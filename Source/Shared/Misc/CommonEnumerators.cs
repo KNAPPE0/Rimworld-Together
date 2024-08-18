@@ -2,21 +2,45 @@ namespace Shared
 {
     public class CommonEnumerators
     {
-        public enum ServerFileMode { Configs, Actions, Sites, Events, Roads, World, Whitelist, Difficulty, Market }
+        public enum ServerFileMode 
+        { 
+            Configs, Actions, Sites, Events, Roads, World, Whitelist, Difficulty, Market 
+        }
 
-        public enum LogMode { Message, Warning, Error, Title }
+        public enum LogMode 
+        { 
+            Message, Warning, Error, Title 
+        }
 
-        public enum CommandMode { Op, Deop, Broadcast, ForceSave }
+        public enum CommandMode 
+        { 
+            Op, Deop, Broadcast, ForceSave 
+        }
 
-        public enum EventStepMode { Send, Receive, Recover }
+        public enum EventStepMode 
+        { 
+            Send, Receive, Recover 
+        }
 
-        public enum MarketStepMode { Add, Request, Reload }
+        public enum MarketStepMode 
+        { 
+            Add, Request, Reload 
+        }
 
-        public enum AidStepMode { Send, Receive, Accept, Reject }
+        public enum AidStepMode 
+        { 
+            Send, Receive, Accept, Reject 
+        }
 
-        public enum CaravanStepMode { Add, Remove, Move }
+        public enum CaravanStepMode 
+        { 
+            Add, Remove, Move 
+        }
 
-        public enum RoadStepMode { Add, Remove }
+        public enum RoadStepMode 
+        { 
+            Add, Remove 
+        }
 
         public enum FactionManifestMode
         {
@@ -33,45 +57,105 @@ namespace Shared
             MemberList
         }
 
-        public enum FactionRanks { Member, Moderator, Admin }
+        public enum FactionRanks 
+        { 
+            Member, Moderator, Admin 
+        }
 
-        public enum Goodwill { Enemy, Neutral, Ally, Faction, Personal }
+        public enum Goodwill 
+        { 
+            Enemy, Neutral, Ally, Faction, Personal 
+        }
 
-        public enum GoodwillTarget { Settlement, Site }
+        public enum GoodwillTarget 
+        { 
+            Settlement, Site 
+        }
 
-        public enum TransferMode { Gift, Trade, Rebound, Pod, Market }
+        public enum TransferMode 
+        { 
+            Gift, Trade, Rebound, Pod, Market 
+        }
 
-        public enum TransferLocation { Caravan, Settlement, Pod, World }
+        public enum TransferLocation 
+        { 
+            Caravan, Settlement, Pod, World 
+        }
 
-        public enum TransferStepMode { TradeRequest, TradeAccept, TradeReject, TradeReRequest, TradeReAccept, TradeReReject, Recover, Pod, Market }
+        public enum TransferStepMode 
+        { 
+            TradeRequest, TradeAccept, TradeReject, TradeReRequest, TradeReAccept, TradeReReject, Recover, Pod, Market 
+        }
 
-        public enum OfflineActivityStepMode { Request, Deny, Unavailable }
+        public enum OfflineActivityStepMode 
+        { 
+            Request, Deny, Unavailable 
+        }
 
-        public enum OnlineActivityStepMode { Request, Accept, Reject, Unavailable, Action, Create, Destroy, Damage, Hediff, Kill, TimeSpeed, GameCondition, Weather, Stop }
+        public enum OnlineActivityStepMode 
+        { 
+            Request, Accept, Reject, Unavailable, Action, Create, Destroy, Damage, Hediff, Kill, TimeSpeed, GameCondition, Weather, Stop 
+        }
 
-        public enum OnlineActivityTargetFaction { Faction, NonFaction, None }
+        public enum OnlineActivityTargetFaction 
+        { 
+            Faction, NonFaction, None 
+        }
 
-        public enum OnlineActivityApplyMode { Add, Remove }
+        public enum OnlineActivityApplyMode 
+        { 
+            Add, Remove, None 
+        }
 
-        public enum OnlineActivityType { None, Visit, Raid }
+        public enum OnlineActivityType 
+        { 
+            None, Visit, Raid 
+        }
 
-        public enum OfflineActivityType { None, Visit, Raid, Spy }
+        public enum OfflineActivityType 
+        { 
+            None, Visit, Raid, Spy 
+        }
 
-        public enum ActionTargetType { Thing, Human, Animal, Cell, Invalid }
+        public enum ActionTargetType 
+        { 
+            Thing, Human, Animal, Cell, Invalid 
+        }
 
-        public enum CreationType { Human, Animal, Thing }
+        public enum CreationType 
+        { 
+            Human, Animal, Thing 
+        }
 
-        public enum SiteStepMode { Accept, Build, Destroy, Info, Deposit, Retrieve, Reward, WorkerError }
+        public enum SiteStepMode 
+        { 
+            Accept, Build, Destroy, Info, Deposit, Retrieve, Reward, WorkerError 
+        }
 
-        public enum SettlementStepMode { Add, Remove }
+        public enum SettlementStepMode 
+        { 
+            Add, Remove 
+        }
 
-        public enum SaveMode { Disconnect, Autosave, Strict }
+        public enum SaveMode 
+        { 
+            Disconnect, Autosave, Strict 
+        }
 
-        public enum UserColor { Normal, Admin, Console, Private }
+        public enum UserColor 
+        { 
+            Normal, Admin, Console, Private 
+        }
 
-        public enum MessageColor { Normal, Admin, Console, Private }
+        public enum MessageColor 
+        { 
+            Normal, Admin, Console, Private 
+        }
 
-        public enum LoginMode { Login, Register }
+        public enum LoginMode 
+        { 
+            Login, Register 
+        }
 
         public enum LoginResponse 
         { 
@@ -87,7 +171,9 @@ namespace Shared
             NoWorld
         }
 
-        public enum WorldStepMode { Required, Existing }
+        public enum WorldStepMode 
+        { 
+            Required, Existing 
+        }
     }
 }
-

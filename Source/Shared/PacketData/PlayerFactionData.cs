@@ -7,14 +7,19 @@ namespace Shared
     [Serializable]
     public class PlayerFactionData
     {
-        public FactionManifestMode manifestMode;
+        // The mode of the faction manifest, determining the type of operation
+        public FactionManifestMode ManifestMode { get; set; } = FactionManifestMode.Create; // Default to 'Create', adjust as necessary
 
-        public string manifestDataString;
+        // A string to hold basic data related to the faction manifest
+        public string ManifestDataString { get; set; } = string.Empty; // Default to an empty string
 
-        public int manifestDataInt;
+        // An integer to hold numeric data related to the faction manifest
+        public int ManifestDataInt { get; set; } = 0; // Default to 0
 
-        public List<string> manifestComplexData = new List<string>();
+        // A list to hold more complex data related to the faction manifest
+        public List<string> ManifestComplexData { get; set; } = new List<string>(); // Initialize with an empty list
 
-        public List<string> manifestSecondaryComplexData = new List<string>();
+        // A secondary list to hold additional complex data related to the faction manifest
+        public List<string> ManifestSecondaryComplexData { get; set; } = new List<string>(); // Initialize with an empty list
     }
 }

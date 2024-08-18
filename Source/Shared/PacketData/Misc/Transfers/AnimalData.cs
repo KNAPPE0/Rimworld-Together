@@ -4,36 +4,31 @@ using System.Collections.Generic;
 namespace Shared
 {
     [Serializable]
-
     public class AnimalData
     {
-        //Bio
+        // Basic Information
+        public string DefName { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string BiologicalAge { get; set; } = "";
+        public string ChronologicalAge { get; set; } = "";
+        public string Gender { get; set; } = "";
+        public string FactionDef { get; set; } = "";
+        public string KindDef { get; set; } = "";
 
-        public string defName;
-        public string name;
-        public string biologicalAge;
-        public string chronologicalAge;
-        public string gender;
-        public string factionDef;
-        public string kindDef;
+        // Health Conditions (Hediffs)
+        public List<string> HediffDefNames { get; set; } = new List<string>();
+        public List<string> HediffPartDefNames { get; set; } = new List<string>();
+        public List<string> HediffSeverities { get; set; } = new List<string>();
+        public List<bool> HediffPermanents { get; set; } = new List<bool>();
 
-        //Hediffs
+        // Trainables
+        public List<string> TrainableDefNames { get; set; } = new List<string>();
+        public List<bool> CanTrain { get; set; } = new List<bool>();
+        public List<bool> HasLearned { get; set; } = new List<bool>();
+        public List<bool> IsDisabled { get; set; } = new List<bool>();
 
-        public List<string> hediffDefNames = new List<string>();
-        public List<string> hediffPartDefName = new List<string>();
-        public List<string> hediffSeverity = new List<string>();
-        public List<bool> heddifPermanent = new List<bool>();
-
-        //Trainables
-
-        public List<string> trainableDefNames = new List<string>();
-        public List<bool> canTrain = new List<bool>();
-        public List<bool> hasLearned = new List<bool>();
-        public List<bool> isDisabled = new List<bool>();
-
-        //Misc
-
-        public string[] position;
-        public int rotation;
+        // Transform (Position and Rotation)
+        public string[] Position { get; set; } = Array.Empty<string>();
+        public int Rotation { get; set; } = 0;
     }
 }

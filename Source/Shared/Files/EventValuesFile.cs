@@ -5,22 +5,14 @@ namespace Shared
     [Serializable]
     public class EventValuesFile
     {
-        public int RaidCost = 250;
-
-        public int InfestationCost = 250;
-
-        public int MechClusterCost = 250;
-
-        public int ToxicFalloutCost = 250;
-
-        public int ManhunterCost = 250;
-
-        public int WandererCost = 250;
-
-        public int FarmAnimalsCost = 250;
-
-        public int ShipChunkCost = 250;
-
-        public int TraderCaravanCost = 250;
+        public int RaidCost { get; set; } = 250;
+        public int InfestationCost { get; set; } = 250;
+        public int MechClusterCost { get; set; } = 250;
+        public int ToxicFalloutCost { get; set; } = 250;
+        public int ManhunterCost { get; set; } = 250;
+        public int WandererCost { get; set; } = 250;
+        public int FarmAnimalsCost { get; set; } = 250;
+        public int ShipChunkCost { get; set; } = 250;
+        public int TraderCaravanCost { get; set; } = 250;
     }
 }

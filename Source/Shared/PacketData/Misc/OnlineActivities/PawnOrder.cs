@@ -6,29 +6,36 @@ namespace Shared
     [Serializable]
     public class PawnOrder
     {
-        public string defName;
-        public int pawnIndex;
+        // Basic Information
+        public string DefName { get; set; } = "";
+        public int PawnIndex { get; set; } = 0;
 
-        public int targetCount;
-        public int[] queueTargetCounts;
+        // Targets
+        public int TargetCount { get; set; } = 0;
+        public int[] QueueTargetCounts { get; set; } = Array.Empty<int>();
 
-        public string[] targets;
-        public int[] targetIndexes;
-        public ActionTargetType[] targetTypes;
-        public OnlineActivityTargetFaction[] targetFactions;
+        public string[] Targets { get; set; } = Array.Empty<string>();
+        public int[] TargetIndexes { get; set; } = Array.Empty<int>();
+        public ActionTargetType[] TargetTypes { get; set; } = Array.Empty<ActionTargetType>();
+        public OnlineActivityTargetFaction[] TargetFactions { get; set; } = Array.Empty<OnlineActivityTargetFaction>();
 
-        public string[] queueTargetsA;
-        public int[] queueTargetIndexesA;
-        public ActionTargetType[] queueTargetTypesA;
-        public OnlineActivityTargetFaction[] queueTargetFactionsA;
+        // Queue A
+        public string[] QueueTargetsA { get; set; } = Array.Empty<string>();
+        public int[] QueueTargetIndexesA { get; set; } = Array.Empty<int>();
+        public ActionTargetType[] QueueTargetTypesA { get; set; } = Array.Empty<ActionTargetType>();
+        public OnlineActivityTargetFaction[] QueueTargetFactionsA { get; set; } = Array.Empty<OnlineActivityTargetFaction>();
 
-        public string[] queueTargetsB;
-        public int[] queueTargetIndexesB;
-        public ActionTargetType[] queueTargetTypesB;
-        public OnlineActivityTargetFaction[] queueTargetFactionsB;
+        // Queue B
+        public string[] QueueTargetsB { get; set; } = Array.Empty<string>();
+        public int[] QueueTargetIndexesB { get; set; } = Array.Empty<int>();
+        public ActionTargetType[] QueueTargetTypesB { get; set; } = Array.Empty<ActionTargetType>();
+        public OnlineActivityTargetFaction[] QueueTargetFactionsB { get; set; } = Array.Empty<OnlineActivityTargetFaction>();
 
-        public bool isDrafted;
-        public int[] updatedPosition;
-        public int updatedRotation;
+        // Draft Status
+        public bool IsDrafted { get; set; } = false;
+
+        // Transform (Position and Rotation)
+        public int[] UpdatedPosition { get; set; } = Array.Empty<int>();
+        public int UpdatedRotation { get; set; } = 0;
     }
 }

@@ -3,37 +3,30 @@
 namespace Shared
 {
     [Serializable]
-
     public class MapData
     {
-        //Misc
+        // Miscellaneous map details
+        public int MapTile { get; set; } = 0; // Default to 0, representing the map tile index
+        public int[] MapSize { get; set; } = new int[2]; // Default to a 2-element array for width and height
+        public string MapOwner { get; set; } = string.Empty; // Default to an empty string
+        public string[] MapMods { get; set; } = new string[0]; // Default to an empty array
+        public string CurWeatherDefName { get; set; } = string.Empty; // Default to an empty string
 
-        public int mapTile;
-        public int[] mapSize;
-        public string mapOwner;
-        public string[] mapMods;
-        public string curWeatherDefName;
+        // Tile data
+        public string[] TileDefNames { get; set; } = new string[0]; // Default to an empty array
+        public string[] TileRoofDefNames { get; set; } = new string[0]; // Default to an empty array
+        public bool[] TilePollutions { get; set; } = new bool[0]; // Default to an empty array
 
-        //Tiles
+        // Thing data
+        public ThingData[] FactionThings { get; set; } = new ThingData[0]; // Default to an empty array
+        public ThingData[] NonFactionThings { get; set; } = new ThingData[0]; // Default to an empty array
 
-        public string[] tileDefNames;
-        public string[] tileRoofDefNames;
-        public bool[] tilePollutions;
+        // Human data
+        public HumanData[] FactionHumans { get; set; } = new HumanData[0]; // Default to an empty array
+        public HumanData[] NonFactionHumans { get; set; } = new HumanData[0]; // Default to an empty array
 
-        //Things
-
-        public ThingData[] factionThings;
-        public ThingData[] nonFactionThings;
-
-        //Humans
-
-        public HumanData[] factionHumans;
-        public HumanData[] nonFactionHumans;
-
-        //Animals
-
-        public AnimalData[] factionAnimals;
-        public AnimalData[] nonFactionAnimals;
-        
+        // Animal data
+        public AnimalData[] FactionAnimals { get; set; } = new AnimalData[0]; // Default to an empty array
+        public AnimalData[] NonFactionAnimals { get; set; } = new AnimalData[0]; // Default to an empty array
     }
 }

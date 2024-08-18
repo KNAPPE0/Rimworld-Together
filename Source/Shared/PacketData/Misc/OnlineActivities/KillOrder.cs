@@ -6,7 +6,8 @@ namespace Shared
     [Serializable]
     public class KillOrder
     {
-        public OnlineActivityTargetFaction pawnFaction;
-        public int killTargetIndex;
+        // Target Faction and Kill Target Index
+        public OnlineActivityTargetFaction PawnFaction { get; set; } = OnlineActivityTargetFaction.None;
+        public int KillTargetIndex { get; set; } = 0;
     }
 }

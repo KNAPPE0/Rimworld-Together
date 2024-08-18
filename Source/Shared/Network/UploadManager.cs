@@ -1,53 +1,65 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace Shared
 {
-    public class UploadManager
+    public class UploadManager : IDisposable
     {
-        public FileStream fileStream;
-        private FileInfo fileInfo;
+        private FileStream? fileStream = null;  // Nullable type, to avoid null reference warnings
+        private FileInfo? fileInfo = null;      // Nullable type, to avoid null reference warnings
 
-        public string filePath;
-        public string fileName;
-        public double fileSize;
-        public double fileParts;
+        public string FilePath { get; private set; } = string.Empty;
+        public string FileName { get; private set; } = string.Empty;
+        public double FileSize { get; private set; } = 0;
+        public double FileParts { get; private set; } = 0;
 
-        private double partSize = 262144;
-        public bool isLastPart;
+        private readonly double partSize = 262144;
+        public bool IsLastPart { get; private set; } = false;
 
         public void PrepareUpload(string filePath)
         {
-            this.filePath = filePath;
+            if (string.IsNullOrWhiteSpace(filePath))
+                throw new ArgumentNullException(nameof(filePath));
+
+            FilePath = filePath;
 
             fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             fileInfo = new FileInfo(filePath);
 
-            fileName = Path.GetFileName(filePath);
-            fileSize = fileInfo.Length;
-            fileParts = fileInfo.Length / partSize;
+            FileName = Path.GetFileName(filePath);
+            FileSize = fileInfo.Length;
+            FileParts = Math.Ceiling(fileInfo.Length / partSize);
         }
 
         public byte[] ReadFilePart()
         {
-            double bytesToRead;
-            if (fileStream.Position + partSize <= fileInfo.Length) bytesToRead = partSize;
-            else
-            {
-                bytesToRead = fileInfo.Length - fileStream.Position;
-                isLastPart = true;
-            }
+            if (fileStream == null || fileInfo == null)
+                throw new InvalidOperationException("FileStream or FileInfo is not initialized. Call PrepareUpload first.");
+
+            double bytesToRead = fileStream.Position + partSize <= fileInfo.Length 
+                ? partSize 
+                : fileInfo.Length - fileStream.Position;
+
+            IsLastPart = fileStream.Position + bytesToRead >= fileInfo.Length;
 
             byte[] toReturn = new byte[(int)bytesToRead];
             fileStream.Read(toReturn, 0, (int)bytesToRead);
 
-            if (isLastPart) FinishFileWrite();
+            if (IsLastPart) FinishFileWrite();
             return toReturn;
         }
 
         public void FinishFileWrite()
         {
-            fileStream.Close();
-            fileStream.Dispose();
+            fileStream?.Close();
+            fileStream?.Dispose();
+            fileStream = null;
+            fileInfo = null; // Clear references to avoid potential null warnings
+        }
+
+        public void Dispose()
+        {
+            FinishFileWrite();
         }
     }
 }

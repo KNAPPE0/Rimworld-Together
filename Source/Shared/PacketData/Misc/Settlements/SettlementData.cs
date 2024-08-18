@@ -6,12 +6,16 @@ namespace Shared
     [Serializable]
     public class SettlementData
     {
-        public SettlementStepMode settlementStepMode;
+        // The current step mode for the settlement
+        public SettlementStepMode SettlementStepMode { get; set; } = SettlementStepMode.Add; // Default to 'Add', adjust as necessary
 
-        public int tile;
+        // Tile where the settlement is located
+        public int Tile { get; set; } = 0; // Default to 0, representing the map tile
 
-        public string owner;
+        // Name of the settlement owner
+        public string Owner { get; set; } = string.Empty; // Default to an empty string
 
-        public Goodwill goodwill;
+        // Goodwill level associated with the settlement
+        public Goodwill Goodwill { get; set; } = Goodwill.Neutral; // Default to 'Neutral', adjust as necessary
     }
 }

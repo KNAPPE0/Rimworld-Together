@@ -7,7 +7,7 @@ namespace Shared
     public class DummySettlementFile
     {
         public int tile;
-        public string owner;
+        public string owner = string.Empty; // Initialize with an empty string to avoid null issues
         public Goodwill goodwill;
     }
 }

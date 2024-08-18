@@ -3,20 +3,23 @@ using System;
 namespace Shared
 {
     [Serializable]
-
     public class ThingData
     {
-        public string defName;
-        public string materialDefName;
-        public int quantity;
-        public string quality;
+        // Basic Information
+        public string DefName { get; set; } = "";
+        public string MaterialDefName { get; set; } = "";
+        public int Quantity { get; set; } = 0;
+        public string Quality { get; set; } = "";
 
-        public bool isMinified;
-        public int hitpoints;
+        // State and Condition
+        public bool IsMinified { get; set; } = false;
+        public int Hitpoints { get; set; } = 0;
 
-        public string[] position;
-        public int rotation;
+        // Transform (Position and Rotation)
+        public string[] Position { get; set; } = Array.Empty<string>();
+        public int Rotation { get; set; } = 0;
 
-        public float growthTicks;
+        // Growth
+        public float GrowthTicks { get; set; } = 0f;
     }
 }

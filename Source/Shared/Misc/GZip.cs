@@ -3,12 +3,10 @@ using System.IO.Compression;
 
 namespace Shared
 {
-    //Class in charge of managing compression/decompression of bytes
-
+    // Class responsible for managing compression/decompression of byte arrays
     public static class GZip
     {
-        //Compresses a given byte array into a smaller version
-
+        // Compresses a given byte array into a smaller version
         public static byte[] Compress(byte[] bytes)
         {
             using MemoryStream memoryStream = new MemoryStream();
@@ -20,8 +18,7 @@ namespace Shared
             return memoryStream.ToArray();
         }
 
-        //Decompresses a given byte array into the original version
-
+        // Decompresses a given byte array back to its original version
         public static byte[] Decompress(byte[] bytes)
         {
             using MemoryStream memoryStream = new MemoryStream(bytes);

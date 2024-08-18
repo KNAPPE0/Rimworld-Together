@@ -7,20 +7,28 @@ namespace Shared
     [Serializable]
     public class SiteData
     {
-        public SiteStepMode siteStepMode;
+        // The mode/step of the site operation
+        public SiteStepMode SiteStepMode { get; set; } = SiteStepMode.Accept; // Default to 'Accept', adjust as necessary
 
-        public int tile;
+        // The tile where the site is located
+        public int Tile { get; set; } = 0; // Default to 0, representing the map tile
 
-        public int type;
+        // The type of the site
+        public int Type { get; set; } = 0; // Default to 0
 
-        public string owner;
+        // The owner of the site
+        public string Owner { get; set; } = string.Empty; // Default to an empty string
 
-        public byte[] workerData;
+        // Data related to the workers at the site
+        public byte[] WorkerData { get; set; } = new byte[0]; // Initialize with an empty byte array
 
-        public Goodwill goodwill;
+        // Goodwill associated with the site
+        public Goodwill Goodwill { get; set; } = Goodwill.Neutral; // Default to 'Neutral', adjust as necessary
 
-        public bool isFromFaction;
+        // Indicates if the site belongs to a faction
+        public bool IsFromFaction { get; set; } = false; // Default to false
 
-        public List<int> sitesWithRewards = new List<int>();
+        // List of sites with rewards available
+        public List<int> SitesWithRewards { get; set; } = new List<int>(); // Initialize with an empty list
     }
 }

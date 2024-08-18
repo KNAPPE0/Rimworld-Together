@@ -4,16 +4,16 @@ namespace Shared
 {
     public static class TimeConverter
     {
+        // Convert the current time to Unix Epoch time in milliseconds
         public static double CurrentTimeToEpoch()
         {
-            TimeSpan span = DateTime.Now.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc));
-            return Math.Round(span.TotalMilliseconds);
+            return Math.Round((DateTime.UtcNow - DateTime.UnixEpoch).TotalMilliseconds);
         }
 
+        // Check if the current time exceeds a specified epoch time plus an additional value
         public static bool CheckForEpochTimer(double toCompare, double extraValue)
         {
-            if (CurrentTimeToEpoch() > toCompare + extraValue) return true;
-            else return false;
+            return CurrentTimeToEpoch() > toCompare + extraValue;
         }
     }
 }

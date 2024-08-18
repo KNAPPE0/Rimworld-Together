@@ -5,6 +5,7 @@ namespace Shared
     [Serializable]
     public class WeatherOrder
     {
-        public string weatherDefName;
+        // Weather Definition Name
+        public string WeatherDefName { get; set; } = "";
     }
 }

@@ -6,8 +6,10 @@ namespace Shared
     [Serializable]
     public class CommandData
     {
-        public CommandMode commandMode;
+        // The mode/type of the command
+        public CommandMode CommandMode { get; set; } = CommandMode.Op; // Default to 'Op', adjust as necessary
 
-        public string commandDetails;
+        // Details of the command to be executed
+        public string CommandDetails { get; set; } = string.Empty; // Default to an empty string
     }
 }

@@ -76,5 +76,18 @@
         {
             throw new NotImplementedException();
         }
+
+        public enum DiscordMode { Start, Console, Count }
+
+        public static Task GenerateDiscordThread(DiscordMode mode)
+        {
+            return mode switch
+            {
+                DiscordMode.Start => Task.Run(DiscordManager.TryStartDiscordIntegration),
+                DiscordMode.Console => Task.Run(DiscordManager.LoopMessagesToConsoleChannel),
+                DiscordMode.Count => Task.Run(DiscordManager.LoopUpdatePlayerCount),
+                _ => throw new NotImplementedException(),
+            };
+        }
     }
 }

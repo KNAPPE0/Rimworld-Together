@@ -9,6 +9,7 @@ namespace GameServer
         // Packet headers in this array won't output into the logs by default
         private static readonly string[] ignoreLogPackets =
         {
+            nameof(KeepAlivePacket),
             nameof(OnlineActivityPacket)
         };
 

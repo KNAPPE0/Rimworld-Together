@@ -49,6 +49,7 @@ namespace GameServer
         public static ActionValuesFile actionValues;
         public static DifficultyValuesFile difficultyValues;
         public static RoadValuesFile roadValues;
+        public static DiscordConfigFile discordConfig;
 
         //Booleans
 
@@ -64,8 +65,15 @@ namespace GameServer
             LoadResources();
             ChangeTitle();
 
+<<<<<<< HEAD
             Threader.GenerateServerThread(Threader.ServerMode.StartServer);
             Threader.GenerateServerThread(Threader.ServerMode.ListenToConsole);
+=======
+            if (discordConfig.Enabled) DiscordManager.StartDiscordIntegration();
+
+            Threader.GenerateServerThread(Threader.ServerMode.Start);
+            Threader.GenerateServerThread(Threader.ServerMode.Console);
+>>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
 
             while (true) Thread.Sleep(1);
         }
@@ -166,6 +174,9 @@ namespace GameServer
             LoadValueFile(ServerFileMode.Market);
             SaveValueFile(ServerFileMode.Market, false);
 
+            LoadValueFile(ServerFileMode.Discord);
+            SaveValueFile(ServerFileMode.Discord, false);
+
             LoadValueFile(ServerFileMode.World);
 
             ModManager.LoadMods();
@@ -222,6 +233,11 @@ namespace GameServer
                 case ServerFileMode.Market:
                     pathToSave = Path.Combine(corePath, "Market.json");
                     Serializer.SerializeToFile(pathToSave, market);
+                    break;
+
+                case ServerFileMode.Discord:
+                    pathToSave = Path.Combine(corePath, "DiscordConfig.json");
+                    Serializer.SerializeToFile(pathToSave, discordConfig);
                     break;
             }
 
@@ -317,6 +333,16 @@ namespace GameServer
                     {
                         market = new MarketFile();
                         Serializer.SerializeToFile(pathToLoad, market);
+                    }
+                    break;
+
+                case ServerFileMode.Discord:
+                    pathToLoad = Path.Combine(corePath, "DiscordConfig.json");
+                    if (File.Exists(pathToLoad)) discordConfig = Serializer.SerializeFromFile<DiscordConfigFile>(pathToLoad);
+                    else
+                    {
+                        discordConfig = new DiscordConfigFile();
+                        Serializer.SerializeToFile(pathToLoad, discordConfig);
                     }
                     break;
             }

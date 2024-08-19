@@ -8,14 +8,15 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <DebugType>full</DebugType>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>TRACE;ENABLE_UNSAFE_MSGPACK;</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
+    <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>TRACE;ENABLE_UNSAFE_MSGPACK;</DefineConstants>
@@ -24,14 +25,14 @@
   <ItemGroup>
     <PackageReference Include="Krafs.Rimworld.Ref" Version="1.5.4104" />
     <PackageReference Include="Lib.Harmony" Version="2.3.3" />
-    <PackageReference Include="System.Text.Json" Version="5.0.2" /> <!-- Add System.Text.Json -->
+    <PackageReference Include="System.Text.Json" Version="7.0.3" />
   </ItemGroup>
 
   <ItemGroup>
-	  <Reference Include="Newtonsoft.Json">
-		<HintPath>..\Shared\Assemblies\Newtonsoft.Json.dll</HintPath>
-	  </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\Shared\Assemblies\Newtonsoft.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
-	
+  
   <Import Project="..\Shared\Shared.projitems" Label="Shared" />
 </Project>

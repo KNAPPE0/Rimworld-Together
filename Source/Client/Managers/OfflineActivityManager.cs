@@ -15,9 +15,9 @@ namespace GameClient
 
         public static void ParseOfflineActivityPacket(Packet packet)
         {
-            OfflineActivityData offlineVisitData = Serializer.ConvertBytesToObject<OfflineActivityData>(packet.contents);
+            OfflineActivityData offlineVisitData = Serializer.ConvertBytesToObject<OfflineActivityData>(packet.Contents);
 
-            switch (offlineVisitData.activityStepMode)
+            switch (offlineVisitData.ActivityStepMode)
             {
                 case OfflineActivityStepMode.Request:
                     OnRequestAccepted(offlineVisitData);
@@ -66,11 +66,11 @@ namespace GameClient
             DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for map"));
 
             OfflineActivityData data = new OfflineActivityData();
-            data.activityStepMode = OfflineActivityStepMode.Request;
-            data.targetTile = ClientValues.chosenSettlement.Tile;
+            data.ActivityStepMode = OfflineActivityStepMode.Request;
+            data.TargetTile = ClientValues.chosenSettlement.Tile;
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OfflineActivityPacket), data);
-            Network.listener.EnqueuePacket(packet);
+            Network.Listener.EnqueuePacket(packet);
         }
 
         //Executes when offline visit is denied
@@ -113,15 +113,15 @@ namespace GameClient
         {
             DialogManager.PopWaitDialog();
 
-            MapData mapData = offlineVisitData.mapData;
+            MapData MapData = offlineVisitData.MapData;
 
             Action r1 = delegate 
             {
                 if (ClientValues.latestOfflineActivity == OfflineActivityType.Spy) SaveManager.ForceSave();
-                PrepareMapForOfflineActivity(mapData); 
+                PrepareMapForOfflineActivity(MapData); 
             };
 
-            if (ModManager.CheckIfMapHasConflictingMods(mapData))
+            if (ModManager.CheckIfMapHasConflictingMods(MapData))
             {
                 DialogManager.PushNewDialog(new RT_Dialog_YesNo("Map received but contains unknown mod data, continue?", r1, null));
             }
@@ -130,23 +130,23 @@ namespace GameClient
 
         //Prepares a map for the offline visit feature from a request
 
-        private static void PrepareMapForOfflineActivity(MapData mapData)
+        private static void PrepareMapForOfflineActivity(MapData MapData)
         {
             Map map = null;
 
             if (ClientValues.latestOfflineActivity == OfflineActivityType.Visit)
             {
-                map = MapScribeManager.StringToMap(mapData, false, true, true, true, true, true);
+                map = MapScribeManager.StringToMap(MapData, false, true, true, true, true, true);
             }
 
             else if (ClientValues.latestOfflineActivity == OfflineActivityType.Raid)
             {
-                map = MapScribeManager.StringToMap(mapData, true, true, true, true, true, true, true);
+                map = MapScribeManager.StringToMap(MapData, true, true, true, true, true, true, true);
             }
 
             else if (ClientValues.latestOfflineActivity == OfflineActivityType.Spy)
             {
-                map = MapScribeManager.StringToMap(mapData, false, true, false, true, false, true);
+                map = MapScribeManager.StringToMap(MapData, false, true, false, true, false, true);
             }
 
             HandleMapFactions(map);
@@ -229,7 +229,7 @@ namespace GameClient
 
         public static void SetSpyCost(ServerGlobalData serverGlobalData)
         {
-            try { spyCost = serverGlobalData.actionValues.SpyCost; }
+            try { spyCost = serverGlobalData.ActionValues.SpyCost; }
             catch
             {
                 Logger.Warning("Server didn't have spy cost set, defaulting to 0");

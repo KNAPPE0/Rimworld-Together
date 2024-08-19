@@ -12,9 +12,9 @@ namespace GameClient
 
         public static void ParseCommand(Packet packet)
         {
-            CommandData commandData = Serializer.ConvertBytesToObject<CommandData>(packet.contents);
+            CommandData commandData = Serializer.ConvertBytesToObject<CommandData>(packet.Contents);
 
-            switch(commandData.commandMode)
+            switch(commandData.CommandMode)
             {
                 case CommandMode.Op:
                     OnOpCommand();
@@ -52,7 +52,7 @@ namespace GameClient
 
         private static void OnBroadcastCommand(CommandData commandData)
         {
-            RimworldManager.GenerateLetter("Server Broadcast", commandData.commandDetails, LetterDefOf.PositiveEvent);
+            RimworldManager.GenerateLetter("Server Broadcast", commandData.CommandDetails, LetterDefOf.PositiveEvent);
         }
 
         private static void OnForceSaveCommand()

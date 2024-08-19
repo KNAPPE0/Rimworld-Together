@@ -1,17 +1,16 @@
 ﻿using Shared;
 using Verse;
+using System.Linq;
 
 namespace GameClient
 {
-    //Class that handles map functions for the mod to use
-
+    // Class that handles map functions for the mod to use
     public static class MapManager
     {
-        //Sends all the player maps to the server
-
+        // Sends all the player maps to the server
         public static void SendPlayerMapsToServer()
         {
-            foreach (Map map in Find.Maps.ToArray())
+            foreach (var map in Find.Maps.ToArray())
             {
                 if (map.IsPlayerHome)
                 {
@@ -20,27 +19,41 @@ namespace GameClient
             }
         }
 
-        //Sends a desired map to the server
-
+        // Sends a desired map to the server
         private static void SendMapToServerSingle(Map map)
         {
-            MapData mapData = ParseMap(map, true, true, true, true);
+            var mapData = ParseMap(map, true, true, true, true);
+            if (mapData == null)
+            {
+                Logger.Error("Failed to parse map data.");
+                return;
+            }
 
-            MapFileData mapFileData = new MapFileData();
-            mapFileData.mapTile = mapData.mapTile;
-            mapFileData.mapData = mapData;
+            var mapFileData = new MapFileData
+            {
+                MapTile = mapData.MapTile,
+                MapData = mapData
+            };
 
-            Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.MapPacket), mapFileData);
-            Network.listener.EnqueuePacket(packet);
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.MapPacket), mapFileData);
+            Network.Listener.EnqueuePacket(packet);
         }
 
-        //Parses a desired map into an usable mod class
-
-        public static MapData ParseMap(Map map, bool includeThings, bool includeHumans, bool includeAnimals, bool includeMods)
+        // Parses a desired map into a usable mod class
+        public static MapData? ParseMap(Map map, bool includeThings, bool includeHumans, bool includeAnimals, bool includeMods)
         {
-            MapData mapData = MapScribeManager.MapToString(map, includeThings, includeThings, includeHumans, includeHumans, includeAnimals, includeAnimals);
+            var mapData = MapScribeManager.MapToString(map, includeThings, includeThings, includeHumans, includeHumans, includeAnimals, includeAnimals);
 
-            if (includeMods) mapData.mapMods = ModManager.GetRunningModList();
+            if (mapData == null)
+            {
+                Logger.Error("Failed to convert map to string.");
+                return null;
+            }
+
+            if (includeMods)
+            {
+                mapData.MapMods = ModManager.GetRunningModList();
+            }
 
             return mapData;
         }

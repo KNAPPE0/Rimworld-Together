@@ -22,8 +22,8 @@ namespace GameClient
 
         public static void AddPollutedTileSimple(PollutionDetails details, bool forceRefresh)
         {
-            Tile toPollute = Find.WorldGrid.tiles[details.tile];
-            toPollute.pollution = details.quantity;
+            Tile toPollute = Find.WorldGrid.tiles[details.Tile];
+            toPollute.pollution = details.Quantity;
 
             if (forceRefresh) PollutionManagerHelper.ForcePollutionLayerRefresh();
         }
@@ -45,7 +45,7 @@ namespace GameClient
 
         public static void SetValues(ServerGlobalData serverGlobalData)
         {
-            tempPollutionDetails = serverGlobalData.pollutedTiles;
+            tempPollutionDetails = serverGlobalData.PollutedTiles;
         }
 
         public static PollutionDetails[] GetPlanetPollutedTiles()
@@ -56,8 +56,8 @@ namespace GameClient
                 if (tile.pollution != 0)
                 {
                     PollutionDetails details = new PollutionDetails();
-                    details.tile = Find.WorldGrid.tiles.IndexOf(tile);
-                    details.quantity = tile.pollution;
+                    details.Tile = Find.WorldGrid.tiles.IndexOf(tile);
+                    details.Quantity = tile.pollution;
 
                     toGet.Add(details);
                 }

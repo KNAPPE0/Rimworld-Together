@@ -40,16 +40,16 @@ namespace GameClient
 
         public static void ParsePacket(Packet packet)
         {
-            ChatData chatData = Serializer.ConvertBytesToObject<ChatData>(packet.contents);
+            ChatData chatData = Serializer.ConvertBytesToObject<ChatData>(packet.Contents);
 
             bool hasBeenTagged = false;
-            if (ChatManagerHelper.GetMessageWords(chatData.message).Contains($"@{ClientValues.username}"))
+            if (ChatManagerHelper.GetMessageWords(chatData.Message).Contains($"@{ClientValues.Username}"))
             {
                 hasBeenTagged = true;
-                chatData.message = chatData.message.Replace($"@{ClientValues.username}", $"<color=red>@{ClientValues.username}</color>");
+                chatData.Message = chatData.Message.Replace($"@{ClientValues.Username}", $"<color=red>@{ClientValues.Username}</color>");
             }
 
-            AddMessageToChat(chatData.username, chatData.message, chatData.userColor, chatData.messageColor);
+            AddMessageToChat(chatData.Username, chatData.Message, chatData.UserColor, chatData.MessageColor);
 
             if (!ClientValues.isReadyToPlay) return;
 
@@ -60,30 +60,30 @@ namespace GameClient
             if (hasBeenTagged) ChatSounds.SystemChatDing.PlayOneShotOnCamera();
         }
 
-        public static void SendMessage(string messageToSend)
+        public static void SendMessage(string MessageToSend)
         {
             ChatSounds.OwnChatDing.PlayOneShotOnCamera();
     
             ChatData chatData = new ChatData();
-            chatData.username = ClientValues.username;
-            chatData.message = messageToSend;
+            chatData.Username = ClientValues.Username;
+            chatData.Message = MessageToSend;
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
-            Network.listener?.EnqueuePacket(packet);
+            Network.Listener?.EnqueuePacket(packet);
         }
 
-        private static string ParseMessage(string message)
+        private static string ParseMessage(string Message)
         {
             bool verifying = false;
             string verification = "";
             Stack<string> codeType = new Stack<string>();
 
-            message = Regex.Replace(message, @"\*\*\*(.+?)\*\*\*", "[b][i]$1[/][/]");
-            message = Regex.Replace(message, @"\*\*(.+?)\*\*", "[b]$1[/]");
-            message = Regex.Replace(message, @"\*(.+?)\*", "[i]$1[/]");
-            message = Regex.Replace(message, @"\&([a-fA-F0-9]{6})(.+?)\&\&", "[$1]$2[/]");
+            Message = Regex.Replace(Message, @"\*\*\*(.+?)\*\*\*", "[b][i]$1[/][/]");
+            Message = Regex.Replace(Message, @"\*\*(.+?)\*\*", "[b]$1[/]");
+            Message = Regex.Replace(Message, @"\*(.+?)\*", "[i]$1[/]");
+            Message = Regex.Replace(Message, @"\&([a-fA-F0-9]{6})(.+?)\&\&", "[$1]$2[/]");
 
-            foreach (char c in message)
+            foreach (char c in Message)
             {
                 if (c == '[') verifying = true;
 
@@ -100,14 +100,14 @@ namespace GameClient
                         //Check for TAG CLOSING
 
                         case "[/]":
-                            if (codeType.Count > 0) message = message.ReplaceFirst(verification, $"</{codeType.Pop()}>");
+                            if (codeType.Count > 0) Message = Message.ReplaceFirst(verification, $"</{codeType.Pop()}>");
                             verification = "";
                             break;
 
                         //Check for BOLD
 
                         case "[b]":
-                            message = message.Replace(verification, "<b>");
+                            Message = Message.Replace(verification, "<b>");
                             codeType.Push("b");
                             verification = "";
                             break;
@@ -115,7 +115,7 @@ namespace GameClient
                         //Check for CURSIVE
 
                         case "[i]":
-                            message = message.Replace(verification, "<i>");
+                            Message = Message.Replace(verification, "<i>");
                             codeType.Push("i");
                             verification = "";
                             break;
@@ -126,7 +126,7 @@ namespace GameClient
                             if (Regex.IsMatch(verification, @"\[[a-fA-F0-9]{6}\]"))
                             {
                                 string verificationReplacement = verification.Replace("[", "<color=#").Replace("]", ">");
-                                message = message.Replace(verification, verificationReplacement);
+                                Message = Message.Replace(verification, verificationReplacement);
                                 codeType.Push("color");
                                 verification = "";
                             }
@@ -135,17 +135,17 @@ namespace GameClient
                 }
             }
 
-            while (codeType.Count > 0) message += $"</{codeType.Pop()}>";
+            while (codeType.Count > 0) Message += $"</{codeType.Pop()}>";
 
-            return message;
+            return Message;
         }
 
-        public static void AddMessageToChat(string username, string message, UserColor userColor, MessageColor messageColor)
+        public static void AddMessageToChat(string Username, string Message, UserColor userColor, MessageColor MessageColor)
         {
             if (chatMessageCache.Count() > 100) chatMessageCache.RemoveAt(0);
 
-            chatMessageCache.Add($"<color=grey>{DateTime.Now.ToString("HH:mm")}</color> " + $"{ChatManagerHelper.userColorDictionary[userColor]}{username}</color>: " +
-                $"{ChatManagerHelper.messageColorDictionary[messageColor]}{ParseMessage(message)}</color>");
+            chatMessageCache.Add($"<color=grey>{DateTime.Now.ToString("HH:mm")}</color> " + $"{ChatManagerHelper.userColorDictionary[userColor]}{Username}</color>: " +
+                $"{ChatManagerHelper.MessageColorDictionary[MessageColor]}{ParseMessage(Message)}</color>");
 
             if (chatAutoscroll) ClientValues.ToggleChatScroll(true);
         }
@@ -212,7 +212,7 @@ namespace GameClient
             { UserColor.Private, "<color=#3ae0dd>" }
         };
 
-        public static Dictionary<MessageColor, string> messageColorDictionary = new Dictionary<MessageColor, string>()
+        public static Dictionary<MessageColor, string> MessageColorDictionary = new Dictionary<MessageColor, string>()
         {
             { MessageColor.Normal, "<color=white>" },
             { MessageColor.Admin, "<color=white>" },
@@ -220,9 +220,9 @@ namespace GameClient
             { MessageColor.Private, "<color=#3ae0dd>" }
         };
 
-        public static string[] GetMessageWords(string message)
+        public static string[] GetMessageWords(string Message)
         {
-            return message.Split(' ');
+            return Message.Split(' ');
         }
     }
 
@@ -239,7 +239,7 @@ namespace GameClient
     }
 
     //TODO
-    //Apply different sounds depending on the message type, since right now only "Own" and "System" play
+    //Apply different sounds depending on the Message type, since right now only "Own" and "System" play
 
     [DefOf]
     public static class ChatSounds

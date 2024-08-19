@@ -10,7 +10,13 @@ namespace GameClient
     {
         public static void ParseFactionPacket(Packet packet)
         {
-            PlayerFactionData factionManifest = Serializer.ConvertBytesToObject<PlayerFactionData>(packet.contents);
+            PlayerFactionData? factionManifest = Serializer.ConvertBytesToObject<PlayerFactionData>(packet.Contents);
+
+            if (factionManifest == null)
+            {
+                Logger.Error("Failed to parse faction packet: Data is null.");
+                return;
+            }
 
             switch (factionManifest.manifestMode)
             {
@@ -45,52 +51,60 @@ namespace GameClient
                 case FactionManifestMode.MemberList:
                     OnFactionMemberList(factionManifest);
                     break;
+
+                default:
+                    Logger.Warning($"Unknown faction manifest mode: {factionManifest.manifestMode}");
+                    break;
             }
         }
 
         public static void OnFactionOpen()
         {
-            Action r3 = delegate
+            Action r3 = () =>
             {
                 DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for member list"));
 
-                PlayerFactionData playerFactionData = new PlayerFactionData();
-                playerFactionData.manifestMode = FactionManifestMode.MemberList;
+                var playerFactionData = new PlayerFactionData
+                {
+                    manifestMode = FactionManifestMode.MemberList
+                };
 
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
-                Network.listener.EnqueuePacket(packet);
+                var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
+                Network.Listener.EnqueuePacket(packet);
             };
 
-            Action r2 = delegate
+            Action r2 = () =>
             {
-                PlayerFactionData playerFactionData = new PlayerFactionData();
-                playerFactionData.manifestMode = FactionManifestMode.RemoveMember;
-                playerFactionData.manifestDataInt = ClientValues.chosenSettlement.Tile;
+                var playerFactionData = new PlayerFactionData
+                {
+                    manifestMode = FactionManifestMode.RemoveMember,
+                    manifestDataInt = ClientValues.chosenSettlement?.Tile ?? 0
+                };
 
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
-                Network.listener.EnqueuePacket(packet);
+                var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
+                Network.Listener.EnqueuePacket(packet);
             };
 
-            Action r1 = delegate
+            Action r1 = () =>
             {
                 DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for faction deletion"));
 
-                PlayerFactionData playerFactionData = new PlayerFactionData();
-                playerFactionData.manifestMode = FactionManifestMode.Delete;
+                var playerFactionData = new PlayerFactionData
+                {
+                    manifestMode = FactionManifestMode.Delete
+                };
 
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
-                Network.listener.EnqueuePacket(packet);
+                var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
+                Network.Listener.EnqueuePacket(packet);
             };
 
-            RT_Dialog_YesNo d3 = new RT_Dialog_YesNo("Are you sure you want to LEAVE your faction?", r2, null);
-
-            RT_Dialog_YesNo d2 = new RT_Dialog_YesNo("Are you sure you want to DELETE your faction?", r1, null);
-
-            RT_Dialog_3Button d1 = new RT_Dialog_3Button("Faction Management", "Manage your faction from here",
+            var d3 = new RT_Dialog_YesNo("Are you sure you want to LEAVE your faction?", r2, null);
+            var d2 = new RT_Dialog_YesNo("Are you sure you want to DELETE your faction?", r1, null);
+            var d1 = new RT_Dialog_3Button("Faction Management", "Manage your faction from here",
                 "Members", "Delete", "Leave",
-                delegate { r3(); },
-                delegate { DialogManager.PushNewDialog(d2); },
-                delegate { DialogManager.PushNewDialog(d3); },
+                () => r3(),
+                () => DialogManager.PushNewDialog(d2),
+                () => DialogManager.PushNewDialog(d3),
                 null);
 
             DialogManager.PushNewDialog(d1);
@@ -98,87 +112,94 @@ namespace GameClient
 
         public static void OnNoFactionOpen()
         {
-            Action r2 = delegate
+            Action r2 = () =>
             {
                 if (string.IsNullOrWhiteSpace(DialogManager.dialog1ResultOne) || DialogManager.dialog1ResultOne.Length > 32)
                 {
                     DialogManager.PushNewDialog(new RT_Dialog_Error("Faction name is invalid! Please try again!"));
                 }
-
                 else
                 {
                     DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for faction creation"));
 
-                    PlayerFactionData playerFactionData = new PlayerFactionData();
-                    playerFactionData.manifestMode = FactionManifestMode.Create;
-                    playerFactionData.manifestDataString = DialogManager.dialog1ResultOne;
+                    var playerFactionData = new PlayerFactionData
+                    {
+                        manifestMode = FactionManifestMode.Create,
+                        manifestDataString = DialogManager.dialog1ResultOne
+                    };
 
-                    Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
-                    Network.listener.EnqueuePacket(packet);
+                    var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
+                    Network.Listener.EnqueuePacket(packet);
                 }
             };
-            RT_Dialog_1Input d2 = new RT_Dialog_1Input("New Faction Name", "Input the name of your new faction", r2, null);
 
-            Action r1 = delegate { DialogManager.PushNewDialog(d2); };
-            RT_Dialog_YesNo d1 = new RT_Dialog_YesNo("You are not a member of any faction! Create one?", r1, null);
+            var d2 = new RT_Dialog_1Input("New Faction Name", "Input the name of your new faction", r2, null);
+            Action r1 = () => DialogManager.PushNewDialog(d2);
+            var d1 = new RT_Dialog_YesNo("You are not a member of any faction! Create one?", r1, null);
 
             DialogManager.PushNewDialog(d1);
         }
 
         public static void OnFactionOpenOnMember()
         {
-            Action r1 = delegate
+            Action r1 = () =>
             {
-                PlayerFactionData playerFactionData = new PlayerFactionData();
-                playerFactionData.manifestMode = FactionManifestMode.Promote;
-                playerFactionData.manifestDataInt = ClientValues.chosenSettlement.Tile;
+                var playerFactionData = new PlayerFactionData
+                {
+                    manifestMode = FactionManifestMode.Promote,
+                    manifestDataInt = ClientValues.chosenSettlement?.Tile ?? 0
+                };
 
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
-                Network.listener.EnqueuePacket(packet);
+                var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
+                Network.Listener.EnqueuePacket(packet);
             };
 
-            Action r2 = delegate
+            Action r2 = () =>
             {
-                PlayerFactionData playerFactionData = new PlayerFactionData();
-                playerFactionData.manifestMode = FactionManifestMode.Demote;
-                playerFactionData.manifestDataInt = ClientValues.chosenSettlement.Tile;
+                var playerFactionData = new PlayerFactionData
+                {
+                    manifestMode = FactionManifestMode.Demote,
+                    manifestDataInt = ClientValues.chosenSettlement?.Tile ?? 0
+                };
 
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
-                Network.listener.EnqueuePacket(packet);
+                var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
+                Network.Listener.EnqueuePacket(packet);
             };
 
-            Action r3 = delegate
+            Action r3 = () =>
             {
-                PlayerFactionData playerFactionData = new PlayerFactionData();
-                playerFactionData.manifestMode = FactionManifestMode.RemoveMember;
-                playerFactionData.manifestDataInt = ClientValues.chosenSettlement.Tile;
+                var playerFactionData = new PlayerFactionData
+                {
+                    manifestMode = FactionManifestMode.RemoveMember,
+                    manifestDataInt = ClientValues.chosenSettlement?.Tile ?? 0
+                };
 
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
-                Network.listener.EnqueuePacket(packet);
+                var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
+                Network.Listener.EnqueuePacket(packet);
             };
 
-            RT_Dialog_YesNo d5 = new RT_Dialog_YesNo("Are you sure you want to demote this player?", 
+            var d5 = new RT_Dialog_YesNo("Are you sure you want to demote this player?",
                 r2,
-                delegate { DialogManager.PushNewDialog(DialogManager.previousDialog); });
+                () => DialogManager.PushNewDialog(DialogManager.previousDialog));
 
-            RT_Dialog_YesNo d4 = new RT_Dialog_YesNo("Are you sure you want to promote this player?", 
+            var d4 = new RT_Dialog_YesNo("Are you sure you want to promote this player?",
                 r1,
-                delegate { DialogManager.PushNewDialog(DialogManager.previousDialog); });
+                () => DialogManager.PushNewDialog(DialogManager.previousDialog));
 
-            RT_Dialog_YesNo d3 = new RT_Dialog_YesNo("Are you sure you want to kick this player?", 
+            var d3 = new RT_Dialog_YesNo("Are you sure you want to kick this player?",
                 r3,
-                delegate { DialogManager.PushNewDialog(DialogManager.previousDialog); });
+                () => DialogManager.PushNewDialog(DialogManager.previousDialog));
 
-            RT_Dialog_2Button d2 = new RT_Dialog_2Button("Power Management Menu", "Choose what you want to manage",
+            var d2 = new RT_Dialog_2Button("Power Management Menu", "Choose what you want to manage",
                 "Promote", "Demote",
-                delegate { DialogManager.PushNewDialog(d4); },
-                delegate { DialogManager.PushNewDialog(d5); },
+                () => DialogManager.PushNewDialog(d4),
+                () => DialogManager.PushNewDialog(d5),
                 null);
 
-            RT_Dialog_2Button d1 = new RT_Dialog_2Button("Management Menu", "Choose what you want to manage", 
-                "Powers", "Kick", 
-                delegate { DialogManager.PushNewDialog(d2); }, 
-                delegate { DialogManager.PushNewDialog(d3); }, 
+            var d1 = new RT_Dialog_2Button("Management Menu", "Choose what you want to manage",
+                "Powers", "Kick",
+                () => DialogManager.PushNewDialog(d2),
+                () => DialogManager.PushNewDialog(d3),
                 null);
 
             DialogManager.PushNewDialog(d1);
@@ -186,17 +207,19 @@ namespace GameClient
 
         public static void OnFactionOpenOnNonMember()
         {
-            Action r1 = delegate
+            Action r1 = () =>
             {
-                PlayerFactionData playerFactionData = new PlayerFactionData();
-                playerFactionData.manifestMode = FactionManifestMode.AddMember;
-                playerFactionData.manifestDataInt = ClientValues.chosenSettlement.Tile;
+                var playerFactionData = new PlayerFactionData
+                {
+                    manifestMode = FactionManifestMode.AddMember,
+                    manifestDataInt = ClientValues.chosenSettlement?.Tile ?? 0
+                };
 
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
-                Network.listener.EnqueuePacket(packet);
+                var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), playerFactionData);
+                Network.Listener.EnqueuePacket(packet);
             };
 
-            RT_Dialog_YesNo d1 = new RT_Dialog_YesNo("Do you want to invite this player to your faction?", r1, null);
+            var d1 = new RT_Dialog_YesNo("Do you want to invite this player to your faction?", r1, null);
             DialogManager.PushNewDialog(d1);
         }
 
@@ -211,7 +234,7 @@ namespace GameClient
             };
 
             DialogManager.PopWaitDialog();
-            RT_Dialog_OK_Loop d1 = new RT_Dialog_OK_Loop(messages);
+            var d1 = new RT_Dialog_OK_Loop(messages);
             DialogManager.PushNewDialog(d1);
         }
 
@@ -237,17 +260,17 @@ namespace GameClient
 
         private static void OnFactionGetInvited(PlayerFactionData factionManifest)
         {
-            Action r1 = delegate
+            Action r1 = () =>
             {
                 ServerValues.hasFaction = true;
 
                 factionManifest.manifestMode = FactionManifestMode.AcceptInvite;
 
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), factionManifest);
-                Network.listener.EnqueuePacket(packet);
+                var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), factionManifest);
+                Network.Listener.EnqueuePacket(packet);
             };
 
-            RT_Dialog_YesNo d1 = new RT_Dialog_YesNo($"Invited to {factionManifest.manifestDataString}, accept?", r1, null);
+            var d1 = new RT_Dialog_YesNo($"Invited to {factionManifest.manifestDataString}, accept?", r1, null);
             DialogManager.PushNewDialog(d1);
         }
 

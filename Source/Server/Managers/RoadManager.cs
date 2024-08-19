@@ -9,9 +9,9 @@ namespace GameServer
 
         public static void ParsePacket(ServerClient client, Packet packet)
         {
-            RoadData data = Serializer.ConvertBytesToObject<RoadData>(packet.contents);
+            RoadData data = Serializer.ConvertBytesToObject<RoadData>(packet.Contents);
 
-            switch (data.stepMode)
+            switch (data.StepMode)
             {
                 case RoadStepMode.Add:
                     AddRoad(client, data);
@@ -25,24 +25,24 @@ namespace GameServer
 
         private static void AddRoad(ServerClient client, RoadData data)
         {
-            if (RoadManagerHelper.CheckIfRoadExists(data.details))
+            if (RoadManagerHelper.CheckIfRoadExists(data.Details))
             {
                 ResponseShortcutManager.SendIllegalPacket(client, "Tried to add a road that already existed");
                 return;
             }
 
-            SaveRoad(data.details, client);
+            SaveRoad(data.Details, client);
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.RoadPacket), data);
             foreach(ServerClient cClient in Network.connectedClients.ToArray())
             {
-                cClient.listener.EnqueuePacket(packet);
+                cClient.Listener.EnqueuePacket(packet);
             }
         }
 
         private static void RemoveRoad(ServerClient client, RoadData data)
         {
-            if (!RoadManagerHelper.CheckIfRoadExists(data.details))
+            if (!RoadManagerHelper.CheckIfRoadExists(data.Details))
             {
                 ResponseShortcutManager.SendIllegalPacket(client, "Tried to remove a road that didn't exist");
                 return;
@@ -50,14 +50,14 @@ namespace GameServer
 
             foreach (RoadDetails existingRoad in Master.worldValues.Roads)
             {
-                if (existingRoad.tileA == data.details.tileA && existingRoad.tileB == data.details.tileB)
+                if (existingRoad.TileA == data.Details.TileA && existingRoad.TileB == data.Details.TileB)
                 {
                     DeleteRoad(existingRoad, client);
                     BroadcastDeletion(existingRoad);
                     return;
                 }
 
-                else if (existingRoad.tileA == data.details.tileB && existingRoad.tileB == data.details.tileA)
+                else if (existingRoad.TileA == data.Details.TileB && existingRoad.TileB == data.Details.TileA)
                 {
                     DeleteRoad(existingRoad, client);
                     BroadcastDeletion(existingRoad);
@@ -72,7 +72,7 @@ namespace GameServer
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.RoadPacket), data);
                 foreach (ServerClient cClient in Network.connectedClients.ToArray())
                 {
-                    cClient.listener.EnqueuePacket(packet);
+                    cClient.Listener.EnqueuePacket(packet);
                 }
             }
         }
@@ -85,8 +85,8 @@ namespace GameServer
             Master.worldValues.Roads = currentRoads.ToArray();
             Master.SaveValueFile(ServerFileMode.World);
 
-            if (client != null) Logger.Warning($"[Added road from tiles '{details.tileA}' to '{details.tileB}'] > {client.userFile.Username}");
-            else Logger.Warning($"[Added road from tiles '{details.tileA}' to '{details.tileB}']");
+            if (client != null) Logger.Warning($"[Added road from tiles '{details.TileA}' to '{details.TileB}'] > {client.userFile.Username}");
+            else Logger.Warning($"[Added road from tiles '{details.TileA}' to '{details.TileB}']");
         }
 
         private static void DeleteRoad(RoadDetails details, ServerClient client = null)
@@ -97,8 +97,8 @@ namespace GameServer
             Master.worldValues.Roads = currentRoads.ToArray();
             Master.SaveValueFile(ServerFileMode.World);
 
-            if (client != null) Logger.Warning($"[Removed road from tiles '{details.tileA}' to '{details.tileB}'] > {client.userFile.Username}");
-            else Logger.Warning($"[Removed road from tiles '{details.tileA}' to '{details.tileB}']");
+            if (client != null) Logger.Warning($"[Removed road from tiles '{details.TileA}' to '{details.TileB}'] > {client.userFile.Username}");
+            else Logger.Warning($"[Removed road from tiles '{details.TileA}' to '{details.TileB}']");
         }
     }
 
@@ -108,8 +108,8 @@ namespace GameServer
         {
             foreach (RoadDetails existingRoad in Master.worldValues.Roads)
             {
-                if (existingRoad.tileA == details.tileA && existingRoad.tileB == details.tileB) return true;
-                else if (existingRoad.tileA == details.tileB && existingRoad.tileB == details.tileA) return true;
+                if (existingRoad.TileA == details.TileA && existingRoad.TileB == details.TileB) return true;
+                else if (existingRoad.TileA == details.TileB && existingRoad.TileB == details.TileA) return true;
             }
 
             return false;

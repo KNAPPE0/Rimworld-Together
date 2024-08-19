@@ -1,161 +1,180 @@
 ﻿using Shared;
 using static Shared.CommonEnumerators;
+using System.IO;
+using System.Linq;
+using System.Threading;
 
 namespace GameServer
 {
     public static class CaravanManager
     {
-        //Variables
+        // Constants and Variables
+        private static readonly string FileExtension = ".mpcaravan";
+        private static readonly double BaseMaxTimer = 86400000;
 
-        private static readonly string fileExtension = ".mpcaravan";
-
-        private static readonly double baseMaxTimer = 86400000;
-
+        // Packet Parsing
         public static void ParsePacket(ServerClient client, Packet packet)
         {
-            CaravanData data = Serializer.ConvertBytesToObject<CaravanData>(packet.contents);
+            var data = Serializer.ConvertBytesToObject<CaravanData>(packet.Contents);
+            if (data == null)
+            {
+                Logger.Error("[CaravanManager] > Failed to deserialize caravan data.");
+                return;
+            }
 
-            switch (data.stepMode)
+            switch (data.StepMode)
             {
                 case CaravanStepMode.Add:
                     AddCaravan(client, data);
                     break;
-
                 case CaravanStepMode.Remove:
                     RemoveCaravan(client, data);
                     break;
-
                 case CaravanStepMode.Move:
                     MoveCaravan(client, data);
+                    break;
+                default:
+                    Logger.Warning("[CaravanManager] > Unknown CaravanStepMode.");
                     break;
             }
         }
 
+        // Add Caravan
         private static void AddCaravan(ServerClient client, CaravanData data)
         {
-            data.details.ID = GetNewCaravanID();
-            RefreshCaravanTimer(data.details);
+            data.Details.Id = GetNewCaravanID();
+            RefreshCaravanTimer(data.Details);
+            SaveCaravan(data.Details);
 
-            Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.CaravanPacket), data);
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.CaravanPacket), data);
             NetworkHelper.SendPacketToAllClients(packet);
 
-            Logger.Message($"[Add Caravan] > {data.details.ID} > {client.userFile.Username}");
+            Logger.Message($"[Add Caravan] > {data.Details.Id} > {client.userFile.Username}");
         }
 
+        // Remove Caravan
         private static void RemoveCaravan(ServerClient client, CaravanData data)
         {
-            CaravanDetails toRemove = GetCaravanFromID(client, data.details.ID);
-            if (toRemove == null) return;
-            else
+            var toRemove = GetCaravanFromID(client, data.Details.Id);
+            if (toRemove == null)
             {
-                DeleteCaravan(data.details);
-
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.CaravanPacket), data);
-                NetworkHelper.SendPacketToAllClients(packet);
-
-                Logger.Message($"[Remove Caravan] > {data.details.ID} > {client.userFile.Username}");
+                Logger.Warning($"[Remove Caravan] > Caravan ID {data.Details.Id} not found.");
+                return;
             }
+
+            DeleteCaravan(toRemove);
+
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.CaravanPacket), data);
+            NetworkHelper.SendPacketToAllClients(packet);
+
+            Logger.Message($"[Remove Caravan] > {data.Details.Id} > {client.userFile.Username}");
         }
 
+        // Move Caravan
         private static void MoveCaravan(ServerClient client, CaravanData data)
         {
-            CaravanDetails toMove = GetCaravanFromID(client, data.details.ID);
-            if (toMove == null) return;
-            else
+            var toMove = GetCaravanFromID(client, data.Details.Id);
+            if (toMove == null)
             {
-                UpdateCaravan(toMove, data.details);
-                RefreshCaravanTimer(data.details);
-
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.CaravanPacket), data);
-                NetworkHelper.SendPacketToAllClients(packet, client);
+                Logger.Warning($"[Move Caravan] > Caravan ID {data.Details.Id} not found.");
+                return;
             }
+
+            UpdateCaravan(toMove, data.Details);
+            RefreshCaravanTimer(toMove);
+
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.CaravanPacket), data);
+            NetworkHelper.SendPacketToAllClients(packet, client);
         }
 
+        // Save Caravan
         private static void SaveCaravan(CaravanDetails details)
         {
-            Serializer.SerializeToFile(Path.Combine(Master.caravansPath, details.ID + fileExtension), details);
+            Serializer.SerializeToFile(Path.Combine(Master.caravansPath, $"{details.Id}{FileExtension}"), details);
         }
 
+        // Delete Caravan
         private static void DeleteCaravan(CaravanDetails details)
         {
-            File.Delete(Path.Combine(Master.caravansPath, details.ID + fileExtension));
+            File.Delete(Path.Combine(Master.caravansPath, $"{details.Id}{FileExtension}"));
         }
 
-        private static void UpdateCaravan(CaravanDetails details, CaravanDetails newDetails)
+        // Update Caravan
+        private static void UpdateCaravan(CaravanDetails current, CaravanDetails updated)
         {
-            details.tile = newDetails.tile;
+            current.Tile = updated.Tile;
+            SaveCaravan(current);
         }
 
+        // Refresh Caravan Timer
         private static void RefreshCaravanTimer(CaravanDetails details)
         {
-            details.timeSinceRefresh = TimeConverter.CurrentTimeToEpoch();
-
+            details.TimeSinceRefresh = TimeConverter.CurrentTimeToEpoch();
             SaveCaravan(details);
         }
 
+        // Start Caravan Ticker
         public static void StartCaravanTicker()
         {
             while (true)
             {
-                Thread.Sleep(1800000);
-
-                try { IdleCaravanTick(); }
-                catch (Exception e) { Logger.Error($"Caravan tick failed, this should never happen. Exception > {e}"); }
+                Thread.Sleep(1800000); // 30 minutes
+                try 
+                { 
+                    IdleCaravanTick(); 
+                }
+                catch (Exception e) 
+                { 
+                    Logger.Error($"[CaravanManager] > Caravan tick failed. Exception: {e}"); 
+                }
             }
         }
 
+        // Idle Caravan Tick
         private static void IdleCaravanTick()
         {
-            foreach(CaravanDetails caravans in GetActiveCaravans())
+            foreach (var caravan in GetActiveCaravans())
             {
-                if (TimeConverter.CheckForEpochTimer(caravans.timeSinceRefresh, baseMaxTimer))
+                if (TimeConverter.CheckForEpochTimer(caravan.TimeSinceRefresh, BaseMaxTimer))
                 {
-                    DeleteCaravan(caravans);
+                    DeleteCaravan(caravan);
 
-                    CaravanData data = new CaravanData();
-                    data.stepMode = CaravanStepMode.Remove;
-                    data.details = caravans;
+                    var data = new CaravanData
+                    {
+                        StepMode = CaravanStepMode.Remove,
+                        Details = caravan
+                    };
 
-                    Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.CaravanPacket), data);
+                    var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.CaravanPacket), data);
                     NetworkHelper.SendPacketToAllClients(packet);
                 }
             }
 
-            Logger.Message($"[Caravan tick]");
+            Logger.Message("[CaravanManager] > Caravan tick completed.");
         }
 
+        // Get Active Caravans
         public static CaravanDetails[] GetActiveCaravans()
         {
-            List<CaravanDetails> activeCaravans = new List<CaravanDetails>();
-            foreach (string str in Directory.GetFiles(Master.caravansPath))
-            {
-                activeCaravans.Add(Serializer.SerializeFromFile<CaravanDetails>(str));
-            }
-
-            return activeCaravans.ToArray();
+            return Directory.GetFiles(Master.caravansPath)
+                .Select(file => Serializer.SerializeFromFile<CaravanDetails>(file))
+                .ToArray();
         }
 
+        // Get Caravan by ID
         public static CaravanDetails GetCaravanFromID(ServerClient client, int caravanID)
         {
-            CaravanDetails toGet = GetActiveCaravans().FirstOrDefault(fetch => fetch.ID == caravanID &&
-                fetch.owner == client.userFile.Username);
-
-            if (toGet == null) return null;
-            else return toGet;
+            return GetActiveCaravans()
+                .FirstOrDefault(caravan => caravan.Id == caravanID && caravan.Owner == client.userFile.Username);
         }
 
+        // Generate New Caravan ID
         private static int GetNewCaravanID()
         {
-            int maxID = 0;
-            foreach(CaravanDetails caravans in GetActiveCaravans())
-            {
-                if (caravans.ID >= maxID)
-                {
-                    maxID = caravans.ID + 1;
-                }
-            }
-
-            return maxID;
+            return GetActiveCaravans()
+                .Select(caravan => caravan.Id)
+                .DefaultIfEmpty(0)
+                .Max() + 1;
         }
     }
 }

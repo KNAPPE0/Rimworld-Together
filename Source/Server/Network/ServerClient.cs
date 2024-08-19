@@ -1,25 +1,44 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Sockets;
 
 namespace GameServer
 {
-    //Class object for the client connecting into the server. Contains all important data about it
-
+    // Class object for the client connecting into the server. Contains all important data about it
     [Serializable]
     public class ServerClient
     {
-        public UserFile userFile = new UserFile();
+        // PascalCase property
+        public UserFile UserFile { get; private set; } = new UserFile();
 
-        [NonSerialized] public Listener listener;
+        // camelCase property for backward compatibility
+        public UserFile userFile
+        {
+            get => UserFile;
+            set => UserFile = value;
+        }
 
-        [NonSerialized] public ServerClient InVisitWith;
+        [NonSerialized]
+        public Listener Listener;
+
+        [NonSerialized]
+        public ServerClient InVisitWith;
 
         public ServerClient(TcpClient tcp)
         {
-            if (tcp == null) return;
-            else userFile.SavedIP = ((IPEndPoint)tcp.Client.RemoteEndPoint).Address.ToString();
+            if (tcp == null)
+            {
+                throw new ArgumentNullException(nameof(tcp), "TcpClient cannot be null");
+            }
+            else
+            {
+                UserFile.SavedIP = ((IPEndPoint)tcp.Client.RemoteEndPoint).Address.ToString();
+            }
         }
 
-        public void LoadFromUserFile() { userFile = UserManager.GetUserFile(this); }
+        public void LoadFromUserFile()
+        {
+            UserFile = UserManager.GetUserFile(this) ?? throw new InvalidOperationException("Failed to load user file.");
+        }
     }
 }

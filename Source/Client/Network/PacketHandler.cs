@@ -20,17 +20,17 @@ namespace GameClient
 
         public static void HandlePacket(Packet packet)
         {
-            if (ClientValues.verboseBool && !ignoreLogPackets.Contains(packet.header)) Logger.Message($"[N] > {packet.header}");
-            else if (ClientValues.extremeVerboseBool) Logger.Message($"[N] > {packet.header}");
+            if (ClientValues.verboseBool && !ignoreLogPackets.Contains(packet.Header)) Logger.Message($"[N] > {packet.Header}");
+            else if (ClientValues.extremeVerboseBool) Logger.Message($"[N] > {packet.Header}");
 
             Action toDo = delegate
             {
                 Type toUse = typeof(PacketHandler);
-                MethodInfo methodInfo = toUse.GetMethod(packet.header);
-                methodInfo.Invoke(packet.header, new object[] { packet });
+                MethodInfo methodInfo = toUse.GetMethod(packet.Header);
+                methodInfo.Invoke(packet.Header, new object[] { packet });
             };
 
-            if (packet.requiresMainThread) Master.threadDispatcher.Enqueue(toDo);
+            if (packet.RequiresMainThread) Master.threadDispatcher.Enqueue(toDo);
             else toDo();
         }
 
@@ -154,7 +154,7 @@ namespace GameClient
 
         public static void ServerValuesPacket(Packet packet)
         {
-            ServerGlobalData serverGlobalData = Serializer.ConvertBytesToObject<ServerGlobalData>(packet.contents);
+            ServerGlobalData serverGlobalData = Serializer.ConvertBytesToObject<ServerGlobalData>(packet.Contents);
             ServerValues.SetServerParameters(serverGlobalData);
             ServerValues.SetAccountData(serverGlobalData);
             EventManager.SetEventPrices(serverGlobalData);

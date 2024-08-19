@@ -62,7 +62,7 @@ namespace GameClient
                             DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for server response"));
 
                             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ResetSavePacket));
-                            Network.listener.EnqueuePacket(packet);
+                            Network.Listener.EnqueuePacket(packet);
                         };
 
                         RT_Dialog_YesNo d1 = new RT_Dialog_YesNo("Are you sure you want to delete your save?", r1, null);

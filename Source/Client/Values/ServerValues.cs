@@ -22,16 +22,16 @@ namespace GameClient
 
         public static void SetAccountData(ServerGlobalData serverGlobalData)
         {
-            isAdmin = serverGlobalData.isClientAdmin;
+            isAdmin = serverGlobalData.IsClientAdmin;
 
-            hasFaction = serverGlobalData.isClientFactionMember;
+            hasFaction = serverGlobalData.IsClientFactionMember;
         }
 
         public static void SetServerPlayers(Packet packet)
         {
-            PlayerRecountData playerRecountData = Serializer.ConvertBytesToObject<PlayerRecountData>(packet.contents);
-            currentPlayers = int.Parse(playerRecountData.currentPlayers);
-            currentPlayerNames = playerRecountData.currentPlayerNames;
+            PlayerRecountData playerRecountData = Serializer.ConvertBytesToObject<PlayerRecountData>(packet.Contents);
+            currentPlayers = int.Parse(playerRecountData.CurrentPlayers);
+            currentPlayerNames = playerRecountData.CurrentPlayerNames;
         }
 
         public static void CleanValues()

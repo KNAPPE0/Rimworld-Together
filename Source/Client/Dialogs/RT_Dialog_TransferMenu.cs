@@ -122,13 +122,13 @@ namespace GameClient
             {
                 Action r1 = delegate
                 {
-                    ClientValues.outgoingManifest.transferMode = TransferMode.Gift;
+                    ClientValues.outgoingManifest.TransferMode = TransferMode.Gift;
                     postChoosing();
                 };
 
                 Action r2 = delegate
                 {
-                    ClientValues.outgoingManifest.transferMode = TransferMode.Trade;
+                    ClientValues.outgoingManifest.TransferMode = TransferMode.Trade;
                     postChoosing();
                 };
 
@@ -145,7 +145,7 @@ namespace GameClient
             {
                 Action r1 = delegate
                 {
-                    ClientValues.outgoingManifest.transferMode = TransferMode.Rebound;
+                    ClientValues.outgoingManifest.TransferMode = TransferMode.Rebound;
                     DialogManager.PopDialog(DialogManager.dialogItemListing);
                     postChoosing();
                 };
@@ -160,7 +160,7 @@ namespace GameClient
             {
                 Action r1 = delegate
                 {
-                    ClientValues.outgoingManifest.transferMode = TransferMode.Market;
+                    ClientValues.outgoingManifest.TransferMode = TransferMode.Market;
                     DialogManager.PopDialog(DialogManager.dialogItemListing);
                     postChoosing();
                 };
@@ -236,7 +236,7 @@ namespace GameClient
 
             else if (transferLocation == TransferLocation.Settlement)
             {
-                TradeSession.SetupWith(Find.WorldObjects.SettlementAt(ClientValues.incomingManifest.fromTile), 
+                TradeSession.SetupWith(Find.WorldObjects.SettlementAt(ClientValues.incomingManifest.FromTile), 
                     playerNegotiator, true);
             }
 
@@ -341,7 +341,7 @@ namespace GameClient
 
             else if (transferLocation == TransferLocation.Settlement)
             {
-                Map map = Find.Maps.Find(x => x.Tile == ClientValues.incomingManifest.toTile);
+                Map map = Find.Maps.Find(x => x.Tile == ClientValues.incomingManifest.ToTile);
 
                 List<Pawn> pawnsInMap = map.mapPawns.PawnsInFaction(Faction.OfPlayer).ToList();
                 pawnsInMap.AddRange(map.mapPawns.PrisonersOfColony);

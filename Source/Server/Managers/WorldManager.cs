@@ -1,50 +1,71 @@
 ﻿using Shared;
 using static Shared.CommonEnumerators;
+using System.IO;
 
 namespace GameServer
 {
     public static class WorldManager
     {
-        private static string worldFileName = "WorldValues.json";
-
-        private static string worldFilePath = Path.Combine(Master.corePath, worldFileName);
+        private static readonly string worldFileName = "WorldValues.json";
+        private static readonly string worldFilePath = Path.Combine(Master.corePath, worldFileName);
 
         public static void ParseWorldPacket(ServerClient client, Packet packet)
         {
-            WorldData worldData = Serializer.ConvertBytesToObject<WorldData>(packet.contents);
+            WorldData worldData = Serializer.ConvertBytesToObject<WorldData>(packet.Contents);
 
-            switch (worldData.worldStepMode)
+            switch (worldData.WorldStepMode)
             {
                 case WorldStepMode.Required:
-                    Master.worldValues = worldData.worldValuesFile;
-                    Master.SaveValueFile(ServerFileMode.World);
+                    if (worldData.WorldValuesFile != null)
+                    {
+                        Master.worldValues = worldData.WorldValuesFile;
+                        Master.SaveValueFile(ServerFileMode.World);
+                    }
+                    else
+                    {
+                        Logger.Error("Received null WorldValuesFile in WorldStepMode.Required");
+                    }
                     break;
 
                 case WorldStepMode.Existing:
-                    //Do nothing
+                    // Do nothing, as the client is simply acknowledging the existing world
+                    break;
+
+                default:
+                    Logger.Warning($"Unknown WorldStepMode received: {worldData.WorldStepMode}");
                     break;
             }
         }
 
-        public static bool CheckIfWorldExists() { return File.Exists(worldFilePath); }
+        public static bool CheckIfWorldExists() => File.Exists(worldFilePath);
 
-        public static void RequireWorldFile(ServerClient client)
+        public static void RequestWorldFile(ServerClient client)
         {
-            WorldData worldData = new WorldData();
-            worldData.worldStepMode = WorldStepMode.Required;
+            WorldData worldData = new WorldData
+            {
+                WorldStepMode = WorldStepMode.Required
+            };
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.WorldPacket), worldData);
-            client.listener.EnqueuePacket(packet);
+            client.Listener?.EnqueuePacket(packet); // Added null check for Listener
         }
 
         public static void SendWorldFile(ServerClient client)
         {
-            WorldData worldData = new WorldData();
-            worldData.worldStepMode = WorldStepMode.Existing;
-            worldData.worldValuesFile = Master.worldValues;
+            if (Master.worldValues == null)
+            {
+                Logger.Error("World values are null, cannot send world file.");
+                return;
+            }
+
+            WorldData worldData = new WorldData
+            {
+                WorldStepMode = WorldStepMode.Existing,
+                WorldValuesFile = Master.worldValues
+            };
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.WorldPacket), worldData);
-            client.listener.EnqueuePacket(packet);
+            client.Listener?.EnqueuePacket(packet); // Added null check for Listener
         }
     }
 }

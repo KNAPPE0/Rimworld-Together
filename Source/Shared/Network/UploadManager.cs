@@ -45,7 +45,6 @@ namespace Shared
             byte[] toReturn = new byte[(int)bytesToRead];
             fileStream.Read(toReturn, 0, (int)bytesToRead);
 
-            if (IsLastPart) FinishFileWrite();
             return toReturn;
         }
 

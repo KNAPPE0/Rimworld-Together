@@ -7,155 +7,174 @@ namespace GameServer
     {
         public static void ParseTransferPacket(ServerClient client, Packet packet)
         {
-            TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(packet.contents);
+            TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(packet.Contents);
 
-            switch (transferData.transferStepMode)
+            switch (transferData.TransferStepMode)
             {
                 case TransferStepMode.TradeRequest:
                     TransferThings(client, transferData);
                     break;
 
                 case TransferStepMode.TradeAccept:
-                    //Nothing goes here
+                    // No action needed here
                     break;
 
                 case TransferStepMode.TradeReject:
-                    RejectTransfer(client, packet);
+                    RejectTransfer(client, transferData);
                     break;
 
                 case TransferStepMode.TradeReRequest:
-                    TransferThingsRebound(client, packet);
+                    TransferThingsRebound(client, transferData);
                     break;
 
                 case TransferStepMode.TradeReAccept:
-                    AcceptReboundTransfer(client, packet);
+                    AcceptReboundTransfer(client, transferData);
                     break;
 
                 case TransferStepMode.TradeReReject:
-                    RejectReboundTransfer(client, packet);
+                    RejectReboundTransfer(client, transferData);
+                    break;
+
+                default:
+                    Logger.Warning($"Unknown transfer step mode: {transferData.TransferStepMode}");
                     break;
             }
         }
 
         public static void TransferThings(ServerClient client, TransferData transferData)
         {
-            if (!SettlementManager.CheckIfTileIsInUse(transferData.toTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.userFile.Username} attempted to send items to a settlement at tile {transferData.toTile}, but no settlement could be found");
+            if (!SettlementManager.CheckIfTileIsInUse(transferData.ToTile))
+            {
+                ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.userFile.Username} attempted to send items to a settlement at tile {transferData.ToTile}, but no settlement could be found");
+                return;
+            }
+
+            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData.ToTile);
+            if (settlement == null)
+            {
+                Logger.Error($"Failed to retrieve settlement file for tile {transferData.ToTile}");
+                ResponseShortcutManager.SendIllegalPacket(client, "Settlement data could not be retrieved.");
+                return;
+            }
+
+            if (!UserManager.CheckIfUserIsConnected(settlement.owner))
+            {
+                HandleUnavailableTransfer(client, transferData);
+            }
             else
             {
-                SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData.toTile);
-
-                if (!UserManager.CheckIfUserIsConnected(settlement.owner))
-                {
-                    if (transferData.transferMode == TransferMode.Pod) ResponseShortcutManager.SendUnavailablePacket(client);
-                    else
-                    {
-                        transferData.transferStepMode = TransferStepMode.Recover;
-                        Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                        client.listener.EnqueuePacket(rPacket);
-                    }
-                }
-
-                else
-                {
-                    if (transferData.transferMode == TransferMode.Gift)
-                    {
-                        transferData.transferStepMode = TransferStepMode.TradeAccept;
-                        Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                        client.listener.EnqueuePacket(rPacket);
-                    }
-
-                    else if (transferData.transferMode == TransferMode.Pod)
-                    {
-                        transferData.transferStepMode = TransferStepMode.TradeAccept;
-                        Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                        client.listener.EnqueuePacket(rPacket);
-                    }
-
-                    transferData.transferStepMode = TransferStepMode.TradeRequest;
-                    string[] contents2 = new string[] { Serializer.SerializeToString(transferData) };
-                    Packet rPacket2 = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                    UserManager.GetConnectedClientFromUsername(settlement.owner).listener.EnqueuePacket(rPacket2);
-                }
+                HandleTransfer(client, settlement.owner, transferData);
             }
         }
 
-        public static void RejectTransfer(ServerClient client, Packet packet)
+        private static void HandleUnavailableTransfer(ServerClient client, TransferData transferData)
         {
-            TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(packet.contents);
-
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData.fromTile);
-            if (!UserManager.CheckIfUserIsConnected(settlement.owner))
+            if (transferData.TransferMode == TransferMode.Pod)
             {
-                transferData.transferStepMode = TransferStepMode.Recover;
-                Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                client.listener.EnqueuePacket(rPacket);
+                ResponseShortcutManager.SendUnavailablePacket(client);
             }
-
             else
             {
-                transferData.transferStepMode = TransferStepMode.TradeReject;
+                transferData.TransferStepMode = TransferStepMode.Recover;
                 Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                UserManager.GetConnectedClientFromUsername(settlement.owner).listener.EnqueuePacket(rPacket);
+                client.Listener.EnqueuePacket(rPacket);
             }
         }
 
-        public static void TransferThingsRebound(ServerClient client, Packet packet)
+        private static void HandleTransfer(ServerClient client, string owner, TransferData transferData)
         {
-            TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(packet.contents);
+            transferData.TransferStepMode = TransferStepMode.TradeRequest;
+            Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
+            UserManager.GetConnectedClientFromUsername(owner)?.Listener.EnqueuePacket(rPacket);
 
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData.toTile);
-            if (!UserManager.CheckIfUserIsConnected(settlement.owner))
+            if (transferData.TransferMode == TransferMode.Gift || transferData.TransferMode == TransferMode.Pod)
             {
-                transferData.transferStepMode = TransferStepMode.TradeReReject;
-                Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                client.listener.EnqueuePacket(rPacket);
-            }
-
-            else
-            {
-                transferData.transferStepMode = TransferStepMode.TradeReRequest;
-                Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                UserManager.GetConnectedClientFromUsername(settlement.owner).listener.EnqueuePacket(rPacket);
+                transferData.TransferStepMode = TransferStepMode.TradeAccept;
+                client.Listener.EnqueuePacket(Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData));
             }
         }
 
-        public static void AcceptReboundTransfer(ServerClient client, Packet packet)
+        public static void RejectTransfer(ServerClient client, TransferData transferData)
         {
-            TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(packet.contents);
-            
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData.fromTile);
-            if (!UserManager.CheckIfUserIsConnected(settlement.owner))
+            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData.FromTile);
+            if (settlement == null)
             {
-                transferData.transferStepMode = TransferStepMode.Recover;
-                Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                client.listener.EnqueuePacket(rPacket);
+                Logger.Error($"Failed to retrieve settlement file for tile {transferData.FromTile}");
+                return;
             }
 
+            if (!UserManager.CheckIfUserIsConnected(settlement.owner))
+            {
+                transferData.TransferStepMode = TransferStepMode.Recover;
+                client.Listener.EnqueuePacket(Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData));
+            }
             else
             {
-                transferData.transferStepMode = TransferStepMode.TradeReAccept;
-                Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                UserManager.GetConnectedClientFromUsername(settlement.owner).listener.EnqueuePacket(rPacket);
+                transferData.TransferStepMode = TransferStepMode.TradeReject;
+                UserManager.GetConnectedClientFromUsername(settlement.owner)?.Listener.EnqueuePacket(Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData));
             }
         }
 
-        public static void RejectReboundTransfer(ServerClient client, Packet packet)
+        public static void TransferThingsRebound(ServerClient client, TransferData transferData)
         {
-            TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(packet.contents);
-
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData.fromTile);
-            if (!UserManager.CheckIfUserIsConnected(settlement.owner))
+            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData.ToTile);
+            if (settlement == null)
             {
-                transferData.transferStepMode = TransferStepMode.Recover;
-                Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                client.listener.EnqueuePacket(rPacket);
+                Logger.Error($"Failed to retrieve settlement file for tile {transferData.ToTile}");
+                return;
             }
 
+            if (!UserManager.CheckIfUserIsConnected(settlement.owner))
+            {
+                transferData.TransferStepMode = TransferStepMode.TradeReReject;
+                client.Listener.EnqueuePacket(Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData));
+            }
             else
             {
-                transferData.transferStepMode = TransferStepMode.TradeReReject;
-                Packet rPacket = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData);
-                UserManager.GetConnectedClientFromUsername(settlement.owner).listener.EnqueuePacket(rPacket);
+                transferData.TransferStepMode = TransferStepMode.TradeReRequest;
+                UserManager.GetConnectedClientFromUsername(settlement.owner)?.Listener.EnqueuePacket(Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData));
+            }
+        }
+
+        public static void AcceptReboundTransfer(ServerClient client, TransferData transferData)
+        {
+            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData.FromTile);
+            if (settlement == null)
+            {
+                Logger.Error($"Failed to retrieve settlement file for tile {transferData.FromTile}");
+                return;
+            }
+
+            if (!UserManager.CheckIfUserIsConnected(settlement.owner))
+            {
+                transferData.TransferStepMode = TransferStepMode.Recover;
+                client.Listener.EnqueuePacket(Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData));
+            }
+            else
+            {
+                transferData.TransferStepMode = TransferStepMode.TradeReAccept;
+                UserManager.GetConnectedClientFromUsername(settlement.owner)?.Listener.EnqueuePacket(Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData));
+            }
+        }
+
+        public static void RejectReboundTransfer(ServerClient client, TransferData transferData)
+        {
+            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData.FromTile);
+            if (settlement == null)
+            {
+                Logger.Error($"Failed to retrieve settlement file for tile {transferData.FromTile}");
+                return;
+            }
+
+            if (!UserManager.CheckIfUserIsConnected(settlement.owner))
+            {
+                transferData.TransferStepMode = TransferStepMode.Recover;
+                client.Listener.EnqueuePacket(Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData));
+            }
+            else
+            {
+                transferData.TransferStepMode = TransferStepMode.TradeReReject;
+                UserManager.GetConnectedClientFromUsername(settlement.owner)?.Listener.EnqueuePacket(Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), transferData));
             }
         }
     }

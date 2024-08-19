@@ -11,13 +11,19 @@ namespace GameClient
 {
     public static class PlayerSettlementManager
     {
-        public static List<Settlement> playerSettlements = new List<Settlement>();
+        public static List<Settlement> PlayerSettlements { get; private set; } = new List<Settlement>();
 
         public static void ParsePacket(Packet packet)
         {
-            SettlementData settlementData = Serializer.ConvertBytesToObject<SettlementData>(packet.contents);
+            if (packet?.Contents == null)
+            {
+                Logger.Error("Received null packet or packet contents in ParsePacket.");
+                return;
+            }
 
-            switch (settlementData.settlementStepMode)
+            SettlementData settlementData = Serializer.ConvertBytesToObject<SettlementData>(packet.Contents);
+
+            switch (settlementData?.SettlementStepMode)
             {
                 case SettlementStepMode.Add:
                     SpawnSingleSettlement(settlementData);
@@ -26,6 +32,10 @@ namespace GameClient
                 case SettlementStepMode.Remove:
                     RemoveSingleSettlement(settlementData);
                     break;
+
+                default:
+                    Logger.Warning($"Unknown SettlementStepMode received: {settlementData?.SettlementStepMode}");
+                    break;
             }
         }
 
@@ -33,73 +43,89 @@ namespace GameClient
         {
             if (settlements == null) return;
 
-            for (int i = 0; i < PlayerSettlementManagerHelper.tempSettlements.Count(); i++)
+            foreach (var settlementFile in settlements)
             {
-                OnlineSettlementFile settlementFile = PlayerSettlementManagerHelper.tempSettlements[i];
-
                 try
                 {
                     Settlement settlement = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
-                    settlement.Tile = settlementFile.tile;
-                    settlement.Name = $"{settlementFile.owner}'s settlement";
-                    settlement.SetFaction(PlanetManagerHelper.GetPlayerFactionFromGoodwill(settlementFile.goodwill));
+                    settlement.Tile = settlementFile.Tile;
+                    settlement.Name = $"{settlementFile.Owner}'s settlement";
+                    settlement.SetFaction(PlanetManagerHelper.GetPlayerFactionFromGoodwill(settlementFile.Goodwill));
 
-                    playerSettlements.Add(settlement);
+                    PlayerSettlements.Add(settlement);
                     Find.WorldObjects.Add(settlement);
                 }
-                catch (Exception e) { Logger.Error($"Failed to build settlement at {settlementFile.tile}. Reason: {e}"); }
+                catch (Exception e)
+                {
+                    Logger.Error($"Failed to build settlement at {settlementFile.Tile}. Reason: {e}");
+                }
             }
         }
 
         public static void ClearAllSettlements()
         {
-            playerSettlements.Clear();
+            PlayerSettlements.Clear();
 
-            Settlement[] settlements = Find.WorldObjects.Settlements.Where(fetch => FactionValues.playerFactions.Contains(fetch.Faction)).ToArray();
-            foreach (Settlement settlement in settlements) Find.WorldObjects.Remove(settlement);
+            var settlements = Find.WorldObjects.Settlements
+                .Where(fetch => FactionValues.playerFactions.Contains(fetch.Faction))
+                .ToArray();
+
+            foreach (var settlement in settlements)
+            {
+                Find.WorldObjects.Remove(settlement);
+            }
         }
 
-        public static void SpawnSingleSettlement(SettlementData newSettlementJSON)
+        public static void SpawnSingleSettlement(SettlementData newSettlementData)
         {
             if (ClientValues.isReadyToPlay)
             {
                 try
                 {
                     Settlement settlement = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
-                    settlement.Tile = newSettlementJSON.tile;
-                    settlement.Name = $"{newSettlementJSON.owner}'s settlement";
-                    settlement.SetFaction(PlanetManagerHelper.GetPlayerFactionFromGoodwill(newSettlementJSON.goodwill));
+                    settlement.Tile = newSettlementData.Tile;
+                    settlement.Name = $"{newSettlementData.Owner}'s settlement";
+                    settlement.SetFaction(PlanetManagerHelper.GetPlayerFactionFromGoodwill(newSettlementData.Goodwill));
 
-                    playerSettlements.Add(settlement);
+                    PlayerSettlements.Add(settlement);
                     Find.WorldObjects.Add(settlement);
                 }
-                catch (Exception e) { Logger.Error($"Failed to spawn settlement at {newSettlementJSON.tile}. Reason: {e}"); }
+                catch (Exception e)
+                {
+                    Logger.Error($"Failed to spawn settlement at {newSettlementData.Tile}. Reason: {e}");
+                }
             }
         }
 
-        public static void RemoveSingleSettlement(SettlementData newSettlementJSON)
+        public static void RemoveSingleSettlement(SettlementData settlementData)
         {
             if (ClientValues.isReadyToPlay)
             {
                 try
                 {
-                    Settlement toGet = playerSettlements.Find(x => x.Tile == newSettlementJSON.tile);
+                    var settlement = PlayerSettlements.FirstOrDefault(x => x.Tile == settlementData.Tile);
 
-                    playerSettlements.Remove(toGet);
-                    Find.WorldObjects.Remove(toGet);
+                    if (settlement != null)
+                    {
+                        PlayerSettlements.Remove(settlement);
+                        Find.WorldObjects.Remove(settlement);
+                    }
                 }
-                catch (Exception e) { Logger.Error($"Failed to remove settlement at {newSettlementJSON.tile}. Reason: {e}"); }
+                catch (Exception e)
+                {
+                    Logger.Error($"Failed to remove settlement at {settlementData.Tile}. Reason: {e}");
+                }
             }
         }
     }
 
     public static class PlayerSettlementManagerHelper
     {
-        public static OnlineSettlementFile[] tempSettlements;
+        public static OnlineSettlementFile[] TempSettlements { get; private set; }
 
         public static void SetValues(ServerGlobalData serverGlobalData)
         {
-            tempSettlements = serverGlobalData.playerSettlements;
+            TempSettlements = serverGlobalData.PlayerSettlements;
         }
     }
 }

@@ -8,8 +8,8 @@ namespace GameServer
         public static void SendIllegalPacket(ServerClient client, string message, bool shouldBroadcast = true)
         {
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.IllegalActionPacket));
-            client.listener.EnqueuePacket(packet);
-            client.listener.disconnectFlag = true;
+            client.Listener.EnqueuePacket(packet);
+            client.Listener.disconnectFlag = true;
 
             if (shouldBroadcast) 
             { 
@@ -21,13 +21,13 @@ namespace GameServer
         public static void SendUnavailablePacket(ServerClient client)
         {
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.UserUnavailablePacket));
-            client.listener.EnqueuePacket(packet);
+            client.Listener.EnqueuePacket(packet);
         }
 
         public static void SendBreakPacket(ServerClient client)
         {
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.BreakPacket));
-            client.listener.EnqueuePacket(packet);
+            client.Listener.EnqueuePacket(packet);
         }
 
         public static void SendNoPowerPacket(ServerClient client, PlayerFactionData factionManifest)
@@ -35,16 +35,16 @@ namespace GameServer
             factionManifest.manifestMode = FactionManifestMode.NoPower;
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.FactionPacket), factionManifest);
-            client.listener.EnqueuePacket(packet);
+            client.Listener.EnqueuePacket(packet);
         }
 
         public static void SendWorkerInsidePacket(ServerClient client)
         {
             SiteData siteData = new SiteData();
-            siteData.siteStepMode = SiteStepMode.WorkerError;
+            siteData.SiteStepMode = SiteStepMode.WorkerError;
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.SitePacket), siteData);
-            client.listener.EnqueuePacket(packet);
+            client.Listener.EnqueuePacket(packet);
         }
     }
 }

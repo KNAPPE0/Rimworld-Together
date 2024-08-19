@@ -11,9 +11,9 @@ namespace GameClient
 
         public static void ReceiveLoginResponse(Packet packet)
         {
-            LoginData loginData = Serializer.ConvertBytesToObject<LoginData>(packet.contents);
+            LoginData loginData = Serializer.ConvertBytesToObject<LoginData>(packet.Contents);
 
-            switch(loginData.tryResponse)
+            switch(loginData.TryResponse)
             {
                 case LoginResponse.InvalidLogin:
                     DialogManager.PushNewDialog(new RT_Dialog_Error("Login details are invalid! Please try again!"));
@@ -24,7 +24,7 @@ namespace GameClient
                     break;
 
                 case LoginResponse.RegisterInUse:
-                    DialogManager.PushNewDialog(new RT_Dialog_Error("That username is already in use! Please try again!"));
+                    DialogManager.PushNewDialog(new RT_Dialog_Error("That Username is already in use! Please try again!"));
                     break;
 
                 case LoginResponse.RegisterError:
@@ -48,7 +48,7 @@ namespace GameClient
                     break;
 
                 case LoginResponse.WrongVersion:
-                    DialogManager.PushNewDialog(new RT_Dialog_Error($"Mod version mismatch! Expected version {loginData.extraDetails[0]}"));
+                    DialogManager.PushNewDialog(new RT_Dialog_Error($"Mod version mismatch! Expected version {loginData.ExtraDetails[0]}"));
                     break;
 
                 case LoginResponse.NoWorld:

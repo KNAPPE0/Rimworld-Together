@@ -53,7 +53,7 @@ namespace GameClient
                 threadDispatcher = go.AddComponent(typeof(UnityMainThreadDispatcher)) as UnityMainThreadDispatcher;
                 Object.Instantiate(go);
 
-                Logger.Message($"Created dispatcher for version {CommonValues.executableVersion}");
+                Logger.Message($"Created dispatcher for version {CommonValues.ExecutableVersion}");
             }
         }
     }

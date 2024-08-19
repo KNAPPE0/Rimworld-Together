@@ -9,10 +9,10 @@ namespace Shared
         public byte[] Contents { get; private set; }
         public bool RequiresMainThread { get; private set; }
 
-        public Packet(string header, byte[] contents, bool requiresMainThread)
+        public Packet(string header, byte[] Contents, bool requiresMainThread)
         {
             Header = header ?? throw new ArgumentNullException(nameof(header));
-            Contents = contents ?? Array.Empty<byte>();
+            Contents = Contents ?? Array.Empty<byte>();
             RequiresMainThread = requiresMainThread;
         }
 
@@ -22,11 +22,11 @@ namespace Shared
                 throw new ArgumentNullException(nameof(header));
 
             // Updated: Using modern serialization method
-            byte[] contents = objectToUse != null 
+            byte[] Contents = objectToUse != null 
                 ? System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(objectToUse) 
                 : Array.Empty<byte>();
 
-            return new Packet(header, contents, requiresMainThread);
+            return new Packet(header, Contents, requiresMainThread);
         }
     }
 }

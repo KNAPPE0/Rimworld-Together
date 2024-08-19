@@ -1,33 +1,80 @@
 ﻿namespace GameServer
 {
+    /// <summary>
+    /// Handles the creation and management of server and client threads.
+    /// </summary>
     public static class Threader
     {
-        public enum ServerMode { Start, Sites, Caravans, Console }
-
-        public static Task GenerateServerThread(ServerMode mode)
-        {
-            return mode switch
-            {
-                ServerMode.Start => Task.Run(Network.ReadyServer),
-                ServerMode.Sites => Task.Run(SiteManager.StartSiteTicker),
-                ServerMode.Caravans => Task.Run(CaravanManager.StartCaravanTicker),
-                ServerMode.Console => Task.Run(ServerCommandManager.ListenForServerCommands),
-                _ => throw new NotImplementedException(),
-            };
+        public enum ServerMode 
+        { 
+            StartServer, 
+            RunSiteManager, 
+            RunCaravanManager, 
+            ListenToConsole 
         }
 
-        public enum ClientMode { Listener, Sender, Health, KAFlag }
+        public enum ClientMode 
+        { 
+            ListenToClient, 
+            SendDataToClient, 
+            MonitorClientHealth, 
+            MonitorKAFlag 
+        }
 
-        public static Task GenerateClientThread(Listener listener, ClientMode mode)
+        /// <summary>
+        /// Generates and starts a task for the specified server mode.
+        /// </summary>
+        /// <param name="mode">The server mode to run.</param>
+        /// <returns>A Task representing the operation.</returns>
+        public static Task GenerateServerThread(ServerMode mode)
         {
-            return mode switch
+            try
             {
-                ClientMode.Listener => Task.Run(listener.Listen),
-                ClientMode.Sender => Task.Run(listener.SendData),
-                ClientMode.Health => Task.Run(listener.CheckConnectionHealth),
-                ClientMode.KAFlag => Task.Run(listener.CheckKAFlag),
-                _ => throw new NotImplementedException(),
-            };
+                return mode switch
+                {
+                    ServerMode.StartServer => Task.Run(Network.ReadyServer),
+                    ServerMode.RunSiteManager => Task.Run(SiteManager.StartSiteTicker),
+                    ServerMode.RunCaravanManager => Task.Run(CaravanManager.StartCaravanTicker),
+                    ServerMode.ListenToConsole => Task.Run(ServerCommandManager.ListenForServerCommands),
+                    _ => throw new NotImplementedException($"The server mode {mode} is not implemented."),
+                };
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error in GenerateServerThread: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Generates and starts a task for the specified client mode.
+        /// </summary>
+        /// <param name="Listener">The Listener object associated with the client.</param>
+        /// <param name="mode">The client mode to run.</param>
+        /// <returns>A Task representing the operation.</returns>
+        public static Task GenerateClientThread(Listener Listener, ClientMode mode)
+        {
+            try
+            {
+                return mode switch
+                {
+                    ClientMode.ListenToClient => Task.Run(Listener.Listen),
+                    ClientMode.SendDataToClient => Task.Run(Listener.SendData),
+                    ClientMode.MonitorClientHealth => Task.Run(Listener.CheckConnectionHealth),
+                    ClientMode.MonitorKAFlag => Task.Run(Listener.CheckKAFlag),
+                    _ => throw new NotImplementedException($"The client mode {mode} is not implemented."),
+                };
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error in GenerateClientThread: {ex.Message}");
+                throw;
+            }
+        }
+
+        internal static void GenerateClientThread(Listener listener, object sender)
+        {
+            throw new NotImplementedException();
         }
     }
 }

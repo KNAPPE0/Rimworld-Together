@@ -37,15 +37,15 @@ namespace GameClient
 
             siteRewardCount = new int[]
             {
-                serverGlobalData.siteValues.FarmlandRewardCount,
-                serverGlobalData.siteValues.QuarryRewardCount,
-                serverGlobalData.siteValues.SawmillRewardCount,
-                serverGlobalData.siteValues.BankRewardCount,
-                serverGlobalData.siteValues.LaboratoryRewardCount,
-                serverGlobalData.siteValues.RefineryRewardCount,
-                serverGlobalData.siteValues.HerbalWorkshopRewardCount,
-                serverGlobalData.siteValues.TextileFactoryRewardCount,
-                serverGlobalData.siteValues.FoodProcessorRewardCount
+                serverGlobalData.SiteValues.FarmlandRewardCount,
+                serverGlobalData.SiteValues.QuarryRewardCount,
+                serverGlobalData.SiteValues.SawmillRewardCount,
+                serverGlobalData.SiteValues.BankRewardCount,
+                serverGlobalData.SiteValues.LaboratoryRewardCount,
+                serverGlobalData.SiteValues.RefineryRewardCount,
+                serverGlobalData.SiteValues.HerbalWorkshopRewardCount,
+                serverGlobalData.SiteValues.TextileFactoryRewardCount,
+                serverGlobalData.SiteValues.FoodProcessorRewardCount
             };
 
             PersonalSiteManager.SetSiteData(serverGlobalData);
@@ -64,7 +64,7 @@ namespace GameClient
                 else if (def.defName == "RTLaboratory") defs.Add(def);
                 else if (def.defName == "RTRefinery") defs.Add(def);
                 else if (def.defName == "RTHerbalWorkshop") defs.Add(def);
-                else if (def.defName == "RTTextileFactory") defs.Add(def);
+                else if (def.defName == "RTTexTileFactory") defs.Add(def);
                 else if (def.defName == "RTFoodProcessor") defs.Add(def);
             }
             siteDefs = defs.ToArray();
@@ -84,9 +84,9 @@ namespace GameClient
 
         public static void ParseSitePacket(Packet packet)
         {
-            SiteData siteData = Serializer.ConvertBytesToObject<SiteData>(packet.contents);
+            SiteData siteData = Serializer.ConvertBytesToObject<SiteData>(packet.Contents);
 
-            switch(siteData.siteStepMode)
+            switch(siteData.SiteStepMode)
             {
                 case SiteStepMode.Accept:
                     OnSiteAccept();
@@ -135,18 +135,18 @@ namespace GameClient
             DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for site information"));
 
             SiteData siteData = new SiteData();
-            siteData.tile = ClientValues.chosenSite.Tile;
-            siteData.siteStepMode = SiteStepMode.Info;
+            siteData.Tile = ClientValues.chosenSite.Tile;
+            siteData.SiteStepMode = SiteStepMode.Info;
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.SitePacket), siteData);
-            Network.listener.EnqueuePacket(packet);
+            Network.Listener.EnqueuePacket(packet);
         }
 
         public static void OnSimpleSiteOpen(SiteData siteData)
         {
             DialogManager.PopWaitDialog();
 
-            if (siteData.workerData == null)
+            if (siteData.WorkerData == null)
             {
                 RT_Dialog_YesNo d1 = new RT_Dialog_YesNo("There is no current worker on this site, send?", 
                     delegate { PrepareSendPawnScreen(); }, null);
@@ -162,15 +162,14 @@ namespace GameClient
                 DialogManager.PushNewDialog(d1);
             }
         }
-
         private static void RequestWorkerRetrieval(SiteData siteData)
         {
             DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for site worker"));
 
-            siteData.siteStepMode = SiteStepMode.Retrieve;
+            siteData.SiteStepMode = SiteStepMode.Retrieve;
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.SitePacket), siteData);
-            Network.listener.EnqueuePacket(packet);
+            Network.Listener.EnqueuePacket(packet);
         }
 
         private static void OnWorkerRetrieval(SiteData siteData)
@@ -179,7 +178,7 @@ namespace GameClient
 
             Action r1 = delegate
             {
-                Pawn pawnToRetrieve = HumanScribeManager.StringToHuman(Serializer.ConvertBytesToObject<HumanData>(siteData.workerData));
+                Pawn pawnToRetrieve = HumanScribeManager.StringToHuman(Serializer.ConvertBytesToObject<HumanData>(siteData.WorkerData));
 
                 RimworldManager.PlaceThingIntoCaravan(pawnToRetrieve, ClientValues.chosenCaravan);
 
@@ -217,12 +216,12 @@ namespace GameClient
             ClientValues.chosenCaravan.RemovePawn(pawnToSend);
 
             SiteData siteData = new SiteData();
-            siteData.tile = ClientValues.chosenSite.Tile;
-            siteData.siteStepMode = SiteStepMode.Deposit;
-            siteData.workerData = Serializer.ConvertObjectToBytes(HumanScribeManager.HumanToString(pawnToSend));
+            siteData.Tile = ClientValues.chosenSite.Tile;
+            siteData.SiteStepMode = SiteStepMode.Deposit;
+            siteData.WorkerData = Serializer.ConvertObjectToBytes(HumanScribeManager.HumanToString(pawnToSend));
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.SitePacket), siteData);
-            Network.listener.EnqueuePacket(packet);
+            Network.Listener.EnqueuePacket(packet);
 
             if (caravanHumans.Count == 1) ClientValues.chosenCaravan.Destroy();
 
@@ -234,11 +233,11 @@ namespace GameClient
             Action r1 = delegate
             {
                 SiteData siteData = new SiteData();
-                siteData.tile = ClientValues.chosenSite.Tile;
-                siteData.siteStepMode = SiteStepMode.Destroy;
+                siteData.Tile = ClientValues.chosenSite.Tile;
+                siteData.SiteStepMode = SiteStepMode.Destroy;
 
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.SitePacket), siteData);
-                Network.listener.EnqueuePacket(packet);
+                Network.Listener.EnqueuePacket(packet);
             };
 
             RT_Dialog_YesNo d1 = new RT_Dialog_YesNo("Are you sure you want to destroy this site?", r1, null);
@@ -259,7 +258,7 @@ namespace GameClient
 
                 foreach (Site site in sites)
                 {
-                    if (siteData.sitesWithRewards.Contains(site.Tile)) rewardedSites.Add(site);
+                    if (siteData.SitesWithRewards.Contains(site.Tile)) rewardedSites.Add(site);
                 }
 
                 Thing[] rewards = GetSiteRewards(rewardedSites.ToArray());
@@ -284,10 +283,10 @@ namespace GameClient
                     if (site.MainSitePartDef == siteDefs[i])
                     {
                         ThingData thingData = new ThingData();
-                        thingData.defName = siteRewardDefNames[i].defName;
-                        thingData.quantity = siteRewardCount[i];
-                        thingData.quality = "null";
-                        thingData.hitpoints = siteRewardDefNames[i].BaseMaxHitPoints;
+                        thingData.DefName = siteRewardDefNames[i].defName;
+                        thingData.Quantity = siteRewardCount[i];
+                        thingData.Quality = "null";
+                        thingData.Hitpoints = siteRewardDefNames[i].BaseMaxHitPoints;
 
                         if (siteRewardCount[i] > 0) thingsToGet.Add(ThingScribeManager.StringToItem(thingData));
 
@@ -308,15 +307,15 @@ namespace GameClient
         {
             sitePrices = new int[]
             {
-                serverGlobalData.siteValues.PersonalFarmlandCost,
-                serverGlobalData.siteValues.PersonalQuarryCost,
-                serverGlobalData.siteValues.PersonalSawmillCost,
-                serverGlobalData.siteValues.PersonalBankCost,
-                serverGlobalData.siteValues.PersonalLaboratoryCost,
-                serverGlobalData.siteValues.PersonalRefineryCost,
-                serverGlobalData.siteValues.PersonalHerbalWorkshopCost,
-                serverGlobalData.siteValues.PersonalTextileFactoryCost,
-                serverGlobalData.siteValues.PersonalFoodProcessorCost
+                serverGlobalData.SiteValues.PersonalFarmlandCost,
+                serverGlobalData.SiteValues.PersonalQuarryCost,
+                serverGlobalData.SiteValues.PersonalSawmillCost,
+                serverGlobalData.SiteValues.PersonalBankCost,
+                serverGlobalData.SiteValues.PersonalLaboratoryCost,
+                serverGlobalData.SiteValues.PersonalRefineryCost,
+                serverGlobalData.SiteValues.PersonalHerbalWorkshopCost,
+                serverGlobalData.SiteValues.PersonalTextileFactoryCost,
+                serverGlobalData.SiteValues.PersonalFoodProcessorCost
             };
         }
 
@@ -342,13 +341,13 @@ namespace GameClient
                 RimworldManager.RemoveThingFromCaravan(ThingDefOf.Silver, sitePrices[DialogManager.selectedScrollButton], ClientValues.chosenCaravan);
 
                 SiteData siteData = new SiteData();
-                siteData.siteStepMode = SiteStepMode.Build;
-                siteData.tile = ClientValues.chosenCaravan.Tile;
-                siteData.type = DialogManager.selectedScrollButton;
-                siteData.isFromFaction = false;
+                siteData.SiteStepMode = SiteStepMode.Build;
+                siteData.Tile = ClientValues.chosenCaravan.Tile;
+                siteData.Type = DialogManager.selectedScrollButton;
+                siteData.IsFromFaction = false;
 
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.SitePacket), siteData);
-                Network.listener.EnqueuePacket(packet);
+                Network.Listener.EnqueuePacket(packet);
 
                 DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for building"));
             }
@@ -363,15 +362,15 @@ namespace GameClient
         {
             sitePrices = new int[]
             {
-                serverGlobalData.siteValues.FactionFarmlandCost,
-                serverGlobalData.siteValues.FactionQuarryCost,
-                serverGlobalData.siteValues.FactionSawmillCost,
-                serverGlobalData.siteValues.FactionBankCost,
-                serverGlobalData.siteValues.FactionLaboratoryCost,
-                serverGlobalData.siteValues.FactionRefineryCost ,
-                serverGlobalData.siteValues.FactionHerbalWorkshopCost,
-                serverGlobalData.siteValues.FactionTextileFactoryCost,
-                serverGlobalData.siteValues.FactionFoodProcessorCost
+                serverGlobalData.SiteValues.FactionFarmlandCost,
+                serverGlobalData.SiteValues.FactionQuarryCost,
+                serverGlobalData.SiteValues.FactionSawmillCost,
+                serverGlobalData.SiteValues.FactionBankCost,
+                serverGlobalData.SiteValues.FactionLaboratoryCost,
+                serverGlobalData.SiteValues.FactionRefineryCost ,
+                serverGlobalData.SiteValues.FactionHerbalWorkshopCost,
+                serverGlobalData.SiteValues.FactionTextileFactoryCost,
+                serverGlobalData.SiteValues.FactionFoodProcessorCost
             };
         }
 
@@ -397,13 +396,13 @@ namespace GameClient
                 RimworldManager.RemoveThingFromCaravan(ThingDefOf.Silver, sitePrices[DialogManager.selectedScrollButton], ClientValues.chosenCaravan);
 
                 SiteData siteData = new SiteData();
-                siteData.siteStepMode = SiteStepMode.Build;
-                siteData.tile = ClientValues.chosenCaravan.Tile;
-                siteData.type = DialogManager.selectedScrollButton;
-                siteData.isFromFaction = true;
+                siteData.SiteStepMode = SiteStepMode.Build;
+                siteData.Tile = ClientValues.chosenCaravan.Tile;
+                siteData.Type = DialogManager.selectedScrollButton;
+                siteData.IsFromFaction = true;
 
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.SitePacket), siteData);
-                Network.listener.EnqueuePacket(packet);
+                Network.Listener.EnqueuePacket(packet);
 
                 DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for building"));
             }

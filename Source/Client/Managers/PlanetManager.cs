@@ -21,13 +21,13 @@ namespace GameClient
             else
             {
                 PlayerSettlementManager.ClearAllSettlements();
-                PlayerSettlementManager.AddSettlements(PlayerSettlementManagerHelper.tempSettlements);
+                PlayerSettlementManager.AddSettlements(PlayerSettlementManagerHelper.TempSettlements);
 
                 PlayerSiteManager.ClearAllSites();
                 PlayerSiteManager.AddSites(PlayerSiteManagerHelper.tempSites);
 
                 NPCSettlementManager.ClearAllSettlements();
-                NPCSettlementManager.AddSettlements(NPCSettlementManagerHelper.tempNPCSettlements);
+                NPCSettlementManager.AddSettlements(NPCSettlementManagerHelper.TempNPCSettlements);
 
                 RoadManager.ClearAllRoads();
                 RoadManager.AddRoads(RoadManagerHelper.tempRoadDetails, false);

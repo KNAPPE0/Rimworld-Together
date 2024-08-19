@@ -17,8 +17,8 @@
         public static string ip = "";
         public static string port = "";
 
-        //TCP listener that will handle the connection with the server
-        public static Listener? listener;
+        //TCP Listener that will handle the connection with the server
+        public static Listener? Listener;
 
         //Entry point function of the network class
 
@@ -55,7 +55,7 @@
             try 
             {
                 state = NetworkState.Connecting;
-                listener = new Listener(new(ip, int.Parse(port)));
+                Listener = new Listener(new(ip, int.Parse(port)));
             } 
             catch { return false; }
 
@@ -73,10 +73,10 @@
         {
             state = NetworkState.Disconnected;
 
-            if (listener != null)
+            if (Listener != null)
             {
-                listener.DestroyConnection();
-                listener = null;
+                Listener.DestroyConnection();
+                Listener = null;
             }
         }
     }

@@ -21,9 +21,9 @@ namespace GameClient
 
             foreach (RiverDetails details in rivers)
             {
-                RiverDef riverDef = DefDatabase<RiverDef>.AllDefs.First(fetch => fetch.defName == details.riverDefName);
+                RiverDef riverDef = DefDatabase<RiverDef>.AllDefs.First(fetch => fetch.defName == details.RiverDefName);
 
-                AddRiverSimple(details.tileA, details.tileB, riverDef, forceRefresh);
+                AddRiverSimple(details.TileA, details.TileB, riverDef, forceRefresh);
             }
 
             //If we don't want to force refresh we wait for all and then refresh the layer
@@ -76,11 +76,11 @@ namespace GameClient
                     foreach (Tile.RiverLink link in tile.Rivers)
                     {
                         RiverDetails details = new RiverDetails();
-                        details.tileA = Find.WorldGrid.tiles.IndexOf(tile);
-                        details.tileB = link.neighbor;
-                        details.riverDefName = link.river.defName;
+                        details.TileA = Find.WorldGrid.tiles.IndexOf(tile);
+                        details.TileB = link.neighbor;
+                        details.RiverDefName = link.river.defName;
 
-                        if (!CheckIfExists(details.tileA, details.tileB)) toGet.Add(details);
+                        if (!CheckIfExists(details.TileA, details.TileB)) toGet.Add(details);
                     }
                 }
             }
@@ -90,8 +90,8 @@ namespace GameClient
             {
                 foreach (RiverDetails details in toGet)
                 {
-                    if (details.tileA == tileA && details.tileB == tileB) return true;
-                    else if (details.tileA == tileB && details.tileB == tileA) return true;
+                    if (details.TileA == tileA && details.TileB == tileB) return true;
+                    else if (details.TileA == tileB && details.TileB == tileA) return true;
                 }
 
                 return false;

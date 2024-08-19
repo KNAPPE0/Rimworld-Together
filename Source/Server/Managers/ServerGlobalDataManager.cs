@@ -9,50 +9,39 @@ namespace GameServer
             ServerGlobalData globalData = new ServerGlobalData();
 
             globalData = GetServerConfigs(globalData);
-
             globalData = GetClientValues(client, globalData);
-
             globalData = GetServerValues(globalData);
-
             globalData = GetServerSettlements(client, globalData);
-
             globalData = GetServerSites(client, globalData);
-
             globalData = GetServerCaravans(client, globalData);
-
             globalData = GetServerRoads(globalData);
-
-            globalData = GetServerPolution(globalData);
+            globalData = GetServerPollution(globalData);
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ServerValuesPacket), globalData);
-            client.listener.EnqueuePacket(packet);
+            client.Listener.EnqueuePacket(packet);
         }
 
         private static ServerGlobalData GetServerConfigs(ServerGlobalData globalData)
         {
             ServerConfigFile scf = Master.serverConfig;
-
-            globalData.AllowCustomScenarios = scf.AllowCustomScenarios;
-
+            globalData.AllowCustomScenarios = scf?.AllowCustomScenarios ?? false; // null check for serverConfig
             return globalData;
         }
 
         private static ServerGlobalData GetClientValues(ServerClient client, ServerGlobalData globalData)
         {
-            globalData.isClientAdmin = client.userFile.IsAdmin;
-
-            globalData.isClientFactionMember = client.userFile.HasFaction;
-
+            globalData.IsClientAdmin = client.userFile.IsAdmin;
+            globalData.IsClientFactionMember = client.userFile.HasFaction;
             return globalData;
         }
 
         private static ServerGlobalData GetServerValues(ServerGlobalData globalData)
         {
-            globalData.eventValues = Master.eventValues;
-            globalData.siteValues = Master.siteValues;
-            globalData.difficultyValues = Master.difficultyValues;
-            globalData.actionValues = Master.actionValues;
-            globalData.roadValues = Master.roadValues;
+            globalData.EventValues = Master.eventValues;
+            globalData.SiteValues = Master.siteValues;
+            globalData.DifficultyValues = Master.difficultyValues;
+            globalData.ActionValues = Master.actionValues;
+            globalData.RoadValues = Master.roadValues;
             return globalData;
         }
 
@@ -60,23 +49,26 @@ namespace GameServer
         {
             List<OnlineSettlementFile> tempList = new List<OnlineSettlementFile>();
             SettlementFile[] settlements = SettlementManager.GetAllSettlements();
+
             foreach (SettlementFile settlement in settlements)
             {
-                OnlineSettlementFile file = new OnlineSettlementFile();
-
                 if (settlement.owner == client.userFile.Username) continue;
-                else
-                {
-                    file.tile = settlement.tile;
-                    file.owner = settlement.owner;
-                    file.goodwill = GoodwillManager.GetSettlementGoodwill(client, settlement);
 
-                    tempList.Add(file);
-                }
+                OnlineSettlementFile file = new OnlineSettlementFile
+                {
+                    Tile = settlement.tile,
+                    Owner = settlement.owner,
+                    Goodwill = GoodwillManager.GetSettlementGoodwill(client, settlement)
+                };
+
+                tempList.Add(file);
             }
 
-            globalData.playerSettlements = tempList.ToArray();
-            if (Master.worldValues != null) globalData.npcSettlements = Master.worldValues.NPCSettlements;
+            globalData.PlayerSettlements = tempList.ToArray();
+            if (Master.worldValues != null)
+            {
+                globalData.NpcSettlements = Master.worldValues.NPCSettlements;
+            }
 
             return globalData;
         }
@@ -85,40 +77,48 @@ namespace GameServer
         {
             List<OnlineSiteFile> tempList = new List<OnlineSiteFile>();
             SiteFile[] sites = SiteManager.GetAllSites();
+
             foreach (SiteFile site in sites)
             {
-                OnlineSiteFile file = new OnlineSiteFile();
-
-                file.tile = site.tile;
-                file.owner = site.owner;
-                file.goodwill = GoodwillManager.GetSiteGoodwill(client, site);
-                file.type = site.type;
-                file.fromFaction = site.isFromFaction;
+                OnlineSiteFile file = new OnlineSiteFile
+                {
+                    Tile = site.tile,
+                    Owner = site.owner,
+                    Goodwill = GoodwillManager.GetSiteGoodwill(client, site),
+                    Type = site.type,
+                    FromFaction = site.isFromFaction
+                };
 
                 tempList.Add(file);
             }
 
-            globalData.playerSites = tempList.ToArray();
+            globalData.PlayerSites = tempList.ToArray();
 
             return globalData;
         }
 
         private static ServerGlobalData GetServerCaravans(ServerClient client, ServerGlobalData globalData)
         {
-            globalData.playerCaravans = CaravanManager.GetActiveCaravans();
+            globalData.PlayerCaravans = CaravanManager.GetActiveCaravans();
             return globalData;
         }
 
-        private static ServerGlobalData GetServerRoads(ServerGlobalData data)
+        private static ServerGlobalData GetServerRoads(ServerGlobalData globalData)
         {
-            if (Master.worldValues != null) data.roads = Master.worldValues.Roads;
-            return data;
+            if (Master.worldValues != null)
+            {
+                globalData.Roads = Master.worldValues.Roads;
+            }
+            return globalData;
         }
 
-        private static ServerGlobalData GetServerPolution(ServerGlobalData data)
+        private static ServerGlobalData GetServerPollution(ServerGlobalData globalData)
         {
-            if (Master.worldValues != null) data.pollutedTiles = Master.worldValues.PollutedTiles;
-            return data;
+            if (Master.worldValues != null)
+            {
+                globalData.PollutedTiles = Master.worldValues.PollutedTiles;
+            }
+            return globalData;
         }
     }
 }

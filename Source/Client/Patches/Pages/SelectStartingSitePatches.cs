@@ -38,7 +38,7 @@ namespace GameClient
                 {
                     SceneManager.LoadScene(0);
                     ClientValues.SetIntentionalDisconnect(true, DisconnectionManager.DCReason.QuitToMenu);
-                    Network.listener.disconnectFlag = true;
+                    Network.Listener.SetDisconnectFlag(true);
                 }
                 return true;
             }

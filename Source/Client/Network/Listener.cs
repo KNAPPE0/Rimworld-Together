@@ -7,116 +7,139 @@ using System.Threading;
 
 namespace GameClient
 {
-    //Class that handles all incoming and outgoing packet instructions
-
-    public class Listener
+    // Class that handles all incoming and outgoing packet instructions
+    public class Listener : IDisposable
     {
-        //TCP variables needed for the listener to comunicate
-        public TcpClient connection;
-        public NetworkStream networkStream;
+        // TCP variables needed for the Listener to communicate
+        public TcpClient Connection { get; private set; }
+        public NetworkStream NetworkStream { get; private set; }
 
-        //Stream tools used to read and write the connection stream
-        public StreamWriter streamWriter;
-        public StreamReader streamReader;
+        // Stream tools used to read and write the connection stream
+        private StreamWriter _streamWriter;
+        private StreamReader _streamReader;
 
-        //Upload and download classes to send/receive files
-        public UploadManager uploadManager;
-        public DownloadManager downloadManager;
+        // Upload and download managers to send/receive files
+        public UploadManager UploadManager { get; private set; }
+        public DownloadManager DownloadManager { get; private set; }
 
-        //Data queue used to hold packets that are to be sent through the connection
-        private readonly Queue<Packet> dataQueue = new Queue<Packet>();
+        // Data queue used to hold packets that are to be sent through the connection
+        private readonly Queue<Packet> _dataQueue = new Queue<Packet>();
 
-        //Useful variables to handle connection status
-        public bool disconnectFlag;
+        // Useful variables to handle connection status
+        public bool DisconnectFlag { get; private set; }
 
         public Listener(TcpClient connection)
         {
-            this.connection = connection;
-            networkStream = connection.GetStream();
-            streamWriter = new StreamWriter(networkStream);
-            streamReader = new StreamReader(networkStream);
+            Connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            NetworkStream = Connection.GetStream();
+            _streamWriter = new StreamWriter(NetworkStream) { AutoFlush = true };
+            _streamReader = new StreamReader(NetworkStream);
         }
 
-        //Enqueues a new packet into the data queue if needed
+        // Method to set the UploadManager
+        public void SetUploadManager(UploadManager uploadManager)
+        {
+            UploadManager = uploadManager;
+        }
 
+        // Method to set the DownloadManager
+        public void SetDownloadManager(DownloadManager downloadManager)
+        {
+            DownloadManager = downloadManager;
+        }
+
+        // Enqueues a new packet into the data queue if needed
         public void EnqueuePacket(Packet packet)
         {
-            if (disconnectFlag) return;
-            else dataQueue.Enqueue(packet);
+            if (!DisconnectFlag)
+            {
+                lock (_dataQueue)
+                {
+                    _dataQueue.Enqueue(packet);
+                }
+            }
         }
 
-        //Runs in a separate thread and sends all queued packets through the connection
-
+        // Runs in a separate thread and sends all queued packets through the connection
         public void SendData()
         {
             try
             {
-                while (true)
+                while (!DisconnectFlag)
                 {
                     Thread.Sleep(1);
 
-                    if (dataQueue.Count > 0)
+                    if (_dataQueue.Count > 0)
                     {
-                        Packet packet = dataQueue.Dequeue();
-                        streamWriter.WriteLine(Serializer.SerializeToString(packet));
-                        streamWriter.Flush();
+                        Packet packet;
+                        lock (_dataQueue)
+                        {
+                            packet = _dataQueue.Dequeue();
+                        }
+                        _streamWriter.WriteLine(Serializer.SerializeToString(packet));
                     }
                 }
             }
-            catch { disconnectFlag = true; }
+            catch
+            {
+                DisconnectFlag = true;
+            }
         }
 
-        //Runs in a separate thread and listens for any kind of information being sent through the connection
-
+        // Runs in a separate thread and listens for any kind of information being sent through the connection
         public void Listen()
         {
             try
             {
-                while (true)
+                while (!DisconnectFlag)
                 {
                     Thread.Sleep(1);
 
-                    string data = streamReader.ReadLine();
-                    Packet receivedPacket = Serializer.SerializeFromString<Packet>(data);
-                    PacketHandler.HandlePacket(receivedPacket);
+                    string data = _streamReader.ReadLine();
+                    if (data != null)
+                    {
+                        Packet receivedPacket = Serializer.SerializeFromString<Packet>(data);
+                        PacketHandler.HandlePacket(receivedPacket);
+                    }
                 }
             }
-
             catch (Exception e)
             {
-                if (ClientValues.verboseBool)  Logger.Warning($"{e}");
+                if (ClientValues.verboseBool)
+                {
+                    Logger.Warning($"{e}");
+                }
 
-                disconnectFlag = true;
+                DisconnectFlag = true;
             }
         }
 
-        //Runs in a separate thread and checks if the connection should still be up
-
+        // Runs in a separate thread and checks if the connection should still be up
         public void CheckConnectionHealth()
         {
             try
             {
-                while (true)
+                while (!DisconnectFlag)
                 {
                     Thread.Sleep(1);
-
-                    if (disconnectFlag) break;
                 }
             }
-            catch { }
+            catch
+            {
+                // Handle exception if necessary
+            }
 
             Thread.Sleep(1000);
 
-            Master.threadDispatcher.Enqueue(delegate { Network.DisconnectFromServer(); });
+            Master.threadDispatcher.Enqueue(() => Network.DisconnectFromServer());
         }
 
-        //Runs in a separate thread and sends alive pings towards the server
-
+        // Runs in a separate thread and sends alive pings towards the server
         public void SendKAFlag()
         {
             try
             {
-                while (true)
+                while (!DisconnectFlag)
                 {
                     Thread.Sleep(1000);
 
@@ -125,17 +148,34 @@ namespace GameClient
                     EnqueuePacket(packet);
                 }
             }
-            catch { }
+            catch
+            {
+                // Handle exception if necessary
+            }
         }
 
-        //Forcefully ends the connection with the server and any important process associated with it
-
+        // Forcefully ends the connection with the server and any important process associated with it
         public void DestroyConnection()
         {
-            disconnectFlag = true;
-            connection.Close();
-            uploadManager?.fileStream.Close();
-            downloadManager?.fileStream.Close();
+            DisconnectFlag = true;
+            UploadManager?.Dispose();
+            DownloadManager?.Dispose();
+            Connection.Close();
+        }
+
+        // Properly dispose of resources
+        public void Dispose()
+        {
+            DestroyConnection();
+            _streamWriter?.Dispose();
+            _streamReader?.Dispose();
+            NetworkStream?.Dispose();
+            Connection?.Dispose();
+        }
+
+        internal void SetDisconnectFlag(bool v)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -26,13 +26,13 @@ namespace GameClient
 
         private Thing[] listedThings;
 
-        private TransferMode transferMode;
+        private TransferMode TransferMode;
 
-        public RT_Dialog_ItemListing(Thing[] listedThings, TransferMode transferMode)
+        public RT_Dialog_ItemListing(Thing[] listedThings, TransferMode TransferMode)
         {
             DialogManager.dialogItemListing = this;
             this.listedThings = listedThings;
-            this.transferMode = transferMode;
+            this.TransferMode = TransferMode;
 
             ClientValues.ToggleTransfer(true);
 
@@ -122,12 +122,12 @@ namespace GameClient
         {
             Action r1 = delegate
             {
-                if (transferMode == TransferMode.Gift)
+                if (TransferMode == TransferMode.Gift)
                 {
                     TransferManager.GetTransferedItemsToSettlement(listedThings);
                 }
 
-                else if (transferMode == TransferMode.Trade)
+                else if (TransferMode == TransferMode.Trade)
                 {
                     if (RimworldManager.CheckIfSocialPawnInMap(Find.AnyPlayerHomeMap))
                     {
@@ -137,21 +137,21 @@ namespace GameClient
                     else
                     {
                         DialogManager.PushNewDialog(new RT_Dialog_Error("You do not have any pawn capable of trading!"));
-                        TransferManager.RejectRequest(transferMode);
+                        TransferManager.RejectRequest(TransferMode);
                     }
                 }
 
-                else if (transferMode == TransferMode.Pod)
+                else if (TransferMode == TransferMode.Pod)
                 {
                     TransferManager.GetTransferedItemsToSettlement(listedThings);
                 }
 
-                else if (transferMode == TransferMode.Rebound)
+                else if (TransferMode == TransferMode.Rebound)
                 {
-                    ClientValues.incomingManifest.transferStepMode = TransferStepMode.TradeReAccept;
+                    ClientValues.incomingManifest.TransferStepMode = TransferStepMode.TradeReAccept;
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.TransferPacket), ClientValues.incomingManifest);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
 
                     TransferManager.GetTransferedItemsToCaravan(listedThings);
                 }
@@ -167,7 +167,7 @@ namespace GameClient
         {
             Action r1 = delegate
             {
-                TransferManager.RejectRequest(transferMode);
+                TransferManager.RejectRequest(TransferMode);
 
                 Close();
             };

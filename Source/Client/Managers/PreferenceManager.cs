@@ -36,14 +36,14 @@ namespace GameClient
 
         //Saves the login data
 
-        public static void SaveLoginData(string username, string password)
+        public static void SaveLoginData(string Username, string Password)
         {
             LoginDataFile newLoginData;
             if (File.Exists(Master.loginDataPath)) newLoginData = Serializer.SerializeFromFile<LoginDataFile>(Master.loginDataPath);
             else newLoginData = new LoginDataFile();
 
-            newLoginData.username = username;
-            newLoginData.password = password;
+            newLoginData.Username = Username;
+            newLoginData.Password = Password;
 
             Serializer.SerializeToFile(Master.loginDataPath, newLoginData);
         }
@@ -55,7 +55,7 @@ namespace GameClient
             if (File.Exists(Master.loginDataPath))
             {
                 LoginDataFile previousLoginData = Serializer.SerializeFromFile<LoginDataFile>(Master.loginDataPath);
-                return new string[] { previousLoginData.username, previousLoginData.password };
+                return new string[] { previousLoginData.Username, previousLoginData.Password };
             }
             else return new string[] { "", "" };
         }

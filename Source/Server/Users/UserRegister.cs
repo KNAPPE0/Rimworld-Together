@@ -7,25 +7,39 @@ namespace GameServer
     {
         public static void TryRegisterUser(ServerClient client, Packet packet)
         {
-            LoginData loginData = Serializer.ConvertBytesToObject<LoginData>(packet.contents);
+            // Deserialize the login data from the packet
+            var loginData = Serializer.ConvertBytesToObject<LoginData>(packet.Contents);
+            if (loginData == null)
+            {
+                Logger.Warning("[Register] > Failed to deserialize login data.");
+                UserManager.SendLoginResponse(client, LoginResponse.RegisterError);
+                return;
+            }
 
-            if (!UserManager.CheckIfUserUpdated(client, loginData)) return;
-
-            if (!UserManager.CheckLoginData(client, loginData, LoginMode.Register)) return;
-
-            if (UserManager.CheckIfUserExists(client, loginData, LoginMode.Register)) return;
+            // Perform necessary checks for registration
+            if (!UserManager.CheckIfUserUpdated(client, loginData) ||
+                !UserManager.CheckLoginData(client, loginData, LoginMode.Register) ||
+                UserManager.CheckIfUserExists(client, loginData, LoginMode.Register))
+            {
+                return;
+            }
 
             try
             {
-                client.userFile.SetLoginDetails(loginData);
+                // Set login details and save the user file
+                client.UserFile.SetLoginDetails(loginData);
+                client.UserFile.SaveUserFile();
 
-                client.userFile.SaveUserFile();
-
+                // Attempt to login the user after successful registration
                 UserLogin.TryLoginUser(client, packet);
 
-                Logger.Message($"[Registered] > {client.userFile.Username}");
+                Logger.Message($"[Registered] > {client.UserFile.Username}");
             }
-            catch { UserManager.SendLoginResponse(client, LoginResponse.RegisterError); }
+            catch (Exception ex)
+            {
+                Logger.Error($"[Register] > Exception occurred: {ex.Message}");
+                UserManager.SendLoginResponse(client, LoginResponse.RegisterError);
+            }
         }
     }
 }

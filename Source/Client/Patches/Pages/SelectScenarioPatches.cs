@@ -21,7 +21,7 @@ namespace GameClient
             {
                 __instance.Close();
                 ClientValues.SetIntentionalDisconnect(true, DisconnectionManager.DCReason.QuitToMenu);
-                Network.listener.disconnectFlag = true;
+                Network.Listener.SetDisconnectFlag(true);
             }
             return true;
         }

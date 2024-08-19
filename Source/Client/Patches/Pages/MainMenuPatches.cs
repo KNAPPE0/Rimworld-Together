@@ -38,7 +38,7 @@ namespace GameClient
                         bool isInvalid = false;
                         if (string.IsNullOrWhiteSpace(Network.ip)) isInvalid = true;
                         if (string.IsNullOrWhiteSpace(Network.port)) isInvalid = true;
-                        if (string.IsNullOrWhiteSpace(ClientValues.username)) isInvalid = true;
+                        if (string.IsNullOrWhiteSpace(ClientValues.Username)) isInvalid = true;
 
                         if (isInvalid) DialogManager.PushNewDialog(new RT_Dialog_OK("You must join a server first to use this feature!"));
                         else ShowQuickConnectFloatMenu();
@@ -76,7 +76,7 @@ namespace GameClient
                 Network.port = details[1];
 
                 details = PreferenceManager.LoadLoginData();
-                ClientValues.username = details[0];
+                ClientValues.Username = details[0];
             }
 
             private static void ShowQuickConnectFloatMenu()
@@ -84,7 +84,7 @@ namespace GameClient
                 List<FloatMenuOption> list = new List<FloatMenuOption>();
                 List<Tuple<string, int>> quickConnectTuples = new List<Tuple<string, int>>()
                 {
-                    Tuple.Create($"Join '{Network.ip}:{Network.port}' as '{ClientValues.username}'", 0),
+                    Tuple.Create($"Join '{Network.ip}:{Network.port}' as '{ClientValues.Username}'", 0),
                 };
 
                 foreach (Tuple<string, int> tuple in quickConnectTuples)
@@ -100,13 +100,13 @@ namespace GameClient
                         {
                             string[] details = PreferenceManager.LoadLoginData();
                             LoginData loginData = new LoginData();
-                            loginData.username = details[0];
-                            loginData.password = Hasher.GetHashFromString(details[1]);
-                            loginData.clientVersion = CommonValues.executableVersion;
-                            loginData.runningMods = ModManager.GetRunningModList().ToList();
+                            loginData.Username = details[0];
+                            loginData.Password = Hasher.GetHashFromString(details[1]);
+                            loginData.ClientVersion = CommonValues.ExecutableVersion;
+                            loginData.RunningMods = ModManager.GetRunningModList().ToList();
 
                             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.LoginClientPacket), loginData);
-                            Network.listener.EnqueuePacket(packet);
+                            Network.Listener.EnqueuePacket(packet);
                         }
                     });
 

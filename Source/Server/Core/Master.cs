@@ -64,8 +64,8 @@ namespace GameServer
             LoadResources();
             ChangeTitle();
 
-            Threader.GenerateServerThread(Threader.ServerMode.Start);
-            Threader.GenerateServerThread(Threader.ServerMode.Console);
+            Threader.GenerateServerThread(Threader.ServerMode.StartServer);
+            Threader.GenerateServerThread(Threader.ServerMode.ListenToConsole);
 
             while (true) Thread.Sleep(1);
         }
@@ -138,7 +138,7 @@ namespace GameServer
 
         public static void LoadResources()
         {
-            Logger.Title($"Server version {CommonValues.executableVersion}");
+            Logger.Title($"Server version {CommonValues.ExecutableVersion}");
             Logger.Title($"Loading all necessary resources");
             Logger.Title($"----------------------------------------");
 
@@ -326,7 +326,7 @@ namespace GameServer
 
         public static void ChangeTitle()
         {
-            Console.Title = $"RimWorld Together {CommonValues.executableVersion} - " +
+            Console.Title = $"RimWorld Together {CommonValues.ExecutableVersion} - " +
                 $"Players [{Network.connectedClients.Count}/{serverConfig.MaxPlayers}]";
         }
     }

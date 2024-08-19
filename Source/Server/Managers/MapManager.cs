@@ -4,42 +4,81 @@ namespace GameServer
 {
     public static class MapManager
     {
-        //Variables
-
+        // Variables
         public readonly static string fileExtension = ".mpmap";
+        private static readonly object mapLock = new object();
 
         public static void SaveUserMap(ServerClient client, Packet packet)
         {
-            MapFileData mapFileData = Serializer.ConvertBytesToObject<MapFileData>(packet.contents);
-            mapFileData.mapOwner = client.userFile.Username;
+            // Deserialize the map data from the packet
+            MapFileData mapFileData = Serializer.ConvertBytesToObject<MapFileData>(packet.Contents);
+            if (mapFileData == null)
+            {
+                Logger.Error("[MapManager] > Failed to deserialize map data.");
+                return;
+            }
+            mapFileData.MapOwner = client.userFile.Username;
 
-            byte[] compressedMapBytes = Serializer.ConvertObjectToBytes(mapFileData);
-            File.WriteAllBytes(Path.Combine(Master.mapsPath, mapFileData.mapTile + fileExtension), compressedMapBytes);
-
-            Logger.Message($"[Save map] > {client.userFile.Username} > {mapFileData.mapTile}");
+            lock (mapLock)
+            {
+                try
+                {
+                    // Serialize and save the map data to a file
+                    byte[] compressedMapBytes = Serializer.ConvertObjectToBytes(mapFileData);
+                    File.WriteAllBytes(Path.Combine(Master.mapsPath, mapFileData.MapTile + fileExtension), compressedMapBytes);
+                    Logger.Message($"[Save map] > {client.userFile.Username} > {mapFileData.MapTile}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to save map for tile {mapFileData.MapTile}: {ex.Message}");
+                }
+            }
         }
 
         public static void DeleteMap(MapFileData mapFile)
         {
             if (mapFile == null) return;
 
-            File.Delete(Path.Combine(Master.mapsPath, mapFile.mapTile + fileExtension));
-
-            Logger.Warning($"[Remove map] > {mapFile.mapTile}");
+            lock (mapLock)
+            {
+                try
+                {
+                    string filePath = Path.Combine(Master.mapsPath, mapFile.MapTile + fileExtension);
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                        Logger.Warning($"[Remove map] > {mapFile.MapTile}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to delete map for tile {mapFile.MapTile}: {ex.Message}");
+                }
+            }
         }
 
         public static MapFileData[] GetAllMapFiles()
         {
-            List<MapFileData> mapDatas = new List<MapFileData>();
+            var mapDatas = new List<MapFileData>();
 
-            string[] maps = Directory.GetFiles(Master.mapsPath);
-            foreach (string map in maps)
+            try
             {
-                if (!map.EndsWith(fileExtension)) continue;
-                byte[] decompressedBytes = File.ReadAllBytes(map);
+                string[] maps = Directory.GetFiles(Master.mapsPath);
+                foreach (string map in maps)
+                {
+                    if (!map.EndsWith(fileExtension)) continue;
 
-                MapFileData newMap = Serializer.ConvertBytesToObject<MapFileData>(decompressedBytes);
-                mapDatas.Add(newMap);
+                    byte[] decompressedBytes = File.ReadAllBytes(map);
+                    var newMap = Serializer.ConvertBytesToObject<MapFileData>(decompressedBytes);
+                    if (newMap != null)
+                    {
+                        mapDatas.Add(newMap);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to load map files: {ex.Message}");
             }
 
             return mapDatas.ToArray();
@@ -47,27 +86,28 @@ namespace GameServer
 
         public static bool CheckIfMapExists(int mapTileToCheck)
         {
-            MapFileData[] maps = GetAllMapFiles();
-            foreach (MapFileData map in maps)
-            {
-                if (map.mapTile == mapTileToCheck)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return GetAllMapFiles().Any(map => map.MapTile == mapTileToCheck);
         }
 
-        public static MapFileData[] GetAllMapsFromUsername(string username)
+        public static MapFileData[] GetAllMapsFromUsername(string Username)
         {
-            List<MapFileData> userMaps = new List<MapFileData>();
+            var userMaps = new List<MapFileData>();
 
-            SettlementFile[] userSettlements = SettlementManager.GetAllSettlementsFromUsername(username);
-            foreach (SettlementFile settlementFile in userSettlements)
+            try
             {
-                MapFileData mapFile = GetUserMapFromTile(settlementFile.tile);
-                userMaps.Add(mapFile);
+                SettlementFile[] userSettlements = SettlementManager.GetAllSettlementsFromUsername(Username);
+                foreach (var settlementFile in userSettlements)
+                {
+                    var mapFile = GetUserMapFromTile(settlementFile.tile);
+                    if (mapFile != null)
+                    {
+                        userMaps.Add(mapFile);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to retrieve maps for user {Username}: {ex.Message}");
             }
 
             return userMaps.ToArray();
@@ -75,14 +115,23 @@ namespace GameServer
 
         public static MapFileData GetUserMapFromTile(int mapTileToGet)
         {
-            MapFileData[] mapFiles = GetAllMapFiles();
+            return GetAllMapFiles().FirstOrDefault(map => map.MapTile == mapTileToGet);
+        }
 
-            foreach (MapFileData mapFile in mapFiles)
+        internal static void DeleteAllMapsFromUsername(string Username)
+        {
+            try
             {
-                if (mapFile.mapTile == mapTileToGet) return mapFile;
+                var mapsToDelete = GetAllMapsFromUsername(Username);
+                foreach (var map in mapsToDelete)
+                {
+                    DeleteMap(map);
+                }
             }
-
-            return null;
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to delete all maps for user {Username}: {ex.Message}");
+            }
         }
     }
 }

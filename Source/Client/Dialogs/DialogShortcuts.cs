@@ -9,80 +9,81 @@ namespace GameClient
     {
         public static void ShowLoginOrRegisterDialogs()
         {
-            RT_Dialog_3Input a1 = new RT_Dialog_3Input(
+            var registerDialog = new RT_Dialog_3Input(
                 "New User",
                 "Username",
                 "Password",
                 "Confirm Password",
-                delegate { ParseRegisterUser(); },
-                delegate { DialogManager.PushNewDialog(DialogManager.dialog2Button); },
+                ParseRegisterUser,
+                () => DialogManager.PushNewDialog(DialogManager.dialog2Button),
                 false, true, true);
 
-            RT_Dialog_2Input a2 = new RT_Dialog_2Input(
+            var loginDialog = new RT_Dialog_2Input(
                 "Existing User",
                 "Username",
                 "Password",
-                delegate { ParseLoginUser(); },
-                delegate { DialogManager.PushNewDialog(DialogManager.dialog2Button); },
+                ParseLoginUser,
+                () => DialogManager.PushNewDialog(DialogManager.dialog2Button),
                 false, true);
 
-            RT_Dialog_2Button d1 = new RT_Dialog_2Button(
+            var selectDialog = new RT_Dialog_2Button(
                 "Login Select",
                 "Choose your login type",
                 "New User",
                 "Existing User",
-                delegate { DialogManager.PushNewDialog(a1); },
-                delegate 
+                () => DialogManager.PushNewDialog(registerDialog),
+                () =>
                 {
-                    DialogManager.PushNewDialog(a2);
-                    string[] details = PreferenceManager.LoadLoginData();
+                    DialogManager.PushNewDialog(loginDialog);
+                    var details = PreferenceManager.LoadLoginData();
                     DialogManager.dialog2Input.inputOneResult = details[0];
                     DialogManager.dialog2Input.inputTwoResult = details[1];
                 },
-                delegate 
+                () =>
                 {
-                    ClientValues.SetIntentionalDisconnect(true, DisconnectionManager.DCReason.QuitToMenu); 
-                    Network.listener.disconnectFlag = true; 
+                    ClientValues.SetIntentionalDisconnect(true, DisconnectionManager.DCReason.QuitToMenu);
+                    Network.Listener.SetDisconnectFlag(true);  // Use a method to set the flag
                 });
 
-            DialogManager.PushNewDialog(d1);
+            DialogManager.PushNewDialog(selectDialog);
         }
 
         public static void ShowConnectDialogs()
         {
-            RT_Dialog_2Input dialog = new RT_Dialog_2Input(
-            "Connection Details", "IP", "Port",
-            delegate { ParseConnectionDetails(false); },
-            null);
+            var connectDialog = new RT_Dialog_2Input(
+                "Connection Details", "IP", "Port",
+                () => ParseConnectionDetails(false),
+                null);
 
-            string[] details = PreferenceManager.LoadConnectionData();
+            var details = PreferenceManager.LoadConnectionData();
             DialogManager.dialog2Input.inputOneResult = details[0];
             DialogManager.dialog2Input.inputTwoResult = details[1];
 
-            DialogManager.PushNewDialog(dialog);
+            DialogManager.PushNewDialog(connectDialog);
         }
 
         public static void ParseConnectionDetails(bool throughBrowser)
         {
             bool isInvalid = false;
-
             string[] answerSplit = null;
+
             if (throughBrowser)
             {
                 answerSplit = ClientValues.serverBrowserContainer[DialogManager.dialogButtonListingResultInt].Split('|');
 
-                if (string.IsNullOrWhiteSpace(answerSplit[0])) isInvalid = true;
-                if (string.IsNullOrWhiteSpace(answerSplit[1])) isInvalid = true;
-                if (answerSplit[1].Count() > 5) isInvalid = true;
-                if (!answerSplit[1].All(Char.IsDigit)) isInvalid = true;
+                if (string.IsNullOrWhiteSpace(answerSplit[0]) || string.IsNullOrWhiteSpace(answerSplit[1]) ||
+                    answerSplit[1].Length > 5 || !answerSplit[1].All(Char.IsDigit))
+                {
+                    isInvalid = true;
+                }
             }
-
             else
             {
-                if (string.IsNullOrWhiteSpace(DialogManager.dialog2ResultOne)) isInvalid = true;
-                if (string.IsNullOrWhiteSpace(DialogManager.dialog2ResultTwo)) isInvalid = true;
-                if (DialogManager.dialog2ResultTwo.Count() > 5) isInvalid = true;
-                if (!DialogManager.dialog2ResultTwo.All(Char.IsDigit)) isInvalid = true;
+                if (string.IsNullOrWhiteSpace(DialogManager.dialog2ResultOne) || string.IsNullOrWhiteSpace(DialogManager.dialog2ResultTwo) ||
+                    DialogManager.dialog2ResultTwo.Length > 5 || !DialogManager.dialog2ResultTwo.All(Char.IsDigit))
+                {
+                    isInvalid = true;
+                }
             }
 
             if (!isInvalid)
@@ -93,7 +94,6 @@ namespace GameClient
                     Network.port = answerSplit[1];
                     PreferenceManager.SaveConnectionData(answerSplit[0], answerSplit[1]);
                 }
-
                 else
                 {
                     Network.ip = DialogManager.dialog2ResultOne;
@@ -104,79 +104,85 @@ namespace GameClient
                 DialogManager.PushNewDialog(new RT_Dialog_Wait("Trying to connect to server"));
                 Network.StartConnection();
             }
-
             else
             {
-                RT_Dialog_Error d1 = new RT_Dialog_Error("Server details are invalid! Please try again!");
-                DialogManager.PushNewDialog(d1);
+                var errorDialog = new RT_Dialog_Error("Server details are invalid! Please try again!");
+                DialogManager.PushNewDialog(errorDialog);
             }
         }
 
         public static void ParseLoginUser()
         {
             bool isInvalid = false;
-            if (string.IsNullOrWhiteSpace(DialogManager.dialog2ResultOne)) isInvalid = true;
-            if (DialogManager.dialog2ResultOne.Any(Char.IsWhiteSpace)) isInvalid = true;
-            if (string.IsNullOrWhiteSpace(DialogManager.dialog2ResultTwo)) isInvalid = true;
+
+            if (string.IsNullOrWhiteSpace(DialogManager.dialog2ResultOne) || DialogManager.dialog2ResultOne.Any(Char.IsWhiteSpace) ||
+                string.IsNullOrWhiteSpace(DialogManager.dialog2ResultTwo))
+            {
+                isInvalid = true;
+            }
 
             if (!isInvalid)
             {
-                LoginData loginData = new LoginData();
-                loginData.username = DialogManager.dialog2ResultOne;
-                loginData.password = Hasher.GetHashFromString(DialogManager.dialog2ResultTwo);
-                loginData.clientVersion = CommonValues.executableVersion;
-                loginData.runningMods = ModManager.GetRunningModList().ToList();
+                var loginData = new LoginData
+                {
+                    Username = DialogManager.dialog2ResultOne,
+                    Password = Hasher.GetHashFromString(DialogManager.dialog2ResultTwo),
+                    ClientVersion = CommonValues.ExecutableVersion,
+                    RunningMods = ModManager.GetRunningModList().ToList()
+                };
 
-                ClientValues.username = loginData.username;
+                ClientValues.Username = loginData.Username;
                 PreferenceManager.SaveLoginData(DialogManager.dialog2ResultOne, DialogManager.dialog2ResultTwo);
 
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.LoginClientPacket), loginData);
-                Network.listener.EnqueuePacket(packet);
+                var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.LoginClientPacket), loginData);
+                Network.Listener.EnqueuePacket(packet);
 
                 DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for login response"));
             }
-
             else
             {
-                RT_Dialog_Error d1 = new RT_Dialog_Error("Login details are invalid! Please try again!",
-                    delegate { DialogManager.PushNewDialog(DialogManager.previousDialog); });
+                var errorDialog = new RT_Dialog_Error("Login details are invalid! Please try again!",
+                    () => DialogManager.PushNewDialog(DialogManager.previousDialog));
 
-                DialogManager.PushNewDialog(d1);
+                DialogManager.PushNewDialog(errorDialog);
             }
         }
 
         public static void ParseRegisterUser()
         {
             bool isInvalid = false;
-            if (string.IsNullOrWhiteSpace(DialogManager.dialog3ResultOne)) isInvalid = true;
-            if (DialogManager.dialog3ResultOne.Any(Char.IsWhiteSpace)) isInvalid = true;
-            if (string.IsNullOrWhiteSpace(DialogManager.dialog3ResultTwo)) isInvalid = true;
-            if (string.IsNullOrWhiteSpace(DialogManager.dialog3ResultThree)) isInvalid = true;
-            if (DialogManager.dialog3ResultTwo != DialogManager.dialog3ResultThree) isInvalid = true;
+
+            if (string.IsNullOrWhiteSpace(DialogManager.dialog3ResultOne) || DialogManager.dialog3ResultOne.Any(Char.IsWhiteSpace) ||
+                string.IsNullOrWhiteSpace(DialogManager.dialog3ResultTwo) || string.IsNullOrWhiteSpace(DialogManager.dialog3ResultThree) ||
+                DialogManager.dialog3ResultTwo != DialogManager.dialog3ResultThree)
+            {
+                isInvalid = true;
+            }
 
             if (!isInvalid)
             {
-                LoginData loginData = new LoginData();
-                loginData.username = DialogManager.dialog3ResultOne;
-                loginData.password = Hasher.GetHashFromString(DialogManager.dialog3ResultTwo);
-                loginData.clientVersion = CommonValues.executableVersion;
-                loginData.runningMods = ModManager.GetRunningModList().ToList();
+                var loginData = new LoginData
+                {
+                    Username = DialogManager.dialog3ResultOne,
+                    Password = Hasher.GetHashFromString(DialogManager.dialog3ResultTwo),
+                    ClientVersion = CommonValues.ExecutableVersion,
+                    RunningMods = ModManager.GetRunningModList().ToList()
+                };
 
-                ClientValues.username = loginData.username;
+                ClientValues.Username = loginData.Username;
                 PreferenceManager.SaveLoginData(DialogManager.dialog3ResultOne, DialogManager.dialog3ResultTwo);
 
-                Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.RegisterClientPacket), loginData);
-                Network.listener.EnqueuePacket(packet);
+                var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.RegisterClientPacket), loginData);
+                Network.Listener.EnqueuePacket(packet);
 
                 DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for register response"));
             }
-
             else
             {
-                RT_Dialog_Error d1 = new RT_Dialog_Error("Register details are invalid! Please try again!",
-                    delegate { DialogManager.PushNewDialog(DialogManager.previousDialog); });
+                var errorDialog = new RT_Dialog_Error("Register details are invalid! Please try again!",
+                    () => DialogManager.PushNewDialog(DialogManager.previousDialog));
 
-                DialogManager.PushNewDialog(d1);
+                DialogManager.PushNewDialog(errorDialog);
             }
         }
     }

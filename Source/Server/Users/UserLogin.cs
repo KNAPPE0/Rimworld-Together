@@ -7,60 +7,79 @@ namespace GameServer
     {
         public static void TryLoginUser(ServerClient client, Packet packet)
         {
-            LoginData loginData = Serializer.ConvertBytesToObject<LoginData>(packet.contents);
+            // Deserialize the login data
+            var loginData = Serializer.ConvertBytesToObject<LoginData>(packet.Contents);
+            if (loginData == null)
+            {
+                Logger.Warning("[Login] > Failed to deserialize login data.");
+                return;
+            }
 
-            if (!UserManager.CheckIfUserUpdated(client, loginData)) return;
+            // Perform various checks for login
+            if (!UserManager.CheckIfUserUpdated(client, loginData) ||
+                !UserManager.CheckLoginData(client, loginData, LoginMode.Login) ||
+                !UserManager.CheckIfUserExists(client, loginData, LoginMode.Login) ||
+                !UserManager.CheckIfUserAuthCorrect(client, loginData) ||
+                UserManager.CheckIfUserBanned(client) ||
+                !UserManager.CheckWhitelist(client) ||
+                ModManager.CheckIfModConflict(client, loginData))
+            {
+                return;
+            }
 
-            if (!UserManager.CheckLoginData(client, loginData, LoginMode.Login)) return;
-
-            if (!UserManager.CheckIfUserExists(client, loginData, LoginMode.Login)) return;
-
-            if (!UserManager.CheckIfUserAuthCorrect(client, loginData)) return;
-
-            client.userFile.SetLoginDetails(loginData);
-
+            // Set login Details and load user file
+            client.UserFile.SetLoginDetails(loginData);
             client.LoadFromUserFile();
 
-            Logger.Message($"[Handshake] > {client.userFile.SavedIP} | {client.userFile.Username}");
+            Logger.Message($"[Handshake] > {client.UserFile.SavedIP} | {client.UserFile.Username}");
 
-            if (UserManager.CheckIfUserBanned(client)) return;
-
-            if (!UserManager.CheckWhitelist(client)) return;
-
-            if (ModManager.CheckIfModConflict(client, loginData)) return;
-
+            // Remove old client if exists
             RemoveOldClientIfAny(client);
 
+            // Handle post-login actions
             PostLogin(client);
         }
 
         private static void PostLogin(ServerClient client)
         {
+            // Update player recount
             UserManager.SendPlayerRecount();
 
+            // Send global server data
             ServerGlobalDataManager.SendServerGlobalData(client);
 
-            foreach(string str in ChatManager.defaultJoinMessages) ChatManager.SendSystemMessage(client, str);
+            // Send default join Messages
+            foreach (var Message in ChatManager.DefaultJoinMessages)
+            {
+                ChatManager.SendSystemMessage(client, Message);
+            }
 
+            // Check if world exists and send relevant data
             if (WorldManager.CheckIfWorldExists())
             {
-                if (SaveManager.CheckIfUserHasSave(client)) SaveManager.SendSavePartToClient(client);
-                else WorldManager.SendWorldFile(client);
+                if (SaveManager.CheckIfUserHasSave(client))
+                {
+                    SaveManager.SendSavePartToClient(client);
+                }
+                else
+                {
+                    WorldManager.SendWorldFile(client);
+                }
             }
-            else WorldManager.RequireWorldFile(client);
+            else
+            {
+                WorldManager.RequestWorldFile(client);
+            }
         }
 
         private static void RemoveOldClientIfAny(ServerClient client)
         {
-            foreach (ServerClient cClient in Network.connectedClients.ToArray())
+            foreach (var cClient in Network.connectedClients.ToArray())
             {
-                if (cClient == client) continue;
-                else
+                if (cClient != client && cClient.UserFile.Username == client.UserFile.Username)
                 {
-                    if (cClient.userFile.Username == client.userFile.Username)
-                    {
-                        UserManager.SendLoginResponse(cClient, LoginResponse.ExtraLogin);
-                    }
+                    UserManager.SendLoginResponse(cClient, LoginResponse.ExtraLogin);
+                    cClient.Listener?.DestroyConnection(); // Ensuring the old client is disconnected safely
                 }
             }
         }

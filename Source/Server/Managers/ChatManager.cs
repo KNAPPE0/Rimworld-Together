@@ -6,16 +6,19 @@ namespace GameServer
 {
     public static class ChatManager
     {
+        // Semaphores for thread safety
         private static readonly Semaphore logSemaphore = new Semaphore(1, 1);
         private static readonly Semaphore commandSemaphore = new Semaphore(1, 1);
 
-        public static readonly string[] defaultJoinMessages = new string[]
+        // Default messages and text tools for the chat
+        public static readonly string[] DefaultJoinMessages = new string[]
         {
             "Welcome to the global chat!",
             "Please be considerate with others and have fun!",
             "Use '/help' to check all the available commands."
         };
-        public static readonly string[] defaultTextTools = new string[]
+
+        public static readonly string[] DefaultTextTools = new string[]
         {
             "List of available text tools:",
             "'b' inside brackets - Followed by the text you want to turn [b]bold",
@@ -23,105 +26,116 @@ namespace GameServer
             "HTML color inside brackets - Followed by the text you want to [ff0000]change color"
         };
 
+        // Parse the incoming packet and handle it accordingly
         public static void ParsePacket(ServerClient client, Packet packet)
         {
-            ChatData chatData = Serializer.ConvertBytesToObject<ChatData>(packet.contents);
+            var chatData = Serializer.ConvertBytesToObject<ChatData>(packet.Contents);
+            if (chatData == null)
+            {
+                Logger.Warning("[ChatManager] > Failed to deserialize chat data.");
+                return;
+            }
 
-            if (chatData.message.StartsWith("/")) ExecuteChatCommand(client, chatData.message.Split(' '));
-            else BroadcastChatMessage(client, chatData.message);
+            if (chatData.Message.StartsWith("/"))
+                ExecuteChatCommand(client, chatData.Message.Split(' '));
+            else
+                BroadcastChatMessage(client, chatData.Message);
         }
 
+        // Execute the chat command received
         private static void ExecuteChatCommand(ServerClient client, string[] command)
         {
             commandSemaphore.WaitOne();
 
-            ChatCommand toFind = ChatManagerHelper.GetCommandFromName(command[0]);
-            if (toFind == null) SendSystemMessage(client, "Command was not found.");
+            var chatCommand = ChatManagerHelper.GetCommandFromName(command[0]);
+            if (chatCommand == null)
+            {
+                SendSystemMessage(client, "Command not found.");
+            }
             else
             {
-                ChatCommandManager.targetClient = client;
-                ChatCommandManager.command = command;
-                toFind.commandAction.Invoke();
+                ChatCommandManager.TargetClient = client;
+                ChatCommandManager.Command = command;
+                chatCommand.CommandAction.Invoke();
             }
 
-            string chatCommand = "";
-            for (int i = 0; i < command.Length; i++) chatCommand += command[i] + "";
-
-            ChatManagerHelper.ShowChatInConsole(client.userFile.Username, chatCommand);
+            var chatCommandString = string.Join(" ", command);
+            ChatManagerHelper.ShowChatInConsole(client.userFile.Username, chatCommandString);
 
             commandSemaphore.Release();
         }
 
+        // Broadcast a chat message to all connected clients
         private static void BroadcastChatMessage(ServerClient client, string message)
         {
             if (Master.serverConfig == null) return;
 
-            ChatData chatData = new ChatData();
-            chatData.username = client.userFile.Username;
-            chatData.message = message;
-
-            if (client.userFile.IsAdmin)
+            var chatData = new ChatData
             {
-                chatData.userColor = UserColor.Admin;
-                chatData.messageColor = MessageColor.Admin;
-            }
+                Username = client.userFile.Username,
+                Message = message,
+                UserColor = client.userFile.IsAdmin ? UserColor.Admin : UserColor.Normal,
+                MessageColor = client.userFile.IsAdmin ? MessageColor.Admin : MessageColor.Normal
+            };
 
-            else
-            {
-                chatData.userColor = UserColor.Normal;
-                chatData.messageColor = MessageColor.Normal;
-            }
-
-            Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
-            foreach (ServerClient cClient in Network.connectedClients.ToArray()) cClient.listener.EnqueuePacket(packet);
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
+            foreach (var cClient in Network.connectedClients.ToArray())
+                cClient.Listener.EnqueuePacket(packet);
 
             WriteToLogs(client.userFile.Username, message);
             ChatManagerHelper.ShowChatInConsole(client.userFile.Username, message);
         }
 
+        // Broadcast a message from the server console
         public static void BroadcastServerMessage(string message)
         {
             if (Master.serverConfig == null) return;
 
-            ChatData chatData = new ChatData();
-            chatData.username = "CONSOLE";
-            chatData.message = message;
-            chatData.userColor = UserColor.Console;
-            chatData.messageColor = MessageColor.Console;
+            var chatData = new ChatData
+            {
+                Username = "CONSOLE",
+                Message = message,
+                UserColor = UserColor.Console,
+                MessageColor = MessageColor.Console
+            };
 
-            Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
-            foreach (ServerClient client in Network.connectedClients.ToArray()) client.listener.EnqueuePacket(packet);
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
+            foreach (var client in Network.connectedClients.ToArray())
+                client.Listener.EnqueuePacket(packet);
 
-            WriteToLogs(chatData.username, message);
-            ChatManagerHelper.ShowChatInConsole(chatData.username, message);
+            WriteToLogs(chatData.Username, message);
+            ChatManagerHelper.ShowChatInConsole(chatData.Username, message);
         }
 
+        // Send a system message to a specific client
         public static void SendSystemMessage(ServerClient client, string message)
         {
-            ChatData chatData = new ChatData();
-            chatData.username = "CONSOLE";
-            chatData.message = message;
-            chatData.userColor = UserColor.Console;
-            chatData.messageColor = MessageColor.Console;
+            var chatData = new ChatData
+            {
+                Username = "CONSOLE",
+                Message = message,
+                UserColor = UserColor.Console,
+                MessageColor = MessageColor.Console
+            };
 
-            Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
-            client.listener.EnqueuePacket(packet);
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
+            client.Listener.EnqueuePacket(packet);
         }
 
-        private static void WriteToLogs(string username, string message)
+        // Log chat messages to a file
+        private static void WriteToLogs(string Username, string message)
         {
             logSemaphore.WaitOne();
 
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append($"[{DateTime.Now:HH:mm:ss}] | [" + username + "]: " + message);
+            var stringBuilder = new StringBuilder();
+            stringBuilder.Append($"[{DateTime.Now:HH:mm:ss}] | [{Username}]: {message}");
             stringBuilder.Append(Environment.NewLine);
-    
-            DateTime dateTime = DateTime.Now.Date;
-            string nowFileName = (dateTime.Year + "-" + dateTime.Month.ToString("D2") + "-" + dateTime.Day.ToString("D2")).ToString();
-            string nowFullPath = Master.chatLogsPath + Path.DirectorySeparatorChar + nowFileName + ".txt";
-    
+
+            var dateTime = DateTime.Now.Date;
+            var nowFileName = $"{dateTime.Year}-{dateTime.Month:D2}-{dateTime.Day:D2}.txt";
+            var nowFullPath = Path.Combine(Master.chatLogsPath, nowFileName);
+
             File.AppendAllText(nowFullPath, stringBuilder.ToString());
-            stringBuilder.Clear();
 
             logSemaphore.Release();
         }
@@ -129,149 +143,149 @@ namespace GameServer
 
     public static class ChatCommandManager
     {
-        public static ServerClient? targetClient;
-        public static string[]? command;
+        public static ServerClient? TargetClient { get; set; }
+        public static string[]? Command { get; set; }
 
-        private static readonly ChatCommand helpCommand = new ChatCommand("/help", 0,
+        private static readonly ChatCommand HelpCommand = new ChatCommand("/help", 0,
             "Shows a list of all available commands",
             ChatHelpCommandAction);
 
-        private static readonly ChatCommand toolsCommand = new ChatCommand("/tools", 0,
+        private static readonly ChatCommand ToolsCommand = new ChatCommand("/tools", 0,
             "Shows a list of all available chat tools",
             ChatToolsCommandAction);
 
-        private static readonly ChatCommand pingCommand = new ChatCommand("/ping", 0,
+        private static readonly ChatCommand PingCommand = new ChatCommand("/ping", 0,
             "Checks if the connection to the server is working",
             ChatPingCommandAction);
 
-        private static readonly ChatCommand disconnectCommand = new ChatCommand("/dc", 0,
+        private static readonly ChatCommand DisconnectCommand = new ChatCommand("/dc", 0,
             "Forcefully disconnects you from the server",
             ChatDisconnectCommandAction);
 
-        private static readonly ChatCommand stopOnlineActivityCommand = new ChatCommand("/sv", 0,
+        private static readonly ChatCommand StopOnlineActivityCommand = new ChatCommand("/sv", 0,
             "Forcefully disconnects you from a visit",
             ChatStopOnlineActivityCommandAction);
-        
-        private static readonly ChatCommand privateMessage = new ChatCommand("/w", 0,
+
+        private static readonly ChatCommand PrivateMessageCommand = new ChatCommand("/w", 0,
             "Sends a private message to a specific user",
             ChatPrivateMessageCommandAction);
 
-        public static readonly ChatCommand[] chatCommands = new ChatCommand[]
+        public static readonly ChatCommand[] ChatCommands = new ChatCommand[]
         {
-            helpCommand,
-            toolsCommand,
-            pingCommand,
-            disconnectCommand,
-            stopOnlineActivityCommand,
-            privateMessage
+            HelpCommand,
+            ToolsCommand,
+            PingCommand,
+            DisconnectCommand,
+            StopOnlineActivityCommand,
+            PrivateMessageCommand
         };
 
         private static void ChatHelpCommandAction()
         {
-            if (targetClient == null) return;
-            else
-            {
-                List<string> messagesToSend = new List<string> { "List of available commands:" };
-                foreach (ChatCommand command in chatCommands) messagesToSend.Add($"{command.prefix} - {command.description}");
+            if (TargetClient == null) return;
 
-                foreach (string str in messagesToSend) ChatManager.SendSystemMessage(targetClient, str);
-            }
+            var messagesToSend = new List<string> { "List of available commands:" };
+            foreach (var command in ChatCommands)
+                messagesToSend.Add($"{command.Prefix} - {command.Description}");
+
+            foreach (var str in messagesToSend)
+                ChatManager.SendSystemMessage(TargetClient, str);
         }
 
         private static void ChatToolsCommandAction()
         {
-            if (targetClient == null) return;
-            else
-            {
-                foreach (string str in ChatManager.defaultTextTools)
-                {
-                    ChatManager.SendSystemMessage(targetClient, str);
-                }
-            }
+            if (TargetClient == null) return;
+
+            foreach (var str in ChatManager.DefaultTextTools)
+                ChatManager.SendSystemMessage(TargetClient, str);
         }
 
         private static void ChatPingCommandAction()
         {
-            if (targetClient == null) return;
-            else ChatManager.SendSystemMessage(targetClient, "Pong!");
+            if (TargetClient == null) return;
+            ChatManager.SendSystemMessage(TargetClient, "Pong!");
         }
 
         private static void ChatDisconnectCommandAction()
         {
-            if (targetClient == null) return;
-            else targetClient.listener.disconnectFlag = true;
+            if (TargetClient == null) return;
+            TargetClient.Listener.disconnectFlag = true;
         }
 
         private static void ChatStopOnlineActivityCommandAction()
         {
-            if (targetClient == null) return;
-            else OnlineActivityManager.SendVisitStop(targetClient);
+            if (TargetClient == null) return;
+            OnlineActivityManager.SendVisitStop(TargetClient);
         }
 
         private static void ChatPrivateMessageCommandAction()
         {
-            if (targetClient == null) return;
-            else
+            if (TargetClient == null) return;
+
+            var message = string.Join(" ", Command.Skip(2));
+            if (string.IsNullOrWhiteSpace(message))
             {
-                string message = "";
-                for (int i = 2; i < command.Length; i++) message += command[i] + " ";
-
-                if (string.IsNullOrWhiteSpace(message)) ChatManager.SendSystemMessage(targetClient, "Message was empty.");
-                else
-                {
-                    ServerClient toFind = ChatManagerHelper.GetUserFromName(ChatManagerHelper.GetUsernameFromMention(command[1]));
-                    if (toFind == null) ChatManager.SendSystemMessage(targetClient, "User was not found.");
-                    else
-                    {
-                        //Don't allow players to send wispers to themselves
-                        if (toFind == targetClient) ChatManager.SendSystemMessage(targetClient, "Can't send a wisper to yourself.");
-                        else
-                        {
-                            ChatData chatData = new ChatData();
-                            chatData.message = message;
-                            chatData.userColor = UserColor.Private;
-                            chatData.messageColor = MessageColor.Private;
-
-                            //Send to sender
-                            chatData.username = $">> {toFind.userFile.Username}";
-                            Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
-                            targetClient.listener.EnqueuePacket(packet);
-
-                            //Send to recipient
-                            chatData.username = $"<< {targetClient.userFile.Username}";
-                            packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
-                            toFind.listener.EnqueuePacket(packet);
-
-                            ChatManagerHelper.ShowChatInConsole(chatData.username, message);
-                        }
-                    }
-                }
+                ChatManager.SendSystemMessage(TargetClient, "Message was empty.");
+                return;
             }
+
+            var recipient = ChatManagerHelper.GetUserFromName(ChatManagerHelper.GetUsernameFromMention(Command[1]));
+            if (recipient == null)
+            {
+                ChatManager.SendSystemMessage(TargetClient, "User was not found.");
+                return;
+            }
+
+            if (recipient == TargetClient)
+            {
+                ChatManager.SendSystemMessage(TargetClient, "Can't send a whisper to yourself.");
+                return;
+            }
+
+            var chatData = new ChatData
+            {
+                Message = message,
+                UserColor = UserColor.Private,
+                MessageColor = MessageColor.Private
+            };
+
+            // Send to sender
+            chatData.Username = $">> {recipient.userFile.Username}";
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
+            TargetClient.Listener.EnqueuePacket(packet);
+
+            // Send to recipient
+            chatData.Username = $"<< {TargetClient.userFile.Username}";
+            packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
+            recipient.Listener.EnqueuePacket(packet);
+
+            ChatManagerHelper.ShowChatInConsole(chatData.Username, message);
         }
     }
 
     public static class ChatManagerHelper
     {
-        public static ServerClient GetUserFromName(string username)
+        public static ServerClient GetUserFromName(string Username)
         {
-            return Network.connectedClients.ToArray().FirstOrDefault(fetch => fetch.userFile.Username == username);
+            return Network.connectedClients.ToArray()
+                .FirstOrDefault(client => client.userFile.Username.Equals(Username, StringComparison.OrdinalIgnoreCase));
         }
 
         public static ChatCommand GetCommandFromName(string commandName)
         {
-            return ChatCommandManager.chatCommands.ToArray().FirstOrDefault(x => x.prefix == commandName);
+            return ChatCommandManager.ChatCommands.ToArray()
+                .FirstOrDefault(cmd => cmd.Prefix.Equals(commandName, StringComparison.OrdinalIgnoreCase));
         }
 
         public static string GetUsernameFromMention(string mention)
         {
-            return mention.Replace("@", "");
+            return mention.Replace("@", "").Trim();
         }
 
-        public static void ShowChatInConsole(string username, string message)
+        public static void ShowChatInConsole(string Username, string message)
         {
-            if (!Master.serverConfig.DisplayChatInConsole) return;
-            else Logger.Message($"[Chat] > {username} > {message}");
+            if (Master.serverConfig.DisplayChatInConsole)
+                Logger.Message($"[Chat] > {Username} > {message}");
         }
     }
 }
-

@@ -3,124 +3,134 @@ using System.Net.Sockets;
 
 namespace GameServer
 {
-    //Class that handles all incoming and outgoing packet instructions
-
+    // Class that handles all incoming and outgoing packet instructions
     public class Listener
     {
-        //TCP variables needed for the listener to comunicate
+        // TCP variables needed for the Listener to communicate
         public TcpClient connection;
         public NetworkStream networkStream;
 
-        //Stream tools used to read and write the connection stream
-        public StreamWriter streamWriter;
-        public StreamReader streamReader;
+        // Stream tools used to read and write the connection stream
+        private StreamWriter streamWriter;
+        private StreamReader streamReader;
 
-        //Upload and download classes to send/receive files
-        public UploadManager uploadManager;
-        public DownloadManager downloadManager;
+        // Upload and download classes to send/receive files
+        public UploadManager uploadManager = new UploadManager();
+        public DownloadManager downloadManager = new DownloadManager();
 
-        //Data queue used to hold packets that are to be sent through the connection
+        // Data queue used to hold packets that are to be sent through the connection
         private readonly Queue<Packet> dataQueue = new Queue<Packet>();
+        private readonly object queueLock = new object();
 
-        //Useful variables to handle connection status
-        public bool disconnectFlag;
-        public bool KAFlag;
+        // Useful variables to handle connection status
+        public bool disconnectFlag = false;
+        public bool KAFlag = false;
 
-        //Reference to the ServerClient instance of this listener
-        private ServerClient targetClient;
+        // Reference to the ServerClient instance of this Listener
+        private readonly ServerClient targetClient;
 
-        public Listener(ServerClient clientToUse, TcpClient connection) 
-        { 
-            targetClient = clientToUse;
-
-            this.connection = connection;
+        public Listener(ServerClient clientToUse, TcpClient connection)
+        {
+            targetClient = clientToUse ?? throw new ArgumentNullException(nameof(clientToUse));
+            this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
             networkStream = connection.GetStream();
             streamWriter = new StreamWriter(networkStream);
             streamReader = new StreamReader(networkStream);
         }
 
-        //Enqueues a new packet into the data queue if needed
-
+        // Enqueues a new packet into the data queue if needed
         public void EnqueuePacket(Packet packet)
         {
             if (disconnectFlag) return;
-            else dataQueue.Enqueue(packet);
+
+            lock (queueLock)
+            {
+                dataQueue.Enqueue(packet);
+            }
         }
 
-        //Runs in a separate thread and sends all queued packets through the connection
-
+        // Runs in a separate thread and sends all queued packets through the connection
         public void SendData()
         {
             try
             {
-                while (true)
+                while (!disconnectFlag)
                 {
-                    Thread.Sleep(1);
+                    Packet packet = null;
 
-                    if (dataQueue.Count > 0)
+                    lock (queueLock)
                     {
-                        Packet packet = dataQueue.Dequeue();
+                        if (dataQueue.Count > 0)
+                        {
+                            packet = dataQueue.Dequeue();
+                        }
+                    }
+
+                    if (packet != null)
+                    {
                         streamWriter.WriteLine(Serializer.SerializeToString(packet));
                         streamWriter.Flush();
                     }
+
+                    Thread.Sleep(10); // Adjust sleep time to reduce CPU usage
                 }
             }
-            catch { disconnectFlag = true; }
-        }
-
-        //Runs in a separate thread and listens for any kind of information being sent through the connection
-
-        public void Listen()
-        {
-            try
+            catch (Exception ex)
             {
-                while (true)
-                {
-                    Thread.Sleep(1);
-
-                    string data = streamReader.ReadLine();
-                    Packet receivedPacket = Serializer.SerializeFromString<Packet>(data);
-                    PacketHandler.HandlePacket(targetClient, receivedPacket);
-                }
-            }
-
-            catch (Exception e)
-            {
-                if (Master.serverConfig.VerboseLogs) Logger.Warning(e.ToString());
-
+                Logger.Error($"[Listener] > Error in SendData: {ex.Message}");
                 disconnectFlag = true;
             }
         }
 
-        //Runs in a separate thread and checks if the connection should still be up
+        // Runs in a separate thread and listens for any kind of information being sent through the connection
+        public void Listen()
+        {
+            try
+            {
+                while (!disconnectFlag)
+                {
+                    string data = streamReader.ReadLine();
+                    if (string.IsNullOrEmpty(data)) continue;
 
+                    Packet receivedPacket = Serializer.SerializeFromString<Packet>(data);
+                    PacketHandler.HandlePacket(targetClient, receivedPacket);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[Listener] > Error in Listen: {ex.Message}");
+                disconnectFlag = true;
+            }
+        }
+
+        // Runs in a separate thread and checks if the connection should still be up
         public void CheckConnectionHealth()
         {
             try
             {
-                while (true)
+                while (!disconnectFlag)
                 {
-                    Thread.Sleep(1);
-
-                    if (disconnectFlag) break;
+                    Thread.Sleep(1000);
                 }
             }
-            catch { }
-
-            Thread.Sleep(1000);
-
-            Network.KickClient(targetClient);
+            catch (Exception ex)
+            {
+                Logger.Error($"[Listener] > Error in CheckConnectionHealth: {ex.Message}");
+            }
+            finally
+            {
+                Network.KickClient(targetClient);
+            }
         }
 
-        //Runs in a separate thread and checks if the connection is still alive
-
+        // Runs in a separate thread and checks if the connection is still alive
         public void CheckKAFlag()
         {
             KAFlag = false;
 
             try
             {
-                while (true)
+                while (!disconnectFlag)
                 {
                     Thread.Sleep(int.Parse(Master.serverConfig.MaxTimeoutInMS));
 
@@ -128,19 +138,33 @@ namespace GameServer
                     else break;
                 }
             }
-            catch { }
-
-            disconnectFlag = true;
+            catch (Exception ex)
+            {
+                Logger.Error($"[Listener] > Error in CheckKAFlag: {ex.Message}");
+            }
+            finally
+            {
+                disconnectFlag = true;
+            }
         }
 
-        //Forcefully ends the connection with the client and any important process associated with it
-
+        // Forcefully ends the connection with the client and any important process associated with it
         public void DestroyConnection()
         {
-            connection.Close();
-            uploadManager?.fileStream.Close();
-            downloadManager?.fileStream.Close();
-            if (targetClient.InVisitWith != null) OnlineActivityManager.SendVisitStop(targetClient);
+            try
+            {
+                connection.Close();
+                uploadManager?.Dispose();
+                downloadManager?.Dispose();
+                if (targetClient.InVisitWith != null)
+                {
+                    OnlineActivityManager.SendVisitStop(targetClient);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[Listener] > Error in DestroyConnection: {ex.Message}");
+            }
         }
     }
 }

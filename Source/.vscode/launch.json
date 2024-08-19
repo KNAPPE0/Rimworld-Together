@@ -2,14 +2,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "dotnet: launch",
+            "name": ".NET Core Launch (Server)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "dotnet: build",
             "program": "${workspaceFolder}/Server/bin/Debug/net7.0/GameServer.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/Server/bin/Debug/net7.0",
-            "console": "internalConsole"
+            "cwd": "${workspaceFolder}/Server",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }

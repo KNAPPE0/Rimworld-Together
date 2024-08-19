@@ -36,7 +36,7 @@ namespace GameClient
         public static TransferData incomingManifest = new TransferData();
         public static List<Tradeable> listToShowInTradesMenu = new List<Tradeable>();
 
-        public static string username;
+        public static string Username;
 
         public static string[] serverBrowserContainer = new string[] { "127.0.0.1|25555" };
 

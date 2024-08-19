@@ -1,46 +1,49 @@
 ﻿using Mono.Nat;
+using System.Threading.Tasks;
 
 namespace GameServer
 {
-    //Class that handles UPnP forwarding between the server and the router
-
+    // Class that handles UPnP forwarding between the server and the router
     public class UPnP
     {
-        //Useful variables
-        public bool autoPortForwardSuccessful;
+        // Indicates if the port forwarding was successful
+        public bool AutoPortForwardSuccessful { get; private set; } = false;
 
         public UPnP()
         {
             Logger.Warning($"[UPnP] > Attempting to forward port '{Network.port}'");
 
+            // Subscribe to the DeviceFound event
             NatUtility.DeviceFound += DeviceFound;
 
+            // Start the UPnP mapping process
             TryToMapPort();
         }
 
-        //Function that acts as a clock to check if UPnP was forwarded correctly
+        // Attempts to map the port using UPnP
         public void TryToMapPort()
         {
-
             NatUtility.StartDiscovery();
 
-            for(int i = 0; i < 20; i++)
+            Task.Run(async () =>
             {
-                Thread.Sleep(250);
-                if (autoPortForwardSuccessful) break;
-            }
+                for (int i = 0; i < 20; i++)
+                {
+                    await Task.Delay(250); // Asynchronous wait for 250ms
+                    if (AutoPortForwardSuccessful) break; // Exit loop if successful
+                }
 
-            if (!autoPortForwardSuccessful)
-            {
-                Logger.Error("Could not enable UPnP - Possible causes:\n" +
-                    "- the port is being used\n" +
-                    "- the router has UPnP disabled\n" +
-                    "- the router/modem does not have ports available");
-            }
+                if (!AutoPortForwardSuccessful)
+                {
+                    Logger.Error("[UPnP] > Could not enable UPnP. Possible causes:\n" +
+                        "- The port is being used by another application\n" +
+                        "- The router has UPnP disabled\n" +
+                        "- The router/modem does not support UPnP or has no ports available");
+                }
+            });
         }
 
-        //Trigger that executes whenever a device for UPnP was found
-
+        // Event handler that gets triggered whenever a UPnP-capable device is found
         private void DeviceFound(object sender, DeviceEventArgs args)
         {
             try
@@ -48,13 +51,18 @@ namespace GameServer
                 INatDevice device = args.Device;
                 device.CreatePortMap(new Mapping(Protocol.Tcp, Network.port, Network.port));
 
-                //This line can run multiple times if you are connected to multiple devices (Theres no reason for that, so only print it once)
-                if (!autoPortForwardSuccessful) Logger.Warning("successfully portforwarded the server");
-                autoPortForwardSuccessful = true;
+                if (!AutoPortForwardSuccessful)
+                {
+                    Logger.Warning("[UPnP] > Successfully port-forwarded the server.");
+                    AutoPortForwardSuccessful = true;
+                }
 
-                Logger.Warning("UPnP forward successful");
+                Logger.Warning("[UPnP] > UPnP forward successful.");
             }
-            catch (Exception e) { Logger.Error(e.ToString()); }
+            catch (Exception e)
+            {
+                Logger.Error($"[UPnP] > Error occurred while attempting to forward port: {e.Message}");
+            }
         }
     }
 }

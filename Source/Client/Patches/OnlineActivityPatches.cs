@@ -27,11 +27,11 @@ namespace GameClient
                 if (ClientValues.isRealTimeHost)
                 {
                     OnlineActivityData OnlineActivityData = new OnlineActivityData();
-                    OnlineActivityData.activityStepMode = OnlineActivityStepMode.Create;
-                    OnlineActivityData.creationOrder = OnlineManagerHelper.CreateCreationOrder(__instance);
+                    OnlineActivityData.ActivityStepMode = OnlineActivityStepMode.Create;
+                    OnlineActivityData.CreationOrder = OnlineManagerHelper.CreateCreationOrder(__instance);
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OnlineActivityPacket), OnlineActivityData);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
 
                     //KEEP ALWAYS AS AT THE BOTTOM AS POSSIBLE
                     OnlineManagerHelper.AddThingToMap(__instance);
@@ -79,11 +79,11 @@ namespace GameClient
                 if (ClientValues.isRealTimeHost)
                 {
                     OnlineActivityData onlineActivityData = new OnlineActivityData();
-                    onlineActivityData.activityStepMode = OnlineActivityStepMode.Destroy;
-                    onlineActivityData.destructionOrder = OnlineManagerHelper.CreateDestructionOrder(__instance);
+                    onlineActivityData.ActivityStepMode = OnlineActivityStepMode.Destroy;
+                    onlineActivityData.DestructionOrder = OnlineManagerHelper.CreateDestructionOrder(__instance);
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OnlineActivityPacket), onlineActivityData);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
 
                     //KEEP ALWAYS AS AT THE BOTTOM AS POSSIBLE
                     OnlineManagerHelper.RemoveThingFromMap(__instance);
@@ -132,11 +132,11 @@ namespace GameClient
                 if (ClientValues.isRealTimeHost)
                 {
                     OnlineActivityData onlineActivityData = new OnlineActivityData();
-                    onlineActivityData.activityStepMode = OnlineActivityStepMode.Kill;
-                    onlineActivityData.killOrder = OnlineManagerHelper.CreateKillOrder(__instance);
+                    onlineActivityData.ActivityStepMode = OnlineActivityStepMode.Kill;
+                    onlineActivityData.KillOrder = OnlineManagerHelper.CreateKillOrder(__instance);
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OnlineActivityPacket), onlineActivityData);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
 
                     //KEEP ALWAYS AS AT THE BOTTOM AS POSSIBLE
                     OnlineManagerHelper.RemoveThingFromMap(__instance);
@@ -182,11 +182,11 @@ namespace GameClient
                 if (OnlineActivityManager.factionPawns.Contains(___pawn))
                 {
                     OnlineActivityData data = new OnlineActivityData();
-                    data.activityStepMode = OnlineActivityStepMode.Action;
-                    data.pawnOrder = OnlineManagerHelper.CreatePawnOrder(___pawn, newJob);
+                    data.ActivityStepMode = OnlineActivityStepMode.Action;
+                    data.PawnOrder = OnlineManagerHelper.CreatePawnOrder(___pawn, newJob);
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OnlineActivityPacket), data);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
                     return true;
                 }
 
@@ -223,11 +223,11 @@ namespace GameClient
                 if (ClientValues.isRealTimeHost)
                 {
                     OnlineActivityData onlineActivityData = new OnlineActivityData();
-                    onlineActivityData.activityStepMode = OnlineActivityStepMode.Damage;
-                    onlineActivityData.damageOrder = OnlineManagerHelper.CreateDamageOrder(dinfo, __instance);
+                    onlineActivityData.ActivityStepMode = OnlineActivityStepMode.Damage;
+                    onlineActivityData.DamageOrder = OnlineManagerHelper.CreateDamageOrder(dinfo, __instance);
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OnlineActivityPacket), onlineActivityData);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
                     return true;
                 }
 
@@ -274,11 +274,11 @@ namespace GameClient
                 if (ClientValues.isRealTimeHost)
                 {
                     OnlineActivityData onlineActivityData = new OnlineActivityData();
-                    onlineActivityData.activityStepMode = OnlineActivityStepMode.Hediff;
-                    onlineActivityData.hediffOrder = OnlineManagerHelper.CreateHediffOrder(hediff, ___pawn, OnlineActivityApplyMode.Add);
+                    onlineActivityData.ActivityStepMode = OnlineActivityStepMode.Hediff;
+                    onlineActivityData.HediffOrder = OnlineManagerHelper.CreateHediffOrder(hediff, ___pawn, OnlineActivityApplyMode.Add);
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OnlineActivityPacket), onlineActivityData);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
                     return true;
                 }
 
@@ -319,11 +319,11 @@ namespace GameClient
                 if (ClientValues.isRealTimeHost)
                 {
                     OnlineActivityData onlineActivityData = new OnlineActivityData();
-                    onlineActivityData.activityStepMode = OnlineActivityStepMode.Hediff;
-                    onlineActivityData.hediffOrder = OnlineManagerHelper.CreateHediffOrder(hediff, ___pawn, OnlineActivityApplyMode.Remove);
+                    onlineActivityData.ActivityStepMode = OnlineActivityStepMode.Hediff;
+                    onlineActivityData.HediffOrder = OnlineManagerHelper.CreateHediffOrder(hediff, ___pawn, OnlineActivityApplyMode.Remove);
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OnlineActivityPacket), onlineActivityData);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
                     return true;
                 }
 
@@ -357,11 +357,11 @@ namespace GameClient
             if (ClientValues.isRealTimeHost)
             {
                 OnlineActivityData OnlineActivityData = new OnlineActivityData();
-                OnlineActivityData.activityStepMode = OnlineActivityStepMode.GameCondition;
-                OnlineActivityData.gameConditionOrder = OnlineManagerHelper.CreateGameConditionOrder(cond, OnlineActivityApplyMode.Add);
+                OnlineActivityData.ActivityStepMode = OnlineActivityStepMode.GameCondition;
+                OnlineActivityData.GameConditionOrder = OnlineManagerHelper.CreateGameConditionOrder(cond, OnlineActivityApplyMode.Add);
 
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OnlineActivityPacket), OnlineActivityData);
-                Network.listener.EnqueuePacket(packet);
+                Network.Listener.EnqueuePacket(packet);
                 return true;
             }
 
@@ -394,11 +394,11 @@ namespace GameClient
             if (ClientValues.isRealTimeHost)
             {
                 OnlineActivityData OnlineActivityData = new OnlineActivityData();
-                OnlineActivityData.activityStepMode = OnlineActivityStepMode.GameCondition;
-                OnlineActivityData.gameConditionOrder = OnlineManagerHelper.CreateGameConditionOrder(__instance, OnlineActivityApplyMode.Remove);
+                OnlineActivityData.ActivityStepMode = OnlineActivityStepMode.GameCondition;
+                OnlineActivityData.GameConditionOrder = OnlineManagerHelper.CreateGameConditionOrder(__instance, OnlineActivityApplyMode.Remove);
 
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OnlineActivityPacket), OnlineActivityData);
-                Network.listener.EnqueuePacket(packet);
+                Network.Listener.EnqueuePacket(packet);
                 return true;
             }
 
@@ -437,11 +437,11 @@ namespace GameClient
                     OnlineActivityManager.queuedTimeSpeed = (int)__instance.CurTimeSpeed;
 
                     OnlineActivityData onlineActivityData = new OnlineActivityData();
-                    onlineActivityData.activityStepMode = OnlineActivityStepMode.TimeSpeed;
-                    onlineActivityData.timeSpeedOrder = OnlineManagerHelper.CreateTimeSpeedOrder();
+                    onlineActivityData.ActivityStepMode = OnlineActivityStepMode.TimeSpeed;
+                    onlineActivityData.TimeSpeedOrder = OnlineManagerHelper.CreateTimeSpeedOrder();
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OnlineActivityPacket), onlineActivityData);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
                 }
             }
 
@@ -474,11 +474,11 @@ namespace GameClient
                 OnlineManagerHelper.EnqueueWeather(newWeather);
 
                 OnlineActivityData onlineActivityData = new OnlineActivityData();
-                onlineActivityData.activityStepMode = OnlineActivityStepMode.Weather;
-                onlineActivityData.weatherOrder = OnlineManagerHelper.CreateWeatherOrder(newWeather);
+                onlineActivityData.ActivityStepMode = OnlineActivityStepMode.Weather;
+                onlineActivityData.WeatherOrder = OnlineManagerHelper.CreateWeatherOrder(newWeather);
 
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OnlineActivityPacket), onlineActivityData);
-                Network.listener.EnqueuePacket(packet);
+                Network.Listener.EnqueuePacket(packet);
                 return true;
             }
 

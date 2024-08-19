@@ -25,9 +25,9 @@ namespace GameClient
 
         public static void ParseEventPacket(Packet packet)
         {
-            EventData eventData = Serializer.ConvertBytesToObject<EventData>(packet.contents);
+            EventData eventData = Serializer.ConvertBytesToObject<EventData>(packet.Contents);
 
-            switch (eventData.eventStepMode)
+            switch (eventData.EventStepMode)
             {
                 case EventStepMode.Send:
                     OnEventSent();
@@ -47,15 +47,15 @@ namespace GameClient
         {
             eventCosts = new int[]
             {
-                serverGlobalData.eventValues.RaidCost,
-                serverGlobalData.eventValues.InfestationCost,
-                serverGlobalData.eventValues.MechClusterCost,
-                serverGlobalData.eventValues.ToxicFalloutCost,
-                serverGlobalData.eventValues.ManhunterCost,
-                serverGlobalData.eventValues.WandererCost,
-                serverGlobalData.eventValues.FarmAnimalsCost,
-                serverGlobalData.eventValues.ShipChunkCost,
-                serverGlobalData.eventValues.TraderCaravanCost
+                serverGlobalData.EventValues.RaidCost,
+                serverGlobalData.EventValues.InfestationCost,
+                serverGlobalData.EventValues.MechClusterCost,
+                serverGlobalData.EventValues.ToxicFalloutCost,
+                serverGlobalData.EventValues.ManhunterCost,
+                serverGlobalData.EventValues.WandererCost,
+                serverGlobalData.EventValues.FarmAnimalsCost,
+                serverGlobalData.EventValues.ShipChunkCost,
+                serverGlobalData.EventValues.TraderCaravanCost
             };
         }
 
@@ -85,13 +85,13 @@ namespace GameClient
                 RimworldManager.RemoveThingFromSettlement(toGetSilverFrom, ThingDefOf.Silver, eventCosts[DialogManager.selectedScrollButton]);
 
                 EventData eventData = new EventData();
-                eventData.eventStepMode = EventStepMode.Send;
-                eventData.fromTile = toGetSilverFrom.Tile;
-                eventData.toTile = ClientValues.chosenSettlement.Tile;
-                eventData.eventID = DialogManager.selectedScrollButton;
+                eventData.EventStepMode = EventStepMode.Send;
+                eventData.FromTile = toGetSilverFrom.Tile;
+                eventData.ToTile = ClientValues.chosenSettlement.Tile;
+                eventData.EventId = DialogManager.selectedScrollButton;
 
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.EventPacket), eventData);
-                Network.listener.EnqueuePacket(packet);
+                Network.Listener.EnqueuePacket(packet);
 
                 DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for event"));
             }
@@ -99,7 +99,7 @@ namespace GameClient
 
         public static void OnEventReceived(EventData eventData)
         {
-            if (ClientValues.isReadyToPlay) LoadEvent(eventData.eventID);
+            if (ClientValues.isReadyToPlay) LoadEvent(eventData.EventId);
         }
 
         public static void LoadEvent(int eventID)

@@ -9,9 +9,9 @@ namespace GameServer
 
         public static void ParseOfflineActivityPacket(ServerClient client, Packet packet)
         {
-            OfflineActivityData data = Serializer.ConvertBytesToObject<OfflineActivityData>(packet.contents);
+            OfflineActivityData data = Serializer.ConvertBytesToObject<OfflineActivityData>(packet.Contents);
 
-            switch (data.activityStepMode)
+            switch (data.ActivityStepMode)
             {
                 case OfflineActivityStepMode.Request:
                     SendRequestedMap(client, data);
@@ -25,22 +25,22 @@ namespace GameServer
 
         private static void SendRequestedMap(ServerClient client, OfflineActivityData data)
         {
-            if (!MapManager.CheckIfMapExists(data.targetTile))
+            if (!MapManager.CheckIfMapExists(data.TargetTile))
             {
-                data.activityStepMode = OfflineActivityStepMode.Unavailable;
+                data.ActivityStepMode = OfflineActivityStepMode.Unavailable;
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OfflineActivityPacket), data);
-                client.listener.EnqueuePacket(packet);
+                client.Listener.EnqueuePacket(packet);
             }
 
             else
             {
-                SettlementFile settlementFile = SettlementManager.GetSettlementFileFromTile(data.targetTile);
+                SettlementFile settlementFile = SettlementManager.GetSettlementFileFromTile(data.TargetTile);
 
                 if (UserManager.CheckIfUserIsConnected(settlementFile.owner))
                 {
-                    data.activityStepMode = OfflineActivityStepMode.Deny;
+                    data.ActivityStepMode = OfflineActivityStepMode.Deny;
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OfflineActivityPacket), data);
-                    client.listener.EnqueuePacket(packet);
+                    client.Listener.EnqueuePacket(packet);
                 }
 
                 else
@@ -49,18 +49,18 @@ namespace GameServer
 
                     if (Master.serverConfig.TemporalActivityProtection && !TimeConverter.CheckForEpochTimer(userFile.ActivityProtectionTime, baseActivityTimer))
                     {
-                        data.activityStepMode = OfflineActivityStepMode.Deny;
+                        data.ActivityStepMode = OfflineActivityStepMode.Deny;
                         Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OfflineActivityPacket), data);
-                        client.listener.EnqueuePacket(packet);
+                        client.Listener.EnqueuePacket(packet);
                     }
 
                     else
                     {
                         userFile.UpdateActivityTime();
 
-                        data.mapData = MapManager.GetUserMapFromTile(data.targetTile).mapData;
+                        data.MapData = MapManager.GetUserMapFromTile(data.TargetTile).MapData;
                         Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.OfflineActivityPacket), data);
-                        client.listener.EnqueuePacket(packet);
+                        client.Listener.EnqueuePacket(packet);
                     }
                 }
             }

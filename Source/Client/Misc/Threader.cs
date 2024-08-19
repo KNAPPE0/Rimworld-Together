@@ -11,10 +11,10 @@ namespace GameClient
         {
             return mode switch
             {
-                Mode.Listener => Task.Run(Network.listener.Listen),
-                Mode.Sender => Task.Run(Network.listener.SendData),
-                Mode.Health => Task.Run(Network.listener.CheckConnectionHealth),
-                Mode.KASender => Task.Run(Network.listener.SendKAFlag),
+                Mode.Listener => Task.Run(Network.Listener.Listen),
+                Mode.Sender => Task.Run(Network.Listener.SendData),
+                Mode.Health => Task.Run(Network.Listener.CheckConnectionHealth),
+                Mode.KASender => Task.Run(Network.Listener.SendKAFlag),
                 Mode.Chat => Task.Run(ChatManager.ChatClock),
                 _ => throw new NotImplementedException()
             };

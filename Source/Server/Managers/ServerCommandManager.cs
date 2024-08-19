@@ -28,21 +28,21 @@ namespace GameServer
 
             try
             {
-                ServerCommand commandToFetch = ServerCommandStorage.serverCommands.ToList().Find(x => x.prefix == parsedPrefix);
+                ServerCommand commandToFetch = ServerCommandStorage.serverCommands.ToList().Find(x => x.Prefix == parsedPrefix);
                 if (commandToFetch == null) Logger.Warning($"Command '{parsedPrefix}' was not found");
                 else
                 {
-                    if (commandToFetch.parameters != parsedParameters && commandToFetch.parameters != -1)
+                    if (commandToFetch.Parameters != parsedParameters && commandToFetch.Parameters != -1)
                     {
-                        Logger.Warning($"Command '{commandToFetch.prefix}' wanted [{commandToFetch.parameters}] parameters "
+                        Logger.Warning($"Command '{commandToFetch.Prefix}' wanted [{commandToFetch.Parameters}] parameters "
                             + $"but was passed [{parsedParameters}]");
                     }
 
                     else
                     {
-                        if (commandToFetch.commandAction != null) commandToFetch.commandAction.Invoke();
+                        if (commandToFetch.CommandAction != null) commandToFetch.CommandAction.Invoke();
 
-                        else Logger.Warning($"Command '{commandToFetch.prefix}' didn't have any action built in");
+                        else Logger.Warning($"Command '{commandToFetch.Prefix}' didn't have any action built in");
                     }
                 }
             }
@@ -243,7 +243,7 @@ namespace GameServer
             Logger.Title("----------------------------------------");
             foreach (ServerCommand command in serverCommands)
             {
-                Logger.Warning($"{command.prefix} - {command.description}");
+                Logger.Warning($"{command.Prefix} - {command.Description}");
             }
             Logger.Title("----------------------------------------");
         }
@@ -339,7 +339,7 @@ namespace GameServer
 
             else
             {
-                toFind.listener.disconnectFlag = true;
+                toFind.Listener.disconnectFlag = true;
 
                 Logger.Warning($"User '{commandParameters[0]}' has been kicked from the server");
             }
@@ -367,7 +367,7 @@ namespace GameServer
 
             else
             {
-                toFind.listener.disconnectFlag = true;
+                toFind.Listener.disconnectFlag = true;
 
                 toFind.userFile.UpdateBan(true);
 
@@ -548,7 +548,7 @@ namespace GameServer
 
         private static void WhitelistCommandAction()
         {
-            Logger.Title($"Whitelisted usernames: [{Master.whitelist.WhitelistedUsers.Count()}]");
+            Logger.Title($"Whitelisted Usernames: [{Master.whitelist.WhitelistedUsers.Count()}]");
             Logger.Title("----------------------------------------");
             foreach (string str in Master.whitelist.WhitelistedUsers)
             {
@@ -788,7 +788,7 @@ namespace GameServer
 
                 Master.SetPaths();
                 Logger.Warning("World has been successfully reset and archived");
-                foreach (ServerClient client in Network.connectedClients.ToArray()) client.listener.disconnectFlag = true;
+                foreach (ServerClient client in Network.connectedClients.ToArray()) client.Listener.disconnectFlag = true;
         }
 
         private static void QuitCommandAction()

@@ -5,69 +5,77 @@ namespace GameServer
 {
     public static class EventManager
     {
-        private static readonly double baseMaxTimer = 3600000;
+        private static readonly double BaseMaxTimer = 3600000;
 
         public static void ParseEventPacket(ServerClient client, Packet packet)
         {
-            EventData eventData = Serializer.ConvertBytesToObject<EventData>(packet.contents);
+            // Deserialize the event data from the packet
+            var eventData = Serializer.ConvertBytesToObject<EventData>(packet.Contents);
+            if (eventData == null)
+            {
+                Logger.Warning("[EventManager] > Failed to deserialize event data.");
+                return;
+            }
 
-            switch (eventData.eventStepMode)
+            // Process the event based on its step mode
+            switch (eventData.EventStepMode)
             {
                 case EventStepMode.Send:
-                    SendEvent(client, eventData);
+                    HandleSendEvent(client, eventData);
                     break;
 
                 case EventStepMode.Receive:
-                    //Nothing goes here
-                    break;
-
                 case EventStepMode.Recover:
-                    //Nothing goes here
+                    // These modes are handled by other functions or are no-ops
                     break;
             }
         }
 
-        public static void SendEvent(ServerClient client, EventData eventData)
+        private static void HandleSendEvent(ServerClient client, EventData eventData)
         {
-            if (!SettlementManager.CheckIfTileIsInUse(eventData.toTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.userFile.Username} attempted to send an event to settlement at tile {eventData.toTile}, but it has no settlement");
+            if (!SettlementManager.CheckIfTileIsInUse(eventData.ToTile))
+            {
+                ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.userFile.Username} attempted to send an event to a non-existent settlement at tile {eventData.ToTile}.");
+                return;
+            }
+
+            var settlement = SettlementManager.GetSettlementFileFromTile(eventData.ToTile);
+            if (!UserManager.CheckIfUserIsConnected(settlement.owner))
+            {
+                RecoverEvent(client, eventData);
+            }
             else
             {
-                SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(eventData.toTile);
-                if (!UserManager.CheckIfUserIsConnected(settlement.owner))
-                {
-                    eventData.eventStepMode = EventStepMode.Recover;
-                    Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.EventPacket), eventData);
-                    client.listener.EnqueuePacket(packet);
-                }
+                ProcessEventForTarget(client, settlement.owner, eventData);
+            }
+        }
 
-                else
-                {
-                    ServerClient target = UserManager.GetConnectedClientFromUsername(settlement.owner);
+        private static void RecoverEvent(ServerClient client, EventData eventData)
+        {
+            eventData.EventStepMode = EventStepMode.Recover;
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.EventPacket), eventData);
+            client.Listener.EnqueuePacket(packet);
+        }
 
-                    if (Master.serverConfig.TemporalEventProtection && !TimeConverter.CheckForEpochTimer(target.userFile.EventProtectionTime, baseMaxTimer))
-                    {
-                        eventData.eventStepMode = EventStepMode.Recover;
-                        Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.EventPacket), eventData);
-                        client.listener.EnqueuePacket(packet);
-                    }
+        private static void ProcessEventForTarget(ServerClient client, string targetUsername, EventData eventData)
+        {
+            var target = UserManager.GetConnectedClientFromUsername(targetUsername);
 
-                    else
-                    {
-                        //Back to player
+            if (Master.serverConfig.TemporalEventProtection && !TimeConverter.CheckForEpochTimer(target.userFile.EventProtectionTime, BaseMaxTimer))
+            {
+                RecoverEvent(client, eventData);
+            }
+            else
+            {
+                // Notify the sender
+                var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.EventPacket), eventData);
+                client.Listener.EnqueuePacket(packet);
 
-                        Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.EventPacket), eventData);
-                        client.listener.EnqueuePacket(packet);
-
-                        //To the person that should receive it
-
-                        eventData.eventStepMode = EventStepMode.Receive;
-
-                        target.userFile.UpdateEventTime();
-
-                        packet = Packet.CreatePacketFromObject(nameof(PacketHandler.EventPacket), eventData);
-                        target.listener.EnqueuePacket(packet);
-                    }
-                }
+                // Notify the receiver
+                eventData.EventStepMode = EventStepMode.Receive;
+                target.userFile.UpdateEventTime();
+                packet = Packet.CreatePacketFromObject(nameof(PacketHandler.EventPacket), eventData);
+                target.Listener.EnqueuePacket(packet);
             }
         }
     }

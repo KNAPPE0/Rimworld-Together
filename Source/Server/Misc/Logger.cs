@@ -1,15 +1,16 @@
 ﻿using System.Text;
+using System.Threading;
 using static Shared.CommonEnumerators;
 
 namespace GameServer
 {
     public static class Logger
     {
-        //Variables
+        // Semaphore for thread safety
+        private static readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
-        public static Semaphore semaphore = new Semaphore(1, 1);
-
-        public static Dictionary<LogMode, ConsoleColor> colorDictionary = new Dictionary<LogMode, ConsoleColor>
+        // Dictionary mapping log modes to console colors
+        private static readonly Dictionary<LogMode, ConsoleColor> colorDictionary = new Dictionary<LogMode, ConsoleColor>
         {
             { LogMode.Message, ConsoleColor.White },
             { LogMode.Warning, ConsoleColor.Yellow },
@@ -17,51 +18,57 @@ namespace GameServer
             { LogMode.Title, ConsoleColor.Green }
         };
 
-        //Wrapper to write log in white color
+        // Wrapper to write log in white color
+        public static void Message(string message) => WriteToConsole(message, LogMode.Message);
 
-        public static void Message(string message) { WriteToConsole(message, LogMode.Message); }
+        // Wrapper to write log in yellow color
+        public static void Warning(string message) => WriteToConsole(message, LogMode.Warning);
 
-        //Wrapper to write log in yellow color
+        // Wrapper to write log in red color
+        public static void Error(string message) => WriteToConsole(message, LogMode.Error);
 
-        public static void Warning(string message) { WriteToConsole(message, LogMode.Warning); }
+        // Wrapper to write log in green color
+        public static void Title(string message) => WriteToConsole(message, LogMode.Title);
 
-        //Wrapper to write log in red color
-
-        public static void Error(string message) { WriteToConsole(message, LogMode.Error); }
-
-        //Wrapper to write log in green color
-
-        public static void Title(string message) { WriteToConsole(message, LogMode.Title); }
-
-        //Actual function that writes to the console
-
+        // Function to write to the console
         private static void WriteToConsole(string text, LogMode mode = LogMode.Message, bool writeToLogs = true)
         {
-            semaphore.WaitOne();
+            semaphoreSlim.Wait();
 
-            if (writeToLogs) WriteToLogs(text);
+            try
+            {
+                if (writeToLogs)
+                {
+                    WriteToLogs(text);
+                }
 
-            Console.ForegroundColor = colorDictionary[mode];
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] | " + text);
-            Console.ForegroundColor = ConsoleColor.White;
-
-            semaphore.Release();
+                Console.ForegroundColor = colorDictionary[mode];
+                Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] | {text}");
+                Console.ResetColor();
+            }
+            finally
+            {
+                semaphoreSlim.Release();
+            }
         }
 
-        //Function that writes contents to log file
-
+        // Function to write Contents to log file
         private static void WriteToLogs(string toLog)
         {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append($"[{DateTime.Now:HH:mm:ss}] | " + toLog);
-            stringBuilder.Append(Environment.NewLine);
+            var logEntry = $"[{DateTime.Now:HH:mm:ss}] | {toLog}{Environment.NewLine}";
+            var date = DateTime.Now.Date;
+            var logFileName = $"{date:yyyy-MM-dd}.txt";
+            var logFilePath = Path.Combine(Master.systemLogsPath, logFileName);
 
-            DateTime dateTime = DateTime.Now.Date;
-            string nowFileName = ($"{dateTime.Year}-{dateTime.Month.ToString("D2")}-{dateTime.Day.ToString("D2")}");
-            string nowFullPath = Master.systemLogsPath + Path.DirectorySeparatorChar + nowFileName + ".txt";
-
-            File.AppendAllText(nowFullPath, stringBuilder.ToString());
-            stringBuilder.Clear();
+            semaphoreSlim.Wait();
+            try
+            {
+                File.AppendAllText(logFilePath, logEntry);
+            }
+            finally
+            {
+                semaphoreSlim.Release();
+            }
         }
     }
 }

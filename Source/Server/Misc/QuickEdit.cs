@@ -1,40 +1,42 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 
 namespace GameServer
 {
     public class QuickEdit
     {
-        const uint ENABLE_QUICK_EDIT = 0x0040;
-
-        // STD_INPUT_HANDLE (DWORD): -10 is the standard input device.
-        const int STD_INPUT_HANDLE = -10;
+        private const uint ENABLE_QUICK_EDIT = 0x0040; // Flag for enabling Quick Edit mode
+        private const int STD_INPUT_HANDLE = -10; // Standard input device handle
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        static extern IntPtr GetStdHandle(int nStdHandle);
+        private static extern IntPtr GetStdHandle(int nStdHandle);
 
         [DllImport("kernel32.dll")]
-        static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+        private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
 
         [DllImport("kernel32.dll")]
-        static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+        private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
 
+        /// <summary>
+        /// Disables the Quick Edit mode in the console, preventing the console from freezing when selecting text.
+        /// </summary>
+        /// <returns>True if Quick Edit mode was successfully disabled; otherwise, false.</returns>
         public bool DisableQuickEdit()
         {
             IntPtr consoleHandle = GetStdHandle(STD_INPUT_HANDLE);
 
-            uint consoleMode;
-            if (!GetConsoleMode(consoleHandle, out consoleMode))
+            if (!GetConsoleMode(consoleHandle, out uint consoleMode))
             {
-                //Unable to get console mode.
+                // Unable to retrieve the current console mode.
                 return false;
             }
 
-            // Clear the quick edit bit in the mode flags
+            // Remove the Quick Edit mode from the current console mode.
             consoleMode &= ~ENABLE_QUICK_EDIT;
 
             if (!SetConsoleMode(consoleHandle, consoleMode))
             {
-                //Unable to set console mode
+                // Unable to set the new console mode.
                 return false;
             }
 

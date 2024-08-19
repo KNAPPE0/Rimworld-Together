@@ -19,69 +19,69 @@ namespace GameClient
 
         public static void ParsePacket(Packet packet)
         {
-            CaravanData data = Serializer.ConvertBytesToObject<CaravanData>(packet.contents);
+            CaravanData data = Serializer.ConvertBytesToObject<CaravanData>(packet.Contents);
 
-            switch (data.stepMode)
+            switch (data.StepMode)
             {
                 case CaravanStepMode.Add:
-                    AddCaravan(data.details);
+                    AddCaravan(data.Details);
                     break;
 
                 case CaravanStepMode.Remove:
-                    RemoveCaravan(data.details);
+                    RemoveCaravan(data.Details);
                     break;
 
                 case CaravanStepMode.Move:
-                    MoveCaravan(data.details);
+                    MoveCaravan(data.Details);
                     break;
             }
         }
 
-        public static void AddCaravans(CaravanDetails[] details)
+        public static void AddCaravans(CaravanDetails[] Details)
         {
-            if (details == null) return;
+            if (Details == null) return;
 
-            foreach (CaravanDetails caravan in details)
+            foreach (CaravanDetails caravan in Details)
             {
                 AddCaravan(caravan);
             }
         }
 
-        private static void AddCaravan(CaravanDetails details)
+        private static void AddCaravan(CaravanDetails Details)
         {
-            activeCaravans.Add(details);
+            activeCaravans.Add(Details);
 
-            if (details.owner == ClientValues.username)
+            if (Details.Owner == ClientValues.Username)
             {
                 Caravan toAdd = Find.WorldObjects.Caravans.FirstOrDefault(fetch => fetch.Faction == Faction.OfPlayer && 
                     !activePlayerCaravans.ContainsKey(fetch));
 
                 if (toAdd == null) return;
-                else activePlayerCaravans.Add(toAdd, details.ID);
+                else activePlayerCaravans.Add(toAdd, Details.Id);
             }
 
             else
             {
                 OnlineCaravan onlineCaravan = (OnlineCaravan)WorldObjectMaker.MakeWorldObject(onlineCaravanDef);
-                onlineCaravan.Tile = details.tile;
+                onlineCaravan.Tile = Details.Tile;
                 onlineCaravan.SetFaction(FactionValues.neutralPlayer);
                 Find.World.worldObjects.Add(onlineCaravan);
             }
         }
 
-        private static void RemoveCaravan(CaravanDetails details)
+        private static void RemoveCaravan(CaravanDetails Details)
         {
-            CaravanDetails toRemove = CaravanManagerHelper.GetCaravanDetailsFromID(details.ID);
+            CaravanDetails toRemove = CaravanManagerHelper.GetCaravanDetailsFromID(Details.Id);
             if (toRemove == null) return;
             else
             {
                 activeCaravans.Remove(toRemove);
 
-                if (details.owner == ClientValues.username)
+                if (Details.Owner == ClientValues.Username)
                 {
                     foreach (KeyValuePair<Caravan, int> pair in activePlayerCaravans.ToArray())
                     {
-                        if (pair.Value == details.ID)
+                        if (pair.Value == Details.Id)
                         {
                             activePlayerCaravans.Remove(pair.Key);
                             break;
@@ -91,7 +91,7 @@ namespace GameClient
 
                 else
                 {
-                    WorldObject worldObject = Find.World.worldObjects.AllWorldObjects.First(fetch => fetch.Tile == details.tile 
+                    WorldObject worldObject = Find.World.worldObjects.AllWorldObjects.First(fetch => fetch.Tile == Details.Tile 
                         && fetch.def == onlineCaravanDef);
 
                     Find.World.worldObjects.Remove(worldObject);
@@ -99,17 +99,17 @@ namespace GameClient
             }
         }
 
-        private static void MoveCaravan(CaravanDetails details)
+        private static void MoveCaravan(CaravanDetails Details)
         {
-            CaravanDetails toMove = CaravanManagerHelper.GetCaravanDetailsFromID(details.ID);
+            CaravanDetails toMove = CaravanManagerHelper.GetCaravanDetailsFromID(Details.Id);
             if (toMove == null) return;
             else
             {
-                if (details.owner == ClientValues.username) return;
+                if (Details.Owner == ClientValues.Username) return;
                 else
                 {
                     RemoveCaravan(toMove);
-                    AddCaravan(details);
+                    AddCaravan(Details);
                 }
             }
         }
@@ -117,29 +117,29 @@ namespace GameClient
         public static void RequestCaravanAdd(Caravan caravan)
         {
             CaravanData data = new CaravanData();
-            data.stepMode = CaravanStepMode.Add;
-            data.details = new CaravanDetails();
-            data.details.tile = caravan.Tile;
-            data.details.owner = ClientValues.username;
+            data.StepMode = CaravanStepMode.Add;
+            data.Details = new CaravanDetails();
+            data.Details.Tile = caravan.Tile;
+            data.Details.Owner = ClientValues.Username;
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.CaravanPacket), data);
-            Network.listener.EnqueuePacket(packet);
+            Network.Listener.EnqueuePacket(packet);
         }
 
         public static void RequestCaravanRemove(Caravan caravan)
         {
             activePlayerCaravans.TryGetValue(caravan, out int caravanID);
 
-            CaravanDetails details = CaravanManagerHelper.GetCaravanDetailsFromID(caravanID);
-            if (details == null) return;
+            CaravanDetails Details = CaravanManagerHelper.GetCaravanDetailsFromID(caravanID);
+            if (Details == null) return;
             else
             {
                 CaravanData data = new CaravanData();
-                data.stepMode = CaravanStepMode.Remove;
-                data.details = details;
+                data.StepMode = CaravanStepMode.Remove;
+                data.Details = Details;
 
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.CaravanPacket), data);
-                Network.listener.EnqueuePacket(packet);
+                Network.Listener.EnqueuePacket(packet);
             }
         }
 
@@ -147,16 +147,16 @@ namespace GameClient
         {
             activePlayerCaravans.TryGetValue(caravan, out int caravanID);
 
-            CaravanDetails details = CaravanManagerHelper.GetCaravanDetailsFromID(caravanID);
-            if (details == null) return;
+            CaravanDetails Details = CaravanManagerHelper.GetCaravanDetailsFromID(caravanID);
+            if (Details == null) return;
             else
             {
                 CaravanData data = new CaravanData();
-                data.stepMode = CaravanStepMode.Move;
-                data.details = details;
+                data.StepMode = CaravanStepMode.Move;
+                data.Details = Details;
 
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.CaravanPacket), data);
-                Network.listener.EnqueuePacket(packet);
+                Network.Listener.EnqueuePacket(packet);
             }
         }
 
@@ -178,11 +178,11 @@ namespace GameClient
         {
             activePlayerCaravans.TryGetValue(caravan, out int caravanID);
 
-            foreach (CaravanDetails details in activeCaravans)
+            foreach (CaravanDetails Details in activeCaravans)
             {
-                if (details.ID == caravanID)
+                if (Details.Id == caravanID)
                 {
-                    details.tile = updatedTile;
+                    Details.Tile = updatedTile;
                     break;
                 }
             }
@@ -198,12 +198,12 @@ public static class CaravanManagerHelper
 
     public static void SetValues(ServerGlobalData serverGlobalData)
     {
-        tempCaravanDetails = serverGlobalData.playerCaravans;
+        tempCaravanDetails = serverGlobalData.PlayerCaravans;
     }
 
     public static CaravanDetails GetCaravanDetailsFromID(int id)
     {
-        return CaravanManager.activeCaravans.FirstOrDefault(fetch => fetch.ID == id);
+        return CaravanManager.activeCaravans.FirstOrDefault(fetch => fetch.Id == id);
     }
 
     public static void SetCaravanDefs()

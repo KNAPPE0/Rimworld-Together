@@ -21,11 +21,11 @@ namespace GameClient
                     CustomDifficultyManager.EnforceCustomDifficulty();
 
                     SettlementData settlementData = new SettlementData();
-                    settlementData.tile = __instance.CurrentMap.Tile;
-                    settlementData.settlementStepMode = SettlementStepMode.Add;
+                    settlementData.Tile = __instance.CurrentMap.Tile;
+                    settlementData.SettlementStepMode = SettlementStepMode.Add;
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.SettlementPacket), settlementData);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
 
                     SaveManager.ForceSave();
 
@@ -64,11 +64,11 @@ namespace GameClient
                 if (Network.state == NetworkState.Connected)
                 {
                     SettlementData settlementData = new SettlementData();
-                    settlementData.tile = caravan.Tile;
-                    settlementData.settlementStepMode = SettlementStepMode.Add;
+                    settlementData.Tile = caravan.Tile;
+                    settlementData.SettlementStepMode = SettlementStepMode.Add;
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.SettlementPacket), settlementData);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
 
                     SaveManager.ForceSave();
                 }
@@ -84,11 +84,11 @@ namespace GameClient
                 if (Network.state == NetworkState.Connected)
                 {
                     SettlementData settlementData = new SettlementData();
-                    settlementData.tile = map.Tile;
-                    settlementData.settlementStepMode = SettlementStepMode.Add;
+                    settlementData.Tile = map.Tile;
+                    settlementData.SettlementStepMode = SettlementStepMode.Add;
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.SettlementPacket), settlementData);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
 
                     SaveManager.ForceSave();
                 }
@@ -104,11 +104,11 @@ namespace GameClient
                 if (Network.state == NetworkState.Connected)
                 {
                     SettlementData settlementData = new SettlementData();
-                    settlementData.tile = settlement.Tile;
-                    settlementData.settlementStepMode = SettlementStepMode.Remove;
+                    settlementData.Tile = settlement.Tile;
+                    settlementData.SettlementStepMode = SettlementStepMode.Remove;
 
                     Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.SettlementPacket), settlementData);
-                    Network.listener.EnqueuePacket(packet);
+                    Network.Listener.EnqueuePacket(packet);
 
                     SaveManager.ForceSave();
                 }

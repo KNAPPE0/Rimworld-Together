@@ -1,6 +1,7 @@
 ﻿using RimWorld;
 using Shared;
 using System;
+using System.Linq;
 using Verse;
 using static Shared.CommonEnumerators;
 
@@ -10,12 +11,18 @@ namespace GameClient
     {
         public static void ParsePacket(Packet packet)
         {
-            AidData data = Serializer.ConvertBytesToObject<AidData>(packet.contents);
+            if (packet?.Contents == null)
+            {
+                Logger.Error("Received null packet or packet contents in ParsePacket.");
+                return;
+            }
 
-            switch (data.stepMode)
+            AidData data = Serializer.ConvertBytesToObject<AidData>(packet.Contents);
+
+            switch (data?.StepMode)
             {
                 case AidStepMode.Send:
-                    //Empty
+                    // Handle sending aid request (currently empty)
                     break;
 
                 case AidStepMode.Receive:
@@ -29,40 +36,65 @@ namespace GameClient
                 case AidStepMode.Reject:
                     OnAidReject(data);
                     break;
+
+                default:
+                    Logger.Warning($"Unknown AidStepMode received: {data?.StepMode}");
+                    break;
             }
         }
 
         private static void ReceiveAidRequest(AidData data)
         {
-            Action toDoYes = delegate { AcceptAid(data); };
-            Action toDoNo = delegate { RejectAid(data); };
+            if (data == null)
+            {
+                Logger.Error("Received null AidData in ReceiveAidRequest.");
+                return;
+            }
 
-            DialogManager.PushNewDialog(new RT_Dialog_YesNo("You are receiving aid, accept?", toDoYes, toDoNo));
+            Action acceptAid = () => AcceptAid(data);
+            Action rejectAid = () => RejectAid(data);
+
+            DialogManager.PushNewDialog(new RT_Dialog_YesNo("You are receiving aid, accept?", acceptAid, rejectAid));
         }
 
         public static void SendAidRequest()
         {
-            AidData aidData = new AidData();
-            aidData.stepMode = AidStepMode.Send;
-            aidData.fromTile = Find.AnyPlayerHomeMap.Tile;
-            aidData.toTile = ClientValues.chosenSettlement.Tile;
+            if (ClientValues.chosenSettlement == null)
+            {
+                Logger.Error("ChosenSettlement is null, cannot send aid request.");
+                return;
+            }
 
-            Pawn toGet = RimworldManager.GetAllSettlementPawns(Faction.OfPlayer, false)[DialogManager.dialogButtonListingResultInt];
-            aidData.humanData = HumanScribeManager.HumanToString(toGet);
-            RimworldManager.RemovePawnFromGame(toGet);
+            var aidData = new AidData
+            {
+                StepMode = AidStepMode.Send,
+                FromTile = Find.AnyPlayerHomeMap.Tile,
+                ToTile = ClientValues.chosenSettlement.Tile
+            };
 
-            Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.AidPacket), aidData);
-            Network.listener.EnqueuePacket(packet);
+            var allPawns = RimworldManager.GetAllSettlementPawns(Faction.OfPlayer, false);
+            if (DialogManager.dialogButtonListingResultInt < 0 || DialogManager.dialogButtonListingResultInt >= allPawns.Length)
+            {
+                Logger.Error("Invalid pawn selection for aid request.");
+                return;
+            }
+
+            Pawn selectedPawn = allPawns[DialogManager.dialogButtonListingResultInt];
+            aidData.HumanData = HumanScribeManager.HumanToString(selectedPawn);
+
+            RimworldManager.RemovePawnFromGame(selectedPawn);
+
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.AidPacket), aidData);
+            Network.Listener.EnqueuePacket(packet);
 
             DialogManager.PushNewDialog(new RT_Dialog_Wait("Waiting for server response"));
         }
-
         private static void OnAidAccept()
         {
             DialogManager.PopWaitDialog();
 
-            RimworldManager.GenerateLetter("Sent aid",
-                "You have sent aid towards a settlement! The owner will receive the news soon",
+            RimworldManager.GenerateLetter("Sent Aid",
+                "You have sent aid towards a settlement! The owner will receive the news soon.",
                 LetterDefOf.PositiveEvent);
 
             SaveManager.ForceSave();
@@ -70,10 +102,28 @@ namespace GameClient
 
         private static void OnAidReject(AidData data)
         {
+            if (data == null)
+            {
+                Logger.Error("Received null AidData in OnAidReject.");
+                return;
+            }
+
             DialogManager.PopWaitDialog();
 
-            Map map = Find.World.worldObjects.SettlementAt(data.fromTile).Map;
-            Pawn pawn = HumanScribeManager.StringToHuman(data.humanData);
+            var map = Find.WorldObjects.SettlementAt(data.FromTile)?.Map;
+            if (map == null)
+            {
+                Logger.Error("Failed to retrieve map for aid rejection.");
+                return;
+            }
+
+            var pawn = HumanScribeManager.StringToHuman(data.HumanData);
+            if (pawn == null)
+            {
+                Logger.Error("Failed to deserialize human data from aid rejection.");
+                return;
+            }
+
             RimworldManager.PlaceThingIntoMap(pawn, map, ThingPlaceMode.Near, true);
 
             DialogManager.PushNewDialog(new RT_Dialog_Error("Player is not currently available!"));
@@ -81,16 +131,34 @@ namespace GameClient
 
         private static void AcceptAid(AidData data)
         {
-            Map map = Find.World.worldObjects.SettlementAt(data.toTile).Map;
-            Pawn pawn = HumanScribeManager.StringToHuman(data.humanData);
+            if (data == null)
+            {
+                Logger.Error("Received null AidData in AcceptAid.");
+                return;
+            }
+
+            var map = Find.WorldObjects.SettlementAt(data.ToTile)?.Map;
+            if (map == null)
+            {
+                Logger.Error("Failed to retrieve map for aid acceptance.");
+                return;
+            }
+
+            var pawn = HumanScribeManager.StringToHuman(data.HumanData);
+            if (pawn == null)
+            {
+                Logger.Error("Failed to deserialize human data from aid acceptance.");
+                return;
+            }
+
             RimworldManager.PlaceThingIntoMap(pawn, map, ThingPlaceMode.Near, true);
 
-            data.stepMode = AidStepMode.Accept;
-            Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.AidPacket), data);
-            Network.listener.EnqueuePacket(packet);
+            data.StepMode = AidStepMode.Accept;
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.AidPacket), data);
+            Network.Listener.EnqueuePacket(packet);
 
-            RimworldManager.GenerateLetter("Received aid",
-                "You have received aid from a player! The pawn should come to help soon",
+            RimworldManager.GenerateLetter("Received Aid",
+                "You have received aid from a player! The pawn should come to help soon.",
                 LetterDefOf.PositiveEvent);
 
             SaveManager.ForceSave();
@@ -98,9 +166,15 @@ namespace GameClient
 
         private static void RejectAid(AidData data)
         {
-            data.stepMode = AidStepMode.Reject;
-            Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.AidPacket), data);
-            Network.listener.EnqueuePacket(packet);
+            if (data == null)
+            {
+                Logger.Error("Received null AidData in RejectAid.");
+                return;
+            }
+
+            data.StepMode = AidStepMode.Reject;
+            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.AidPacket), data);
+            Network.Listener.EnqueuePacket(packet);
         }
     }
 }

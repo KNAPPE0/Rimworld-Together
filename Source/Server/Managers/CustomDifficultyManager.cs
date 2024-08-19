@@ -7,103 +7,76 @@ namespace GameServer
     {
         public static void ParseDifficultyPacket(ServerClient client, Packet packet)
         {
-            DifficultyData difficultyData = Serializer.ConvertBytesToObject<DifficultyData>(packet.contents);
+            // Deserialize the difficulty data from the packet
+            var difficultyData = Serializer.ConvertBytesToObject<DifficultyData>(packet.Contents);
+            if (difficultyData == null)
+            {
+                Logger.Warning("[CustomDifficultyManager] > Failed to deserialize difficulty data.");
+                return;
+            }
+
             SetCustomDifficulty(client, difficultyData);
         }
 
         public static void SetCustomDifficulty(ServerClient client, DifficultyData difficultyData)
         {
-            if (!client.userFile.IsAdmin) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.userFile.Username} attempted to set the custom difficulty while not being an admin");
-            else
+            if (!client.userFile.IsAdmin)
             {
-                Master.difficultyValues.ThreatScale = difficultyData.ThreatScale;
-
-                Master.difficultyValues.AllowBigThreats = difficultyData.AllowBigThreats;
-
-                Master.difficultyValues.AllowViolentQuests = difficultyData.AllowViolentQuests;
-
-                Master.difficultyValues.AllowIntroThreats = difficultyData.AllowIntroThreats;
-
-                Master.difficultyValues.PredatorsHuntHumanlikes = difficultyData.PredatorsHuntHumanlikes;
-
-                Master.difficultyValues.AllowExtremeWeatherIncidents = difficultyData.AllowExtremeWeatherIncidents;
-
-                Master.difficultyValues.CropYieldFactor = difficultyData.CropYieldFactor;
-
-                Master.difficultyValues.MineYieldFactor = difficultyData.MineYieldFactor;
-
-                Master.difficultyValues.ButcherYieldFactor = difficultyData.ButcherYieldFactor;
-
-                Master.difficultyValues.ResearchSpeedFactor = difficultyData.ResearchSpeedFactor;
-
-                Master.difficultyValues.QuestRewardValueFactor = difficultyData.QuestRewardValueFactor;
-
-                Master.difficultyValues.RaidLootPointsFactor = difficultyData.RaidLootPointsFactor;
-
-                Master.difficultyValues.TradePriceFactorLoss = difficultyData.TradePriceFactorLoss;
-
-                Master.difficultyValues.MaintenanceCostFactor = difficultyData.MaintenanceCostFactor;
-
-                Master.difficultyValues.ScariaRotChance = difficultyData.ScariaRotChance;
-
-                Master.difficultyValues.EnemyDeathOnDownedChanceFactor = difficultyData.EnemyDeathOnDownedChanceFactor;
-
-                Master.difficultyValues.ColonistMoodOffset = difficultyData.ColonistMoodOffset;
-
-                Master.difficultyValues.FoodPoisonChanceFactor = difficultyData.FoodPoisonChanceFactor;
-
-                Master.difficultyValues.ManhunterChanceOnDamageFactor = difficultyData.ManhunterChanceOnDamageFactor;
-
-                Master.difficultyValues.PlayerPawnInfectionChanceFactor = difficultyData.PlayerPawnInfectionChanceFactor;
-
-                Master.difficultyValues.DiseaseIntervalFactor = difficultyData.DiseaseIntervalFactor;
-
-                Master.difficultyValues.EnemyReproductionRateFactor = difficultyData.EnemyReproductionRateFactor;
-
-                Master.difficultyValues.DeepDrillInfestationChanceFactor = difficultyData.DeepDrillInfestationChanceFactor;
-
-                Master.difficultyValues.FriendlyFireChanceFactor = difficultyData.FriendlyFireChanceFactor;
-
-                Master.difficultyValues.AllowInstantKillChance = difficultyData.AllowInstantKillChance;
-
-                Master.difficultyValues.PeacefulTemples = difficultyData.PeacefulTemples;
-
-                Master.difficultyValues.AllowCaveHives = difficultyData.AllowCaveHives;
-
-                Master.difficultyValues.UnwaveringPrisoners = difficultyData.UnwaveringPrisoners;
-
-                Master.difficultyValues.AllowTraps = difficultyData.AllowTraps;
-
-                Master.difficultyValues.AllowTurrets = difficultyData.AllowTurrets;
-
-                Master.difficultyValues.AllowMortars = difficultyData.AllowMortars;
-
-                Master.difficultyValues.ClassicMortars = difficultyData.ClassicMortars;
-
-                Master.difficultyValues.AdaptationEffectFactor = difficultyData.AdaptationEffectFactor;
-
-                Master.difficultyValues.AdaptationGrowthRateFactorOverZero = difficultyData.AdaptationGrowthRateFactorOverZero;
-
-                Master.difficultyValues.FixedWealthMode = difficultyData.FixedWealthMode;
-
-                Master.difficultyValues.LowPopConversionBoost = difficultyData.LowPopConversionBoost;
-
-                Master.difficultyValues.NoBabiesOrChildren = difficultyData.NoBabiesOrChildren;
-
-                Master.difficultyValues.BabiesAreHealthy = difficultyData.BabiesAreHealthy;
-
-                Master.difficultyValues.ChildRaidersAllowed = difficultyData.ChildRaidersAllowed;
-
-                Master.difficultyValues.ChildAgingRate = difficultyData.ChildAgingRate;
-
-                Master.difficultyValues.AdultAgingRate = difficultyData.AdultAgingRate;
-
-                Master.difficultyValues.WastepackInfestationChanceFactor = difficultyData.WastepackInfestationChanceFactor;
-
-                Logger.Warning($"[Set difficulty] > {client.userFile.Username}");
-
-                Master.SaveValueFile(ServerFileMode.Difficulty);
+                ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.userFile.Username} attempted to set the custom difficulty while not being an admin.");
+                return;
             }
+
+            // Update the master difficulty values with the provided data
+            Master.difficultyValues = new DifficultyValuesFile
+            {
+                ThreatScale = difficultyData.ThreatScale,
+                AllowBigThreats = difficultyData.AllowBigThreats,
+                AllowViolentQuests = difficultyData.AllowViolentQuests,
+                AllowIntroThreats = difficultyData.AllowIntroThreats,
+                PredatorsHuntHumanlikes = difficultyData.PredatorsHuntHumanlikes,
+                AllowExtremeWeatherIncidents = difficultyData.AllowExtremeWeatherIncidents,
+                CropYieldFactor = difficultyData.CropYieldFactor,
+                MineYieldFactor = difficultyData.MineYieldFactor,
+                ButcherYieldFactor = difficultyData.ButcherYieldFactor,
+                ResearchSpeedFactor = difficultyData.ResearchSpeedFactor,
+                QuestRewardValueFactor = difficultyData.QuestRewardValueFactor,
+                RaidLootPointsFactor = difficultyData.RaidLootPointsFactor,
+                TradePriceFactorLoss = difficultyData.TradePriceFactorLoss,
+                MaintenanceCostFactor = difficultyData.MaintenanceCostFactor,
+                ScariaRotChance = difficultyData.ScariaRotChance,
+                EnemyDeathOnDownedChanceFactor = difficultyData.EnemyDeathOnDownedChanceFactor,
+                ColonistMoodOffset = difficultyData.ColonistMoodOffset,
+                FoodPoisonChanceFactor = difficultyData.FoodPoisonChanceFactor,
+                ManhunterChanceOnDamageFactor = difficultyData.ManhunterChanceOnDamageFactor,
+                PlayerPawnInfectionChanceFactor = difficultyData.PlayerPawnInfectionChanceFactor,
+                DiseaseIntervalFactor = difficultyData.DiseaseIntervalFactor,
+                EnemyReproductionRateFactor = difficultyData.EnemyReproductionRateFactor,
+                DeepDrillInfestationChanceFactor = difficultyData.DeepDrillInfestationChanceFactor,
+                FriendlyFireChanceFactor = difficultyData.FriendlyFireChanceFactor,
+                AllowInstantKillChance = difficultyData.AllowInstantKillChance,
+                PeacefulTemples = difficultyData.PeacefulTemples,
+                AllowCaveHives = difficultyData.AllowCaveHives,
+                UnwaveringPrisoners = difficultyData.UnwaveringPrisoners,
+                AllowTraps = difficultyData.AllowTraps,
+                AllowTurrets = difficultyData.AllowTurrets,
+                AllowMortars = difficultyData.AllowMortars,
+                ClassicMortars = difficultyData.ClassicMortars,
+                AdaptationEffectFactor = difficultyData.AdaptationEffectFactor,
+                AdaptationGrowthRateFactorOverZero = difficultyData.AdaptationGrowthRateFactorOverZero,
+                FixedWealthMode = difficultyData.FixedWealthMode,
+                LowPopConversionBoost = difficultyData.LowPopConversionBoost,
+                NoBabiesOrChildren = difficultyData.NoBabiesOrChildren,
+                BabiesAreHealthy = difficultyData.BabiesAreHealthy,
+                ChildRaidersAllowed = difficultyData.ChildRaidersAllowed,
+                ChildAgingRate = difficultyData.ChildAgingRate,
+                AdultAgingRate = difficultyData.AdultAgingRate,
+                WastepackInfestationChanceFactor = difficultyData.WastepackInfestationChanceFactor
+            };
+
+            Logger.Warning($"[Set difficulty] > {client.userFile.Username}");
+
+            // Save the updated difficulty values
+            Master.SaveValueFile(ServerFileMode.Difficulty);
         }
     }
 }

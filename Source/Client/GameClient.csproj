@@ -24,6 +24,7 @@
   <ItemGroup>
     <PackageReference Include="Krafs.Rimworld.Ref" Version="1.5.4104" />
     <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+    <PackageReference Include="System.Text.Json" Version="5.0.2" /> <!-- Add System.Text.Json -->
   </ItemGroup>
 
   <ItemGroup>

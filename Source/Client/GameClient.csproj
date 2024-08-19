@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>GameClient</RootNamespace>
     <Nullable>enable</Nullable>
     <LangVersion>9</LangVersion>
@@ -24,13 +24,14 @@
   <ItemGroup>
     <PackageReference Include="Krafs.Rimworld.Ref" Version="1.5.4104" />
     <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+    <PackageReference Include="System.Text.Json" Version="7.0.3" />
   </ItemGroup>
-
+  
   <ItemGroup>
       <Reference Include="Newtonsoft.Json">
         <HintPath>..\Shared\Assemblies\Newtonsoft.Json.dll</HintPath>
       </Reference>
   </ItemGroup>
-    
+  
   <Import Project="..\Shared\Shared.projitems" Label="Shared" />
 </Project>

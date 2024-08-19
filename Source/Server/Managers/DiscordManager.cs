@@ -1,6 +1,7 @@
 using System.Text;
 using Discord;
 using Discord.WebSocket;
+using System.Net.Http;
 
 namespace GameServer
 {
@@ -12,7 +13,10 @@ namespace GameServer
         private static readonly int sendToConsoleDelay = 1000;
         private static readonly int updatePlayerCountDelay = 60000;
 
-        private static readonly DiscordSocketConfig config = new() { GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages | GatewayIntents.MessageContent };
+        private static readonly DiscordSocketConfig config = new DiscordSocketConfig
+        {
+            GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages | GatewayIntents.MessageContent
+        };
 
         public static void StartDiscordIntegration()
         {
@@ -31,43 +35,44 @@ namespace GameServer
                 discordClient.Log += LogAsync;
                 discordClient.MessageReceived += MessageReceivedAsync;
 
-                //Starting Discord functions
+                // Starting Discord functions
                 await discordClient.LoginAsync(TokenType.Bot, Master.discordConfig.Token);
                 await discordClient.StartAsync();
                 await discordClient.SetCustomStatusAsync("");
 
-                //Start server functions
+                // Start server functions
                 Threader.GenerateDiscordThread(Threader.DiscordMode.Console);
                 Threader.GenerateDiscordThread(Threader.DiscordMode.Count);
             }
-            catch { Logger.Error("Failed to start Discord integration"); }
+            catch
+            {
+                Logger.Error("Failed to start Discord integration");
+            }
         }
 
         private static Task LogAsync(LogMessage log)
         {
             if (!Master.serverConfig.VerboseLogs) return Task.CompletedTask;
-            else
-            {
-                Logger.Outsider("[Discord Integration] > " + log.ToString());
-                return Task.CompletedTask;
-            }
+
+            Logger.Outsider("[Discord Integration] > " + log.ToString());
+            return Task.CompletedTask;
         }
 
         private static Task MessageReceivedAsync(SocketMessage message)
         {
-            //Prevent bot from listening to itself
+            // Prevent bot from listening to itself
             if (message.Author.Id == discordClient.CurrentUser.Id) return Task.CompletedTask;
 
-            //Prevent bot from listening to another webhook
+            // Prevent bot from listening to another webhook
             if (message.Author.IsWebhook) return Task.CompletedTask;
 
-            //If message is from the chat channel
+            // If message is from the chat channel
             if (message.Channel.Id == Master.discordConfig.ChatChannelId)
             {
-                ChatManager.BroadcastDiscordMessage(message.Author.GlobalName == null ? message.Author.Username : message.Author.GlobalName, message.CleanContent);
+                ChatManager.BroadcastDiscordMessage(message.Author.GlobalName ?? message.Author.Username, message.CleanContent);
             }
 
-            //If message is from console channel
+            // If message is from console channel
             else if (message.Channel.Id == Master.discordConfig.ConsoleChannelId)
             {
                 Logger.Outsider($"[Discord Command] > {message.CleanContent}");
@@ -81,9 +86,15 @@ namespace GameServer
         {
             if (discordClient.GetChannel(Master.discordConfig.ChatChannelId) is SocketTextChannel channel)
             {
-                //If no webhook is available, primitive formatting is used
-                if (string.IsNullOrWhiteSpace(Master.discordConfig.ChatWebhook)) await channel.SendMessageAsync($"{user}: {message}");
-                else SendWebhookMessage(user, message);
+                // If no webhook is available, primitive formatting is used
+                if (string.IsNullOrWhiteSpace(Master.discordConfig.ChatWebhook))
+                {
+                    await channel.SendMessageAsync($"{user}: {message}");
+                }
+                else
+                {
+                    SendWebhookMessage(user, message);
+                }
             }
         }
 
@@ -99,13 +110,11 @@ namespace GameServer
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
             var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
-            using (var response = await httpClient.PostAsync(Master.discordConfig.ChatWebhook, httpContent))
+            using var response = await httpClient.PostAsync(Master.discordConfig.ChatWebhook, httpContent);
+            if (!response.IsSuccessStatusCode)
             {
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorMessage = await response.Content.ReadAsStringAsync();
-                    Logger.Outsider($"Failed to send message to Discord webhook ({response.StatusCode}): {errorMessage}");
-                }
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                Logger.Outsider($"Failed to send message to Discord webhook ({response.StatusCode}): {errorMessage}");
             }
         }
 
@@ -126,10 +135,16 @@ namespace GameServer
 
                         condensedMessage += consoleBuffer.Dequeue();
 
-                        if (consoleBuffer.Count == 0 || condensedMessage.Length + consoleBuffer.Peek().Length >= 2000) readyToSend = true;
+                        if (consoleBuffer.Count == 0 || condensedMessage.Length + consoleBuffer.Peek().Length >= 2000)
+                        {
+                            readyToSend = true;
+                        }
                     }
 
-                    if (condensedMessage != "") await channel.SendMessageAsync(condensedMessage);
+                    if (condensedMessage != "")
+                    {
+                        await channel.SendMessageAsync(condensedMessage);
+                    }
                 }
 
                 await Task.Delay(sendToConsoleDelay);
@@ -140,14 +155,17 @@ namespace GameServer
         {
             while (true)
             {
-                int count = Network.connectedClients.ToArray().Count();
+                int count = Network.connectedClients.ToArray().Length;
                 string multiple = count > 1 ? "s" : "";
-                
+
                 await discordClient.SetCustomStatusAsync($"{count} Player{multiple} online");
                 await Task.Delay(updatePlayerCountDelay);
             }
         }
 
-        public static void SendMessageToConsoleChannelBuffer(string message) { consoleBuffer.Enqueue(message); }
+        public static void SendMessageToConsoleChannelBuffer(string message)
+        {
+            consoleBuffer.Enqueue(message);
+        }
     }
 }

@@ -18,19 +18,11 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
 
-<<<<<<< HEAD
-  <ItemGroup>
-    <PackageReference Include="Mono.Nat" Version="3.0.4" />
-    <PackageReference Include="System.Security.Permissions" Version="8.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-  </ItemGroup>
-=======
     <ItemGroup>
       <PackageReference Include="Discord.Net" Version="3.15.3" />
       <PackageReference Include="Mono.Nat" Version="3.0.4" />
       <PackageReference Include="System.Security.Permissions" Version="8.0.0" />
     </ItemGroup>
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
 
   <Import Project="..\Shared\Shared.projitems" Label="Shared" />
 </Project>

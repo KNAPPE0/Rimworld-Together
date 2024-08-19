@@ -1,22 +1,16 @@
 namespace Shared
 {
-    public class CommonEnumerators
+    public static class CommonEnumerators
     {
-<<<<<<< HEAD
         public enum ServerFileMode 
         { 
-            Configs, Actions, Sites, Events, Roads, World, Whitelist, Difficulty, Market 
+            Configs, Actions, Sites, Events, Roads, World, Whitelist, Difficulty, Market, Discord 
         }
 
         public enum LogMode 
         { 
-            Message, Warning, Error, Title 
+            Message, Warning, Error, Title, Outsider 
         }
-=======
-        public enum ServerFileMode { Configs, Actions, Sites, Events, Roads, World, Whitelist, Difficulty, Market, Discord }
-
-        public enum LogMode { Message, Warning, Error, Title, Outsider }
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
 
         public enum CommandMode 
         { 
@@ -148,21 +142,15 @@ namespace Shared
             Disconnect, Autosave, Strict 
         }
 
-<<<<<<< HEAD
         public enum UserColor 
         { 
-            Normal, Admin, Console, Private 
+            Normal, Admin, Console, Private, Discord 
         }
 
         public enum MessageColor 
         { 
-            Normal, Admin, Console, Private 
+            Normal, Admin, Console, Private, Discord 
         }
-=======
-        public enum UserColor { Normal, Admin, Console, Private, Discord }
-
-        public enum MessageColor { Normal, Admin, Console, Private, Discord }
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
 
         public enum LoginMode 
         { 

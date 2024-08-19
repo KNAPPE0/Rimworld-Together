@@ -65,16 +65,9 @@ namespace GameServer
             LoadResources();
             ChangeTitle();
 
-<<<<<<< HEAD
             Threader.GenerateServerThread(Threader.ServerMode.StartServer);
             Threader.GenerateServerThread(Threader.ServerMode.ListenToConsole);
-=======
             if (discordConfig.Enabled) DiscordManager.StartDiscordIntegration();
-
-            Threader.GenerateServerThread(Threader.ServerMode.Start);
-            Threader.GenerateServerThread(Threader.ServerMode.Console);
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
-
             while (true) Thread.Sleep(1);
         }
 

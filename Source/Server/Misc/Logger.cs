@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using System.Threading;
 using static Shared.CommonEnumerators;
 
@@ -9,20 +12,14 @@ namespace GameServer
         // Semaphore for thread safety
         private static readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
-<<<<<<< HEAD
         // Dictionary mapping log modes to console colors
         private static readonly Dictionary<LogMode, ConsoleColor> colorDictionary = new Dictionary<LogMode, ConsoleColor>
-=======
-        public static Semaphore semaphore = new Semaphore(1, 1);
-
-        private static Dictionary<LogMode, ConsoleColor> colorDictionary = new Dictionary<LogMode, ConsoleColor>
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
         {
             { LogMode.Message, ConsoleColor.White },
             { LogMode.Warning, ConsoleColor.Yellow },
             { LogMode.Error, ConsoleColor.Red },
             { LogMode.Title, ConsoleColor.Green },
-            { LogMode.Outsider, ConsoleColor.Magenta}
+            { LogMode.Outsider, ConsoleColor.Magenta }
         };
 
         // Wrapper to write log in white color
@@ -34,26 +31,11 @@ namespace GameServer
         // Wrapper to write log in red color
         public static void Error(string message) => WriteToConsole(message, LogMode.Error);
 
-<<<<<<< HEAD
         // Wrapper to write log in green color
         public static void Title(string message) => WriteToConsole(message, LogMode.Title);
-=======
-        public static void Warning(string message) { WriteToConsole(message, LogMode.Warning); }
 
-        //Wrapper to write log in red color
-
-        public static void Error(string message) { WriteToConsole(message, LogMode.Error); }
-
-        //Wrapper to write log in green color
-
-        public static void Title(string message) { WriteToConsole(message, LogMode.Title); }
-
-        //Wrapper to write log in X color
-
-        public static void Outsider(string message) { WriteToConsole(message, LogMode.Outsider); }
-
-        //Actual function that writes to the console
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
+        // Wrapper to write log in magenta color
+        public static void Outsider(string message) => WriteToConsole(message, LogMode.Outsider);
 
         // Function to write to the console
         private static void WriteToConsole(string text, LogMode mode = LogMode.Message, bool writeToLogs = true)
@@ -67,27 +49,22 @@ namespace GameServer
                     WriteToLogs(text);
                 }
 
-<<<<<<< HEAD
                 Console.ForegroundColor = colorDictionary[mode];
                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] | {text}");
                 Console.ResetColor();
+
+                if (Master.discordConfig != null && Master.discordConfig.Enabled)
+                {
+                    DiscordManager.SendMessageToConsoleChannelBuffer(text);
+                }
             }
             finally
             {
                 semaphoreSlim.Release();
             }
-=======
-            Console.ForegroundColor = colorDictionary[mode];
-            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] | " + text);
-            Console.ForegroundColor = ConsoleColor.White;
-
-            if (Master.discordConfig != null && Master.discordConfig.Enabled) DiscordManager.SendMessageToConsoleChannelBuffer(text);
-
-            semaphore.Release();
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
         }
 
-        // Function to write Contents to log file
+        // Function to write contents to the log file
         private static void WriteToLogs(string toLog)
         {
             var logEntry = $"[{DateTime.Now:HH:mm:ss}] | {toLog}{Environment.NewLine}";

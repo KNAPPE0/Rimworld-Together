@@ -72,45 +72,31 @@ namespace GameServer
         {
             if (Master.serverConfig == null) return;
 
-<<<<<<< HEAD
-            var chatData = new ChatData
-            {
-                Username = client.userFile.Username,
-                Message = message,
-                UserColor = client.userFile.IsAdmin ? UserColor.Admin : UserColor.Normal,
-                MessageColor = client.userFile.IsAdmin ? MessageColor.Admin : MessageColor.Normal
-            };
-
-            var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
-            foreach (var cClient in Network.connectedClients.ToArray())
-                cClient.Listener.EnqueuePacket(packet);
-=======
             ChatData chatData = new ChatData();
-            chatData.username = client.userFile.Username;
-            chatData.message = message;
-            chatData.userColor = client.userFile.IsAdmin ? UserColor.Admin : UserColor.Normal;
-            chatData.messageColor = client.userFile.IsAdmin ? MessageColor.Admin : MessageColor.Normal;
+            chatData.Username = client.userFile.Username;
+            chatData.Message = message;
+            chatData.UserColor = client.userFile.IsAdmin ? UserColor.Admin : UserColor.Normal;
+            chatData.MessageColor = client.userFile.IsAdmin ? MessageColor.Admin : MessageColor.Normal;
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
-            foreach (ServerClient cClient in Network.connectedClients.ToArray()) cClient.listener.EnqueuePacket(packet);
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
+            foreach (ServerClient cClient in Network.connectedClients.ToArray()) cClient.Listener.EnqueuePacket(packet);
 
             WriteToLogs(client.userFile.Username, message);
             ChatManagerHelper.ShowChatInConsole(client.userFile.Username, message);
 
-            if (Master.discordConfig.Enabled && Master.discordConfig.ChatChannelId != 0) DiscordManager.SendMessageToChatChannel(chatData.username, message);
+            if (Master.discordConfig.Enabled && Master.discordConfig.ChatChannelId != 0) DiscordManager.SendMessageToChatChannel(chatData.Username, message);
         }
 
         public static void BroadcastDiscordMessage(string client, string message)
         {
             ChatData chatData = new ChatData();
-            chatData.username = client;
-            chatData.message = message;
-            chatData.userColor = UserColor.Discord;
-            chatData.messageColor = MessageColor.Discord;
+            chatData.Username = client;
+            chatData.Message = message;
+            chatData.UserColor = UserColor.Discord;
+            chatData.MessageColor = MessageColor.Discord;
 
             Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
-            foreach (ServerClient cClient in Network.connectedClients.ToArray()) cClient.listener.EnqueuePacket(packet);
+            foreach (ServerClient cClient in Network.connectedClients.ToArray()) cClient.Listener.EnqueuePacket(packet);
 
             WriteToLogs(client, message);
             ChatManagerHelper.ShowChatInConsole(client, message, true);
@@ -119,57 +105,30 @@ namespace GameServer
         // Broadcast a message from the server console
         public static void BroadcastServerMessage(string message)
         {
-<<<<<<< HEAD
-            if (Master.serverConfig == null) return;
-
-            var chatData = new ChatData
-            {
-                Username = "CONSOLE",
-                Message = message,
-                UserColor = UserColor.Console,
-                MessageColor = MessageColor.Console
-            };
-=======
             ChatData chatData = new ChatData();
-            chatData.username = systemName;
-            chatData.message = message;
-            chatData.userColor = UserColor.Console;
-            chatData.messageColor = MessageColor.Console;
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
+            chatData.Username = systemName;
+            chatData.Message = message;
+            chatData.UserColor = UserColor.Console;
+            chatData.MessageColor = MessageColor.Console;
 
             var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
             foreach (var client in Network.connectedClients.ToArray())
                 client.Listener.EnqueuePacket(packet);
 
-<<<<<<< HEAD
+            if (Master.discordConfig.Enabled && Master.discordConfig.ChatChannelId != 0) DiscordManager.SendMessageToChatChannel(chatData.Username, message);
+
             WriteToLogs(chatData.Username, message);
             ChatManagerHelper.ShowChatInConsole(chatData.Username, message);
-=======
-            if (Master.discordConfig.Enabled && Master.discordConfig.ChatChannelId != 0) DiscordManager.SendMessageToChatChannel(chatData.username, message);
-
-            WriteToLogs(chatData.username, message);
-            ChatManagerHelper.ShowChatInConsole(chatData.username, message);
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
         }
 
         // Send a system message to a specific client
         public static void SendSystemMessage(ServerClient client, string message)
         {
-<<<<<<< HEAD
-            var chatData = new ChatData
-            {
-                Username = "CONSOLE",
-                Message = message,
-                UserColor = UserColor.Console,
-                MessageColor = MessageColor.Console
-            };
-=======
             ChatData chatData = new ChatData();
-            chatData.username = systemName;
-            chatData.message = message;
-            chatData.userColor = UserColor.Console;
-            chatData.messageColor = MessageColor.Console;
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
+            chatData.Username = systemName;
+            chatData.Message = message;
+            chatData.UserColor = UserColor.Console;
+            chatData.MessageColor = MessageColor.Console;
 
             var packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
             client.Listener.EnqueuePacket(packet);
@@ -278,44 +237,39 @@ namespace GameServer
             var message = string.Join(" ", Command.Skip(2));
             if (string.IsNullOrWhiteSpace(message))
             {
-<<<<<<< HEAD
-                ChatManager.SendSystemMessage(TargetClient, "Message was empty.");
-                return;
-=======
-                string message = "";
-                for (int i = 2; i < command.Length; i++) message += command[i] + " ";
+                string Message = "";
+                for (int i = 2; i < Command.Length; i++) message += Command[i] + " ";
 
-                if (string.IsNullOrWhiteSpace(message)) ChatManager.SendSystemMessage(targetClient, "Message was empty.");
+                if (string.IsNullOrWhiteSpace(message)) ChatManager.SendSystemMessage(TargetClient, "Message was empty.");
                 else
                 {
-                    ServerClient toFind = ChatManagerHelper.GetUserFromName(ChatManagerHelper.GetUsernameFromMention(command[1]));
-                    if (toFind == null) ChatManager.SendSystemMessage(targetClient, "User was not found.");
+                    ServerClient toFind = ChatManagerHelper.GetUserFromName(ChatManagerHelper.GetUsernameFromMention(Command[1]));
+                    if (toFind == null) ChatManager.SendSystemMessage(TargetClient, "User was not found.");
                     else
                     {
                         //Don't allow players to send wispers to themselves
-                        if (toFind == targetClient) ChatManager.SendSystemMessage(targetClient, "Can't send a whisper to yourself.");
+                        if (toFind == TargetClient) ChatManager.SendSystemMessage(TargetClient, "Can't send a whisper to yourself.");
                         else
                         {
-                            ChatData chatData = new ChatData();
-                            chatData.message = message;
-                            chatData.userColor = UserColor.Private;
-                            chatData.messageColor = MessageColor.Private;
+                            ChatData chatData1 = new ChatData();
+                            chatData1.Message = message;
+                            chatData1.UserColor = UserColor.Private;
+                            chatData1.MessageColor = MessageColor.Private;
 
                             //Send to sender
-                            chatData.username = $">> {toFind.userFile.Username}";
-                            Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
-                            targetClient.listener.EnqueuePacket(packet);
+                            chatData1.Username = $">> {toFind.userFile.Username}";
+                            Packet Packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData1);
+                            TargetClient.Listener.EnqueuePacket(Packet);
 
                             //Send to recipient
-                            chatData.username = $"<< {targetClient.userFile.Username}";
-                            packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData);
-                            toFind.listener.EnqueuePacket(packet);
+                            chatData1.Username = $"<< {TargetClient.userFile.Username}";
+                            Packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ChatPacket), chatData1);
+                            toFind.Listener.EnqueuePacket(Packet);
 
-                            ChatManagerHelper.ShowChatInConsole(chatData.username, message);
+                            ChatManagerHelper.ShowChatInConsole(chatData1.Username, message);
                         }
                     }
                 }
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
             }
 
             var recipient = ChatManagerHelper.GetUserFromName(ChatManagerHelper.GetUsernameFromMention(Command[1]));
@@ -371,12 +325,6 @@ namespace GameServer
             return mention.Replace("@", "").Trim();
         }
 
-<<<<<<< HEAD
-        public static void ShowChatInConsole(string Username, string message)
-        {
-            if (Master.serverConfig.DisplayChatInConsole)
-                Logger.Message($"[Chat] > {Username} > {message}");
-=======
         public static void ShowChatInConsole(string username, string message, bool fromDiscord = false)
         {
             if (!Master.serverConfig.DisplayChatInConsole) return;
@@ -385,7 +333,6 @@ namespace GameServer
                 if (fromDiscord) Logger.Message($"[Discord] > {username} > {message}");
                 else Logger.Message($"[Chat] > {username} > {message}");
             }
->>>>>>> 4fb7aebda0aa95ba5fc140c05c34cc0a3e75b4e5
         }
     }
 }

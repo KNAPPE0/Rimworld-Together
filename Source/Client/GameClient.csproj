@@ -1,38 +1,48 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Target Framework -->
     <TargetFramework>net472</TargetFramework>
     <RootNamespace>GameClient</RootNamespace>
+
+    <!-- Enable Nullable Reference Types -->
     <Nullable>enable</Nullable>
+
+    <!-- Set Language Version -->
     <LangVersion>9</LangVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <DebugType>portable</DebugType>
-    <Optimize>false</Optimize>
+  <!-- Debug Configuration -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DebugType>full</DebugType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>TRACE;ENABLE_UNSAFE_MSGPACK;</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_UNSAFE_MSGPACK</DefineConstants>
+    <Optimize>false</Optimize> <!-- Disable optimization in Debug for easier debugging -->
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+  <!-- Release Configuration -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>pdbonly</DebugType>
+    <DebugType>pdbonly</DebugType> <!-- Reduced debug information for Release builds -->
     <Optimize>true</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>TRACE;ENABLE_UNSAFE_MSGPACK;</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_UNSAFE_MSGPACK</DefineConstants>
   </PropertyGroup>
 
+  <!-- Package References -->
   <ItemGroup>
     <PackageReference Include="Krafs.Rimworld.Ref" Version="1.5.4104" />
     <PackageReference Include="Lib.Harmony" Version="2.3.3" />
-    <PackageReference Include="System.Text.Json" Version="7.0.3" />
   </ItemGroup>
 
+  <!-- Assembly References -->
   <ItemGroup>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\Shared\Assemblies\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
   
+  <!-- Import Shared Project Items -->
   <Import Project="..\Shared\Shared.projitems" Label="Shared" />
+
 </Project>

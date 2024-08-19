@@ -1,28 +1,48 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Target Framework -->
     <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
     <RootNamespace>GameServer</RootNamespace>
+    
+    <!-- Enable Nullable Reference Types -->
+    <Nullable>enable</Nullable>
+    
+    <!-- Implicit Usings -->
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <!-- Debug Configuration -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DebugType>portable</DebugType>
-    <Optimize>false</Optimize>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize> <!-- Disable optimization in Debug for easier debugging -->
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
+  <!-- Release Configuration -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>pdbonly</DebugType> <!-- Reduced debug information for Release builds -->
     <Optimize>true</Optimize>
+    <DefineConstants>RELEASE;TRACE</DefineConstants>
   </PropertyGroup>
 
+  <!-- Package References -->
   <ItemGroup>
     <PackageReference Include="Mono.Nat" Version="3.0.4" />
     <PackageReference Include="System.Security.Permissions" Version="8.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Text.Json" Version="7.0.3" /> <!-- Consider updating to a newer version to avoid known vulnerabilities -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" /> <!-- Add Newtonsoft.Json as a NuGet package instead of a manual reference -->
   </ItemGroup>
+  
+  <!-- Remove Manual Assembly Reference to Newtonsoft.Json -->
+  <!-- <ItemGroup>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\Shared\Assemblies\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup> -->
 
+  <!-- Import Shared Project Items -->
   <Import Project="..\Shared\Shared.projitems" Label="Shared" />
+
 </Project>

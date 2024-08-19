@@ -19,7 +19,7 @@
   <ItemGroup>
     <PackageReference Include="Mono.Nat" Version="3.0.4" />
     <PackageReference Include="System.Security.Permissions" Version="8.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" /> <!-- Switching to Newtonsoft.Json for better support -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
   <Import Project="..\Shared\Shared.projitems" Label="Shared" />

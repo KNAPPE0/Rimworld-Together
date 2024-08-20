@@ -19,7 +19,6 @@ namespace GameServer
 
             lock (saveLock)
             {
-                // Initialize the download manager if this is the first packet
                 if (client.Listener.downloadManager == null)
                 {
                     client.Listener.downloadManager = new DownloadManager();
@@ -28,7 +27,6 @@ namespace GameServer
 
                 client.Listener.downloadManager.WriteFilePart(fileTransferData.FileBytes);
 
-                // Finalize the download if this is the last packet
                 if (fileTransferData.IsLastPart)
                 {
                     client.Listener.downloadManager.FinishFileWrite();
@@ -54,7 +52,6 @@ namespace GameServer
 
             lock (saveLock)
             {
-                // Initialize the upload manager if this is the first packet
                 if (client.Listener.uploadManager == null)
                 {
                     Logger.Message($"[Load save] > {client.userFile.Username} | {client.userFile.SavedIP}");
@@ -79,7 +76,6 @@ namespace GameServer
                 Packet packet = Packet.CreatePacketFromObject(nameof(PacketHandler.ReceiveSavePartPacket), fileTransferData);
                 client.Listener.EnqueuePacket(packet);
 
-                // Finalize the upload if this is the last packet
                 if (client.Listener.uploadManager.IsLastPart)
                 {
                     client.Listener.uploadManager = null;
@@ -135,8 +131,7 @@ namespace GameServer
             Directory.CreateDirectory(playerArchivedSavePath);
 
             ArchivePlayerData(client, playerArchivedSavePath);
-
-            DeletePlayerData(client, client.userFile.Username);
+            DeletePlayerData(client.userFile.Username);
         }
 
         private static void ArchivePlayerData(ServerClient client, string playerArchivedSavePath)
@@ -186,24 +181,45 @@ namespace GameServer
         private static void ArchiveSettlements(string Username, string settlementsArchivePath)
         {
             SettlementFile[] playerSettlements = SettlementManager.GetAllSettlementsFromUsername(Username);
-            foreach (SettlementFile settlementFile in playerSettlements)
+            foreach (SettlementFile settlement in playerSettlements)
             {
-                File.Copy(Path.Combine(Master.settlementsPath, settlementFile.tile + SettlementManager.fileExtension), Path.Combine(settlementsArchivePath, settlementFile.tile + SettlementManager.fileExtension));
+                File.Copy(Path.Combine(Master.settlementsPath, settlement.tile + SettlementManager.fileExtension), Path.Combine(settlementsArchivePath, settlement.tile + SettlementManager.fileExtension));
             }
         }
 
-        public static void DeletePlayerData(ServerClient client, string Username)
+        private static void DeletePlayerData(string username)
         {
-            if (client != null) client.Listener.disconnectFlag = true;
+            string savePath = Path.Combine(Master.savesPath, username + fileExtension);
+            if (File.Exists(savePath)) File.Delete(savePath);
 
-            try { File.Delete(Path.Combine(Master.savesPath, Username + fileExtension)); }
-            catch { Logger.Warning($"Failed to find {Username}'s save"); }
+            MapFileData[] maps = MapManager.GetAllMapsFromUsername(username);
+            foreach (MapFileData map in maps)
+            {
+                string mapPath = Path.Combine(Master.mapsPath, map.MapTile + MapManager.fileExtension);
+                if (File.Exists(mapPath)) File.Delete(mapPath);
+            }
 
-            MapManager.DeleteAllMapsFromUsername(Username);
-            SiteManager.DeleteAllSitesFromUsername(Username);
-            SettlementManager.DeleteAllSettlementsFromUsername(Username);
+            SiteFile[] sites = SiteManager.GetAllSitesFromUsername(username);
+            foreach (SiteFile site in sites)
+            {
+                string sitePath = Path.Combine(Master.sitesPath, site.tile + SiteManager.fileExtension);
+                if (File.Exists(sitePath)) File.Delete(sitePath);
+            }
 
-            Logger.Warning($"[Deleted player data] > {Username}");
+            SettlementFile[] settlements = SettlementManager.GetAllSettlementsFromUsername(username);
+            foreach (SettlementFile settlement in settlements)
+            {
+                string settlementPath = Path.Combine(Master.settlementsPath, settlement.tile + SettlementManager.fileExtension);
+                if (File.Exists(settlementPath)) File.Delete(settlementPath);
+            }
+
+            Logger.Warning($"[Reset player data] > {username}");
+        }
+
+        public static void ResetPlayerData(ServerClient client, string username)
+        {
+            ArchivePlayerData(client, Path.Combine(Master.backupUsersPath, username));
+            DeletePlayerData(username);
         }
     }
 }

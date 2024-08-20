@@ -105,26 +105,25 @@ namespace GameServer
             optionalModsPath = Path.Combine(modsPath, "Optional");
             forbiddenModsPath = Path.Combine(modsPath, "Forbidden");
 
-            if (!Directory.Exists(corePath)) Directory.CreateDirectory(corePath);
-            if (!Directory.Exists(usersPath)) Directory.CreateDirectory(usersPath);
-            if (!Directory.Exists(savesPath)) Directory.CreateDirectory(savesPath);
-            if (!Directory.Exists(mapsPath)) Directory.CreateDirectory(mapsPath);
-            if (!Directory.Exists(logsPath)) Directory.CreateDirectory(logsPath);
-            if (!Directory.Exists(systemLogsPath)) Directory.CreateDirectory(systemLogsPath);
-            if (!Directory.Exists(chatLogsPath)) Directory.CreateDirectory(chatLogsPath);
-            if (!Directory.Exists(sitesPath)) Directory.CreateDirectory(sitesPath);
-            if (!Directory.Exists(factionsPath)) Directory.CreateDirectory(factionsPath);
-            if (!Directory.Exists(settlementsPath)) Directory.CreateDirectory(settlementsPath);
-            if (!Directory.Exists(caravansPath)) Directory.CreateDirectory(caravansPath);
-
-            if (!Directory.Exists(backupsPath)) Directory.CreateDirectory(backupsPath);
-            if (!Directory.Exists(backupUsersPath)) Directory.CreateDirectory(backupUsersPath);
-            if (!Directory.Exists(backupWorldPath)) Directory.CreateDirectory(backupWorldPath);
-
-            if (!Directory.Exists(modsPath)) Directory.CreateDirectory(modsPath);
-            if (!Directory.Exists(requiredModsPath)) Directory.CreateDirectory(requiredModsPath);
-            if (!Directory.Exists(optionalModsPath)) Directory.CreateDirectory(optionalModsPath);
-            if (!Directory.Exists(forbiddenModsPath)) Directory.CreateDirectory(forbiddenModsPath);
+            // Ensures that directories are created if they don't already exist
+            Directory.CreateDirectory(corePath);
+            Directory.CreateDirectory(usersPath);
+            Directory.CreateDirectory(savesPath);
+            Directory.CreateDirectory(mapsPath);
+            Directory.CreateDirectory(logsPath);
+            Directory.CreateDirectory(systemLogsPath);
+            Directory.CreateDirectory(chatLogsPath);
+            Directory.CreateDirectory(sitesPath);
+            Directory.CreateDirectory(factionsPath);
+            Directory.CreateDirectory(settlementsPath);
+            Directory.CreateDirectory(caravansPath);
+            Directory.CreateDirectory(backupsPath);
+            Directory.CreateDirectory(backupUsersPath);
+            Directory.CreateDirectory(backupWorldPath);
+            Directory.CreateDirectory(modsPath);
+            Directory.CreateDirectory(requiredModsPath);
+            Directory.CreateDirectory(optionalModsPath);
+            Directory.CreateDirectory(forbiddenModsPath);
         }
 
         private static void SetCulture()

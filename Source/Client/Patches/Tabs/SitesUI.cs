@@ -10,87 +10,83 @@ namespace GameClient.Patches.Tabs
 {
     public class SitesUI : WITab
     {
-        private Vector2 scrollPosition;
-
-        private static readonly Vector2 WinSize = new Vector2(432f, 540f);
+        private Vector2 _scroll;
+        private static readonly Vector2 WinSize = new(432f, 540f);
 
         public override bool IsVisible => true;
 
-        private string tabTitle;
-
         public SitesUI()
         {
-            size = WinSize;
+            size     = WinSize;
             labelKey = "Sites";
         }
 
         protected override void FillTab()
         {
-            if (Network.State == ClientNetworkState.Connected)
-            {
-                tabTitle = $"Player Sites [{SiteManager.PlayerSites.Count()}]";
+            if (Network.State != ClientNetworkState.Connected) return;
 
-                float horizontalLineDif = Text.CalcSize(tabTitle).y + 3f + 10f;
+            int oldSize            = GUI.skin.label.fontSize;
+            GUI.skin.label.fontSize = Mathf.RoundToInt(ChatCustomizationManager.FontSize);
 
-                Rect outRect = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
-                Rect rect = new Rect(10f, 10f, outRect.width - 16f, Mathf.Max(0f, outRect.height));
+            var full = new Rect(0f, 0f, WinSize.x, WinSize.y);
+            Widgets.DrawBoxSolid(full, ChatCustomizationManager.BackgroundColor);
 
-                Text.Font = GameFont.Medium;
-                Widgets.Label(rect, tabTitle);
-                Widgets.DrawLineHorizontal(rect.x, horizontalLineDif, rect.width);
-                GenerateList(new Rect(new Vector2(rect.x, rect.y + 30f), new Vector2(rect.width, rect.height - 30f)));
-            }
+            string title       = $"Player Sites [{SiteManager.PlayerSites.Count()}]";
+            float  titleHeight = Text.CalcSize(title).y;
+
+            Text.Font = GameFont.Medium;
+            GUI.color = ChatCustomizationManager.FontColor;
+            Widgets.Label(new Rect(10f, 10f, full.width - 20f, titleHeight), title);
+            GUI.color = Color.white;
+
+            Widgets.DrawLineHorizontal(10f, 10f + titleHeight + 3f, full.width - 20f);
+
+            Rect listRect = new Rect(10f, 10f + titleHeight + 10f,
+                                      full.width - 20f,
+                                      full.height - (titleHeight + 20f));
+            DrawList(listRect);
+
+            GUI.skin.label.fontSize = oldSize;
         }
 
-        private void GenerateList(Rect mainRect)
+        private void DrawList(Rect mainRect)
         {
-            var orderedDictionary = SiteManager.PlayerSites.OrderBy(x => x.Label);
+            var rows  = SiteManager.PlayerSites.OrderBy(s => s.Label).ToList();
+            float rowH = 30f;
+            float cont = 6f + rows.Count * rowH;
 
-            float height = 6f + orderedDictionary.Count() * 30f;
-            Rect viewRect = new Rect(mainRect.x, mainRect.y, mainRect.width - 16f, height);
+            Widgets.BeginScrollView(mainRect, ref _scroll,
+                                    new Rect(0, 0, mainRect.width - 16f, cont));
 
-            Widgets.BeginScrollView(mainRect, ref scrollPosition, viewRect);
-
-            float num = 0;
-            float num2 = scrollPosition.y - 30f;
-            float num3 = scrollPosition.y + mainRect.height;
-            int num4 = 0;
-
-            foreach (Site playerSite in orderedDictionary)
+            float y = 0f;
+            for (int i = 0; i < rows.Count; i++)
             {
-                if (num > num2 && num < num3)
-                {
-                    Rect rect = new Rect(0f, mainRect.y + num, viewRect.width, 30f);
-                    DrawCustomRow(rect, playerSite, num4);
-                }
+                if (i % 2 == 0)
+                    Widgets.DrawLightHighlight(new Rect(0, y, mainRect.width - 16f, rowH));
 
-                num += 30f;
-                num4++;
+                DrawRow(new Rect(0, y, mainRect.width - 16f, rowH), rows[i]);
+                y += rowH;
             }
 
             Widgets.EndScrollView();
         }
 
-        private void DrawCustomRow(Rect rect, Site playerSite, int index)
+        private void DrawRow(Rect rect, Site site)
         {
             Text.Font = GameFont.Small;
+            GUI.color = ChatCustomizationManager.FontColor;
+            Widgets.Label(new Rect(rect.x + 10f, rect.y + 5f,
+                                   rect.width - 100f, rect.height),
+                          $"{site.Label} - {site.Tile}");
+            GUI.color = Color.white;
 
-            if (index % 2 == 0) Widgets.DrawLightHighlight(rect);
-            Rect fixedRect = new Rect(new Vector2(rect.x + 10f, rect.y + 5f), new Vector2(rect.width - 52f, rect.height));
-
-            float buttonX = 47f;
-            float buttonY = 30f;
-            Widgets.Label(fixedRect, $"{playerSite.Label} - {playerSite.Tile}");
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonX, rect.y), new Vector2(buttonX, buttonY)), "Focus"))
+            float btnW = 47f;
+            if (Widgets.ButtonText(new Rect(rect.xMax - btnW, rect.y, btnW, 30f), "Focus"))
             {
-                foreach (Site site in Find.World.worldObjects.Sites)
-                {
-                    if (site.Tile == playerSite.Tile)
-                    {
-                        CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(site));
-                        break;
-                    }
-                }
+                var worldSite = Find.World.worldObjects.Sites
+                                   .FirstOrDefault(s => s.Tile == site.Tile);
+                if (worldSite != null)
+                    CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(worldSite));
             }
         }
     }

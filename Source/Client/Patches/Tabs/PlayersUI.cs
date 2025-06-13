@@ -11,74 +11,69 @@ namespace GameClient.Patches.Tabs
 {
     public class PlayersUI : WITab
     {
-        private Vector2 scrollPosition;
-
-        private static readonly Vector2 WinSize = new Vector2(432f, 540f);
+        private Vector2 _scroll;
+        private static readonly Vector2 WinSize = new(432f, 540f);
 
         public override bool IsVisible => true;
 
-        private string tabTitle;
-
         public PlayersUI()
         {
-            size = WinSize;
+            size     = WinSize;
             labelKey = "Players";
         }
 
         protected override void FillTab()
         {
-            if (Network.State == ClientNetworkState.Connected)
-            {
-                tabTitle = $"Players Online [{RecountManager.CurrentPlayers}]";
+            if (Network.State != ClientNetworkState.Connected) return;
 
-                float horizontalLineDif = Text.CalcSize(tabTitle).y + 3f + 10f;
+            int oldSize            = GUI.skin.label.fontSize;
+            GUI.skin.label.fontSize = Mathf.RoundToInt(ChatCustomizationManager.FontSize);
 
-                Rect outRect = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
-                Rect rect = new Rect(10f, 10f, outRect.width - 16f, Mathf.Max(0f, outRect.height));
+            var full = new Rect(0f, 0f, WinSize.x, WinSize.y);
+            Widgets.DrawBoxSolid(full, ChatCustomizationManager.BackgroundColor);
 
-                Text.Font = GameFont.Medium;
-                Widgets.Label(rect, tabTitle);
-                Widgets.DrawLineHorizontal(rect.x, horizontalLineDif, rect.width);
-                GenerateList(new Rect(new Vector2(rect.x, rect.y + 30f), new Vector2(rect.width, rect.height - 30f)));
-            }
+            string title       = $"Players Online [{RecountManager.CurrentPlayers}]";
+            float  titleHeight = Text.CalcSize(title).y;
+
+            Text.Font = GameFont.Medium;
+            GUI.color = ChatCustomizationManager.FontColor;
+            Widgets.Label(new Rect(10f, 10f, full.width - 20f, titleHeight), title);
+            GUI.color = Color.white;
+
+            Widgets.DrawLineHorizontal(10f, 10f + titleHeight + 3f, full.width - 20f);
+
+            Rect listRect = new Rect(10f, 10f + titleHeight + 10f,
+                                      full.width - 20f,
+                                      full.height - (titleHeight + 20f));
+            DrawList(listRect);
+
+            GUI.skin.label.fontSize = oldSize;
         }
 
-        private void GenerateList(Rect mainRect)
+        private void DrawList(Rect mainRect)
         {
-            List<string> orderedList = RecountManager.CurrentPlayerNames;
-            orderedList.Sort();
+            List<string> list = RecountManager.CurrentPlayerNames.OrderBy(n => n).ToList();
+            float rowH = 30f;
+            float cont = 6f + list.Count * rowH;
 
-            float height = 6f + orderedList.Count() * 30f;
-            Rect viewRect = new Rect(mainRect.x, mainRect.y, mainRect.width - 16f, height);
+            Widgets.BeginScrollView(mainRect, ref _scroll,
+                                    new Rect(0, 0, mainRect.width - 16f, cont));
 
-            Widgets.BeginScrollView(mainRect, ref scrollPosition, viewRect);
-
-            float num = 0;
-            float num2 = scrollPosition.y - 30f;
-            float num3 = scrollPosition.y + mainRect.height;
-            int num4 = 0;
-
-            foreach (string str in orderedList)
+            float y = 0f;
+            for (int i = 0; i < list.Count; i++)
             {
-                if (num > num2 && num < num3)
-                {
-                    Rect rect = new Rect(0f, mainRect.y + num, viewRect.width, 30f);
-                    DrawCustomRow(rect, str, num4);
-                }
+                if (i % 2 == 0)
+                    Widgets.DrawLightHighlight(new Rect(0, y, mainRect.width - 16f, rowH));
 
-                num += 30f;
-                num4++;
+                Text.Font = GameFont.Small;
+                GUI.color = ChatCustomizationManager.FontColor;
+                Widgets.Label(new Rect(10f, y + 5f, mainRect.width - 36f, rowH), list[i]);
+                GUI.color = Color.white;
+
+                y += rowH;
             }
 
             Widgets.EndScrollView();
-        }
-
-        private void DrawCustomRow(Rect rect, string str, int index)
-        {
-            Text.Font = GameFont.Small;
-            if (index % 2 == 0) Widgets.DrawLightHighlight(rect);
-            Rect fixedRect = new Rect(new Vector2(rect.x + 10f, rect.y + 5f), new Vector2(rect.width - 52f, rect.height));
-            Widgets.Label(fixedRect, str);
         }
     }
 }

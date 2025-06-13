@@ -6,6 +6,7 @@ using GameClient.Core;
 
 namespace GameClient.Managers
 {
+<<<<<<< HEAD
     /// <summary>
     /// Which panel to open by default in ChatTab.
     /// </summary>
@@ -45,10 +46,46 @@ namespace GameClient.Managers
         public static int     LeaderboardSize   { get => _cfg.LeaderboardSize;   set => _cfg.LeaderboardSize = Mathf.Clamp(value, 5, 100); }
         public static ChatPanel DefaultPanel    { get => _cfg.DefaultPanel;      set => _cfg.DefaultPanel = value; }
 
+=======
+    public enum ChatPanel { Chat, Leaderboard }
+
+    [Serializable]
+    public class ChatCustomizationData
+    {
+        // Default font size (in pixels)
+        public float FontSize = 14f;
+
+        // Default font color
+        public Color FontColor = Color.white;
+
+        // Background tint color (RGBA)
+        public Color BackgroundColor = new Color(0f, 0f, 0f, 0.5f);
+
+        // Auto‐scroll chat by default
+        public bool AutoScrollDefault = true;
+
+        // Initial panel to open
+        public ChatPanel DefaultPanel = ChatPanel.Chat;
+    }
+
+    public static class ChatCustomizationManager
+    {
+        public static ChatCustomizationData Settings { get; private set; }
+
+        private static string ConfigPath =>
+            Path.Combine(Master.SavesFolderPath, "ChatCustomization.json");
+
+        static ChatCustomizationManager()
+        {
+            Load();
+        }
+
+>>>>>>> 8122f745b7e5c1dd1f5d4e47aa7442f948a0eab5
         public static void Load()
         {
             try
             {
+<<<<<<< HEAD
                 if (File.Exists(_path))
                 {
                     var json = File.ReadAllText(_path);
@@ -61,6 +98,23 @@ namespace GameClient.Managers
             {
                 Log.Error($"[ChatCustomization] Load failed – using defaults: {ex}");
                 _cfg = new Data();
+=======
+                if (File.Exists(ConfigPath))
+                {
+                    string json = File.ReadAllText(ConfigPath);
+                    Settings = JsonUtility.FromJson<ChatCustomizationData>(json);
+                }
+                else
+                {
+                    Settings = new ChatCustomizationData();
+                    Save();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[ChatCustomizationManager] Failed to load settings: {ex.Message}");
+                Settings = new ChatCustomizationData();
+>>>>>>> 8122f745b7e5c1dd1f5d4e47aa7442f948a0eab5
             }
         }
 
@@ -68,6 +122,7 @@ namespace GameClient.Managers
         {
             try
             {
+<<<<<<< HEAD
                 File.WriteAllText(_path, JsonUtility.ToJson(_cfg, true));
             }
             catch (Exception ex)
@@ -111,3 +166,15 @@ namespace GameClient.Managers
         }
     }
 }
+=======
+                string json = JsonUtility.ToJson(Settings, true);
+                File.WriteAllText(ConfigPath, json);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[ChatCustomizationManager] Failed to save settings: {ex.Message}");
+            }
+        }
+    }
+}
+>>>>>>> 8122f745b7e5c1dd1f5d4e47aa7442f948a0eab5

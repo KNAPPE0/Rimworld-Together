@@ -1,5 +1,8 @@
+﻿// File: UserFile.cs  (Server File)
 ﻿using GameServer.Managers;
 using Shared;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace GameServer.Files
 {
@@ -7,29 +10,23 @@ namespace GameServer.Files
     public class UserFile
     {
         public string Uid;
-
         public string Label;
-
         public bool IsAdmin;
-
         public bool IsBanned;
-
         public string SavedIP;
 
         public double ActivityProtectionTime;
-
         public double EventProtectionTime;
-
         public double AidProtectionTime;
-
         public double SpyProtectionTime;
 
-        public string GuildName;
+        // Tracks total wealth per user
+        public double TotalWealth;
 
+        public string GuildName;
         public string[] RunningMods;
 
         public List<string> AllyPlayers = new List<string>();
-
         public List<string> EnemyPlayers = new List<string>();
 
         public SiteConfigFile[] SiteConfigs = Array.Empty<SiteConfigFile>();
@@ -38,8 +35,6 @@ namespace GameServer.Files
 
         public void SetLoginDetails(LoginData data)
         {
-            // No need to save these details
-
             Uid = data._uid;
             Label = data._username;
         }
@@ -48,7 +43,6 @@ namespace GameServer.Files
         {
             if (toUpdateWith == null) GuildName = null;
             else GuildName = toUpdateWith.Name;
-
             UserManagerH.SaveUserFile(this);
         }
 

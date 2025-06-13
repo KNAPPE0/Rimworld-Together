@@ -1,3 +1,4 @@
+// File: Attributes.cs  (Shared File)
 using System;
 
 namespace Shared
@@ -13,7 +14,6 @@ namespace Shared
         {
             this.header = header;
         }
-
         public readonly PacketHeader header;
     }
 
@@ -27,6 +27,7 @@ namespace Shared
         AidManager,
         CaravanManager,
         ChatManager,
+        WealthManager,
         EventManager,
         GameParameterManager,
         GoodWillManager,
@@ -38,12 +39,15 @@ namespace Shared
         SaveManager,
         SettlementManager,
         SiteManager,
+        StatsManager,
+        ConsoleManager,
+        LeaderboardRequest,
+        LeaderboardResponse,
+        GlobalDataManager,
+        RecountManager,
         VersionManager,
         WorldManager,
         PollutionManager,
-        ConsoleManager,
-        GlobalDataManager,
-        ResponseShortcutManager,
-        RecountManager
+        ResponseShortcutManager
     }
 }

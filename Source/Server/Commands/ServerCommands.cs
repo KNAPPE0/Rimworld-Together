@@ -1,4 +1,5 @@
-using Shared;
+// File: ServerCommands.cs  (Server File)
+using Shared; 
 using static GameServer.Commands.ConsoleCommands;
 using static Shared.CommonEnumerators;
 using static GameServer.Commands.ConsoleCommandActions;
@@ -7,6 +8,11 @@ using GameServer.Files;
 using GameServer.Managers;
 using GameServer.Misc;
 using GameServer.TCP;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace GameServer.Commands
 {
@@ -69,11 +75,11 @@ namespace GameServer.Commands
             DoSiteRewardsCommandAction);
 
         public static readonly CommandBase EventCommand = new CommandBase("event", 2,
-            "Sends a command to the selecter players",
+            "Sends an event to the selected player",
             EventCommandAction);
 
         public static readonly CommandBase EventAllCommand = new CommandBase("eventall", 1,
-            "Sends a command to all connected players",
+            "Sends an event to all connected players",
             EventAllCommandAction);
 
         public static readonly CommandBase EventListCommand = new CommandBase("eventlist", 0,
@@ -109,7 +115,7 @@ namespace GameServer.Commands
             ResetPlayerCommandAction);
 
         public static readonly CommandBase PortforwardCommand = new CommandBase("portforward", 0,
-            "will use UPnP to portforward the server",
+            "Will use UPnP to portforward the server",
             PortForwardCommandAction);
 
         public static readonly CommandBase ResetWorldCommand = new CommandBase("resetworld", 0,
@@ -127,6 +133,11 @@ namespace GameServer.Commands
         public static readonly CommandBase ClearCommand = new CommandBase("clear", 0,
             "Clears the console output",
             ClearCommandAction);
+
+        // ─────────── Our new “leaderboard” command ───────────
+        public static readonly CommandBase LeaderboardCommand = new CommandBase("leaderboard", 0,
+            "Shows the top–10 richest players (use 'leaderboard N' for a custom count)",
+            LeaderboardCommandAction);
 
         public static List<CommandBase> Commands = new List<CommandBase>
         {
@@ -158,7 +169,8 @@ namespace GameServer.Commands
             ServerMessageCommand,
             WhitelistAddCommand,
             WhitelistCommand,
-            WhitelistRemoveCommand
+            WhitelistRemoveCommand,
+            LeaderboardCommand
         };
     }
 
@@ -166,13 +178,14 @@ namespace GameServer.Commands
     {
         public static void HelpCommandAction()
         {
-            Printer.Title($"List of available commands: [{ConsoleCommands.Commands.Count()}]");
+            Printer.Title($"List of available commands: [{ConsoleCommands.Commands.Count}]");
             Printer.Title("----------------------------------------");
 
-            foreach (CommandBase command in ConsoleCommands.Commands.ToList().OrderBy(fetch => fetch.Prefix))
+            foreach (var command in ConsoleCommands.Commands.OrderBy(c => c.Prefix))
             {
                 Printer.Warning($"{command.Prefix} - {command.Description}");
             }
+
             Printer.Title("----------------------------------------");
         }
 
@@ -183,31 +196,32 @@ namespace GameServer.Commands
 
         public static void BackupUserCommandAction()
         {
-            UserFile userFile = UserManagerH.GetUserFileFromName(ConsoleManager.commandParameters[0]);
+            var userFile = UserManagerH.GetUserFileFromName(ConsoleManager.commandParameters[0]);
+            if (userFile == null)
+            {
+                ThrowUserNotFoundError();
+                return;
+            }
 
-            if (userFile == null) ThrowUserNotFoundError();
+            Printer.Warning("Do you want this backup to be persistent? (Will not be automatically deleted)");
+            Printer.Warning("Please type 'YES' or 'NO'");
+
+        DeleteUser:
+            string response = Console.ReadLine();
+            if (response == "NO") BackupManager.BackupUser(userFile.Uid);
+            else if (response == "YES") BackupManager.BackupUser(userFile.Uid, true);
             else
             {
-                Printer.Warning("Do you want this backup to be persistent? (Will not be automatically deleted)");
-            DeleteUser:
-                Printer.Warning("Please type 'YES' or 'NO'");
-                string response = Console.ReadLine();
-
-                if (response == "NO") BackupManager.BackupUser(userFile.Uid);
-                else if (response == "YES") BackupManager.BackupUser(userFile.Uid, true);
-                else
-                {
-                    Printer.Error($"{response} is not a valid option; The options must be capitalized");
-                    goto DeleteUser;
-                }
-
+                Printer.Error($"{response} is not a valid option; The options must be capitalized");
+                goto DeleteUser;
             }
         }
+
         public static void ListCommandAction()
         {
             Printer.Title($"Connected players: [{NetworkHelper.GetConnectedClientsSafe().Count()}]");
             Printer.Title("----------------------------------------");
-            foreach (ServerClient client in NetworkHelper.GetConnectedClientsSafe())
+            foreach (var client in NetworkHelper.GetConnectedClientsSafe())
             {
                 Printer.Warning($"{client.UserFile.SavedIP} - {client.UserFile.Label} - {client.UserFile.Uid}");
             }
@@ -216,11 +230,10 @@ namespace GameServer.Commands
 
         public static void DeepListCommandAction()
         {
-            UserFile[] userFiles = UserManagerH.GetAllUserFiles();
-
-            Printer.Title($"Server players: [{userFiles.Count()}]");
+            var userFiles = UserManagerH.GetAllUserFiles();
+            Printer.Title($"Server players: [{userFiles.Length}]");
             Printer.Title("----------------------------------------");
-            foreach (UserFile user in userFiles)
+            foreach (var user in userFiles)
             {
                 Printer.Warning($"{user.Label} - {user.Uid}");
             }
@@ -229,8 +242,9 @@ namespace GameServer.Commands
 
         public static void OpCommandAction()
         {
-            UserFile toFind = UserManagerH.GetAllUserFiles().Where(x => x.Uid == ConsoleManager.commandParameters[0]).FirstOrDefault();
-            if (toFind == null) 
+            var toFind = UserManagerH.GetAllUserFiles()
+                .FirstOrDefault(u => u.Uid == ConsoleManager.commandParameters[0]);
+            if (toFind == null)
             {
                 ThrowUserNotFoundError();
                 return;
@@ -240,17 +254,17 @@ namespace GameServer.Commands
 
             toFind.UpdateAdmin(true);
 
-            ServerClient client = NetworkHelper.GetConnectedClientFromUid(toFind.Uid);
+            var client = NetworkHelper.GetConnectedClientFromUid(toFind.Uid);
             if (client != null)
             {
-                CommandData commandData = new CommandData();
-                commandData._commandMode = CommandMode.Op;
-
+                var commandData = new CommandData
+                {
+                    _commandMode = CommandMode.Op
+                };
                 client.UserFile.UpdateAdmin(true);
                 client.Listener.EnqueuePacket(PacketHeader.ConsoleManager, commandData);
             }
             UserManagerH.SaveUserFile(toFind);
-
             Printer.Warning($"User '{toFind.Label}' has now admin privileges");
             bool CheckIfIsAlready(UserFile userFile)
             {
@@ -259,15 +273,14 @@ namespace GameServer.Commands
                     Printer.Warning($"User '{userFile.Label}' was already an admin");
                     return true;
                 }
-
-                else return false;
+                return false;
             }
         }
 
         public static void DeopCommandAction()
         {
-            UserFile toFind = UserManagerH.GetAllUserFiles().Where(x => x.Uid == ConsoleManager.commandParameters[0]).FirstOrDefault();
-
+            var toFind = UserManagerH.GetAllUserFiles()
+                .FirstOrDefault(u => u.Uid == ConsoleManager.commandParameters[0]);
             if (toFind == null)
             {
                 ThrowUserNotFoundError();
@@ -277,318 +290,400 @@ namespace GameServer.Commands
             if (CheckIfIsAlready(toFind)) return;
 
             toFind.UpdateAdmin(false);
-            ServerClient client = NetworkHelper.GetConnectedClientFromUid(toFind.Uid);
+
+            var client = NetworkHelper.GetConnectedClientFromUid(toFind.Uid);
             if (client != null)
             {
-                CommandData commandData = new CommandData();
-                commandData._commandMode = CommandMode.Deop;
-
+                var commandData = new CommandData
+                {
+                    _commandMode = CommandMode.Deop
+                };
                 client.UserFile.UpdateAdmin(false);
                 client.Listener.EnqueuePacket(PacketHeader.ConsoleManager, commandData);
             }
             UserManagerH.SaveUserFile(toFind);
-
             Printer.Warning($"User '{toFind.Label}' is no longer an admin");
-
-            bool CheckIfIsAlready(UserFile client)
+            bool CheckIfIsAlready(UserFile userFile)
             {
-                if (!client.IsAdmin)
+                if (!userFile.IsAdmin)
                 {
-                    Printer.Warning($"User '{client.Label}' was not an admin");
+                    Printer.Warning($"User '{userFile.Label}' was not an admin");
                     return true;
                 }
-
-                else return false;
+                return false;
             }
         }
 
         public static void KickCommandAction()
         {
-            ServerClient toFind = NetworkHelper.GetConnectedClientFromUid(ConsoleManager.commandParameters[0]);
-
+            var toFind = NetworkHelper.GetConnectedClientFromUid(ConsoleManager.commandParameters[0]);
             if (toFind == null)
             {
                 ThrowUserNotFoundError();
                 return;
             }
             toFind.Listener.DisconnectFlag = true;
-
             Printer.Warning($"User '{toFind.UserFile.Label}' has been kicked from the server");
         }
 
         public static void BanListCommandAction()
         {
-            List<UserFile> userFiles = UserManagerH.GetAllUserFiles().ToList().FindAll(x => x.IsBanned);
-
-            Printer.Title($"Banned players: [{userFiles.Count()}]");
+            var bannedUsers = UserManagerH.GetAllUserFiles().Where(u => u.IsBanned).ToList();
+            Printer.Title($"Banned players: [{bannedUsers.Count}]");
             Printer.Title("----------------------------------------");
-            foreach (UserFile user in userFiles) Printer.Warning($"{user.Label} - {user.SavedIP}");
+            foreach (var user in bannedUsers)
+            {
+                Printer.Warning($"{user.Label} - {user.SavedIP}");
+            }
             Printer.Title("----------------------------------------");
         }
 
-        public static void BanCommandAction() { UserManager.BanPlayerFromName(ConsoleManager.commandParameters[0]); }
+        public static void BanCommandAction()
+        {
+            UserManager.BanPlayerFromName(ConsoleManager.commandParameters[0]);
+        }
 
-        public static void PardonCommandAction() { UserManager.PardonPlayerFromName(ConsoleManager.commandParameters[0]); }
+        public static void PardonCommandAction()
+        {
+            UserManager.PardonPlayerFromName(ConsoleManager.commandParameters[0]);
+        }
 
-        public static void ReloadCommandAction() { Main_.LoadResources(); }
+        public static void ReloadCommandAction()
+        {
+            Main_.LoadResources();
+        }
 
         public static void ModListCommandAction()
         {
             Printer.Title($"Required Mods: [{Master.ModConfig.RequiredMods.Length}]");
             Printer.Title("----------------------------------------");
-            foreach (string str in Master.ModConfig.RequiredMods) Printer.Warning($"{str}");
+            foreach (var mod in Master.ModConfig.RequiredMods)
+                Printer.Warning(mod);
             Printer.Title("----------------------------------------");
 
             Printer.Title($"Optional Mods: [{Master.ModConfig.OptionalMods.Length}]");
             Printer.Title("----------------------------------------");
-            foreach (string str in Master.ModConfig.OptionalMods) Printer.Warning($"{str}");
+            foreach (var mod in Master.ModConfig.OptionalMods)
+                Printer.Warning(mod);
             Printer.Title("----------------------------------------");
 
             Printer.Title($"Forbidden Mods: [{Master.ModConfig.ForbiddenMods.Length}]");
             Printer.Title("----------------------------------------");
-            foreach (string str in Master.ModConfig.ForbiddenMods) Printer.Warning($"{str}");
+            foreach (var mod in Master.ModConfig.ForbiddenMods)
+                Printer.Warning(mod);
             Printer.Title("----------------------------------------");
         }
 
         public static void DoSiteRewardsCommandAction()
         {
-            Printer.Title($"Forced site rewards");
+            Printer.Title("Forced site rewards");
             SiteManager.SiteRewardTick();
         }
 
         public static void EventCommandAction()
         {
-            ServerClient client = NetworkHelper.GetConnectedClientFromUid(ConsoleManager.commandParameters[0]);
-
-            if (client == null) Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' was not found");
-            else
+            var client = NetworkHelper.GetConnectedClientFromUid(ConsoleManager.commandParameters[0]);
+            if (client == null)
             {
-                EventFile toFind = EventManagerHelper.loadedEvents.FirstOrDefault(fetch => fetch.DefName == ConsoleManager.commandParameters[1]);
-                if (toFind == null) Printer.Warning($"Event '{ConsoleManager.commandParameters[1]}' was not found");
-                else
-                {
-                    EventData eventData = new EventData();
-                    eventData._stepMode = EventStepMode.Receive;
-                    eventData._eventFile = toFind;
-
-                    //We set it to -1 to let the client know it will fall at any settlement
-                    eventData._toTile = -1;
-
-                    client.Listener.EnqueuePacket(PacketHeader.EventManager, eventData);
-
-                    Printer.Title($"Sent event '{ConsoleManager.commandParameters[1]}' to '{ConsoleManager.commandParameters[0]}'");
-                }
+                Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' was not found");
+                return;
             }
+
+            var toFind = EventManagerHelper.loadedEvents
+                .FirstOrDefault(ev => ev.DefName == ConsoleManager.commandParameters[1]);
+            if (toFind == null)
+            {
+                Printer.Warning($"Event '{ConsoleManager.commandParameters[1]}' was not found");
+                return;
+            }
+
+            var eventData = new EventData
+            {
+                _stepMode = EventStepMode.Receive,
+                _eventFile = toFind,
+                _toTile = -1 // let client fall at any settlement
+            };
+
+            client.Listener.EnqueuePacket(PacketHeader.EventManager, eventData);
+            Printer.Title($"Sent event '{ConsoleManager.commandParameters[1]}' to '{ConsoleManager.commandParameters[0]}'");
         }
 
         public static void EventAllCommandAction()
         {
-            EventFile toFind = EventManagerHelper.loadedEvents.FirstOrDefault(fetch => fetch.DefName == ConsoleManager.commandParameters[0]);
-            if (toFind == null) Printer.Warning($"Event '{ConsoleManager.commandParameters[0]}' was not found");
-            else
+            var toFind = EventManagerHelper.loadedEvents
+                .FirstOrDefault(ev => ev.DefName == ConsoleManager.commandParameters[0]);
+            if (toFind == null)
             {
-                foreach (ServerClient client in NetworkHelper.GetConnectedClientsSafe())
-                {
-                    EventData eventData = new EventData();
-                    eventData._stepMode = EventStepMode.Receive;
-                    eventData._eventFile = toFind;
-
-                    //We set it to -1 to let the client know it will fall at any settlement
-                    eventData._toTile = -1;
-
-                    client.Listener.EnqueuePacket(PacketHeader.EventManager, eventData);
-                }
-
-                Printer.Title($"Sent event '{ConsoleManager.commandParameters[0]}' to every connected player");
+                Printer.Warning($"Event '{ConsoleManager.commandParameters[0]}' was not found");
+                return;
             }
+
+            foreach (var client in NetworkHelper.GetConnectedClientsSafe())
+            {
+                var eventData = new EventData
+                {
+                    _stepMode = EventStepMode.Receive,
+                    _eventFile = toFind,
+                    _toTile = -1
+                };
+                client.Listener.EnqueuePacket(PacketHeader.EventManager, eventData);
+            }
+
+            Printer.Title($"Sent event '{ConsoleManager.commandParameters[0]}' to every connected player");
         }
 
         public static void EventListCommandAction()
         {
             Printer.Title($"Available events: [{EventManagerHelper.loadedEvents.Length}]");
             Printer.Title("----------------------------------------");
-            foreach (EventFile eventFile in EventManagerHelper.loadedEvents) Printer.Warning($"{eventFile.DefName}");
+            foreach (var ev in EventManagerHelper.loadedEvents)
+                Printer.Warning(ev.DefName);
             Printer.Title("----------------------------------------");
         }
 
         public static void BroadcastCommandAction()
         {
-            string fullText = "";
-            foreach (string str in ConsoleManager.commandParameters) fullText += $"{str} ";
-            fullText = fullText.Remove(fullText.Length - 1, 1);
-
-            CommandData commandData = new CommandData();
-            commandData._commandMode = CommandMode.Broadcast;
-            commandData._details = fullText;
-
+            string fullText = string.Join(' ', ConsoleManager.commandParameters);
+            var commandData = new CommandData
+            {
+                _commandMode = CommandMode.Broadcast,
+                _details = fullText
+            };
             NetworkHelper.SendPacketToAllClients(PacketHeader.ConsoleManager, commandData);
-
             Printer.Title($"Sent broadcast: '{fullText}'");
         }
 
         public static void ServerMessageCommandAction()
         {
-            string fullText = "";
-            foreach (string str in ConsoleManager.commandParameters)
-            {
-                fullText += $"{str} ";
-            }
-            fullText = fullText.Remove(fullText.Length - 1, 1);
-
+            string fullText = string.Join(' ', ConsoleManager.commandParameters);
             ChatManager.BroadcastConsoleMessage(fullText);
-
             Printer.Title($"Sent chat: '{fullText}'");
         }
 
         public static void WhitelistCommandAction()
         {
-            Printer.Title($"Whitelisted usernames: [{Master.Whitelist.WhitelistedUsers.Count()}]");
+            Printer.Title($"Whitelisted usernames: [{Master.Whitelist.WhitelistedUsers.Count}]");
             Printer.Title("----------------------------------------");
-            foreach (string str in Master.Whitelist.WhitelistedUsers) Printer.Warning($"{str}");
+            foreach (var user in Master.Whitelist.WhitelistedUsers)
+                Printer.Warning(user);
             Printer.Title("----------------------------------------");
         }
 
         public static void WhitelistAddCommandAction()
         {
-            UserFile userFile = UserManagerH.GetUserFileFromName(ConsoleManager.commandParameters[0]);
-            if (userFile == null) ThrowUserNotFoundError();
-            else
+            var userFile = UserManagerH.GetUserFileFromName(ConsoleManager.commandParameters[0]);
+            if (userFile == null)
             {
-                if (CheckIfIsAlready(userFile)) return;
-                else WhitelistManager.AddUserToWhitelist(ConsoleManager.commandParameters[0]);
+                ThrowUserNotFoundError();
+                return;
             }
-
-            bool CheckIfIsAlready(UserFile userFile)
+            if (Master.Whitelist.WhitelistedUsers.Contains(userFile.Uid))
             {
-                if (Master.Whitelist.WhitelistedUsers.Contains(userFile.Uid))
-                {
-                    Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' was already whitelisted");
-                    return true;
-                }
-
-                else return false;
+                Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' was already whitelisted");
+                return;
             }
+            WhitelistManager.AddUserToWhitelist(ConsoleManager.commandParameters[0]);
         }
 
         public static void WhitelistRemoveCommandAction()
         {
-            UserFile userFile = UserManagerH.GetUserFileFromName(ConsoleManager.commandParameters[0]);
-            if (userFile == null) ThrowUserNotFoundError();
-
-            else
+            var userFile = UserManagerH.GetUserFileFromName(ConsoleManager.commandParameters[0]);
+            if (userFile == null)
             {
-                if (CheckIfIsAlready(userFile)) return;
-                else WhitelistManager.RemoveUserFromWhitelist(ConsoleManager.commandParameters[0]);
+                ThrowUserNotFoundError();
+                return;
             }
-
-            bool CheckIfIsAlready(UserFile userFile)
+            if (!Master.Whitelist.WhitelistedUsers.Contains(userFile.Uid))
             {
-                if (!Master.Whitelist.WhitelistedUsers.Contains(userFile.Uid))
-                {
-                    Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' was not whitelisted");
-                    return true;
-                }
-
-                else return false;
+                Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' was not whitelisted");
+                return;
             }
+            WhitelistManager.RemoveUserFromWhitelist(ConsoleManager.commandParameters[0]);
         }
 
         public static void ForceSaveCommandAction()
         {
-            ServerClient toFind = NetworkHelper.GetConnectedClientFromUid(ConsoleManager.commandParameters[0]);
-            if (toFind == null) ThrowUserNotFoundError();
-            else
+            var toFind = NetworkHelper.GetConnectedClientFromUid(ConsoleManager.commandParameters[0]);
+            if (toFind == null)
             {
-                CommandData commandData = new CommandData();
-                commandData._commandMode = CommandMode.ForceSave;
-
-                toFind.Listener.EnqueuePacket(PacketHeader.ConsoleManager, commandData);
-
-                Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' has been forced to save");
+                ThrowUserNotFoundError();
+                return;
             }
+
+            var commandData = new CommandData
+            {
+                _commandMode = CommandMode.ForceSave
+            };
+            toFind.Listener.EnqueuePacket(PacketHeader.ConsoleManager, commandData);
+            Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' has been forced to save");
         }
 
         public static void ResetPlayerCommandAction()
         {
-            UserFile userFile = UserManagerH.GetUserFileFromName(ConsoleManager.commandParameters[0]);
-            if (userFile == null) ThrowUserNotFoundError();
-            else
+            var userFile = UserManagerH.GetUserFileFromName(ConsoleManager.commandParameters[0]);
+            if (userFile == null)
             {
-                ServerClient toFind = NetworkHelper.GetConnectedClientFromUid(userFile.Uid);
-                SaveManager.ResetPlayerData(toFind, userFile.Uid);
+                ThrowUserNotFoundError();
+                return;
             }
+            var toFind = NetworkHelper.GetConnectedClientFromUid(userFile.Uid);
+            SaveManager.ResetPlayerData(toFind, userFile.Uid);
         }
 
         public static void PortForwardCommandAction()
         {
-            if (!Master.ServerConfig.UseUPnP) Printer.Error("Cannot portforward because UPnP is disabled on the server");
-            else _ = new UPnP();
+            if (!Master.ServerConfig.UseUPnP)
+            {
+                Printer.Error("Cannot portforward because UPnP is disabled on the server");
+                return;
+            }
+            _ = new UPnP();
         }
+
+        public static void LeaderboardCommandAction()
+        {
+            // 1) Determine how many to print (default = 10)
+            int limit = 10;
+            if (ConsoleManager.commandParameters.Length > 0 &&
+                int.TryParse(ConsoleManager.commandParameters[0], out int n) && n > 0)
+            {
+                limit = n;
+            }
+
+            // 2) Grab the raw text from WealthManager (this returns a multi-line string):
+            //    e.g.:
+            //      "Top 1 richest players:\n1. KNAPPE0 (KNAPPE0) – $19,807.62"
+            string rawLb = WealthManager.FormatLeaderboard(limit);
+
+            // 3) Split into individual lines
+            string[] lines = rawLb.Split(new[] { '\n' }, StringSplitOptions.None);
+
+            // 4) Start printing exactly as 'deeplist' does.
+            //    First, the header (lines[0]) is printed as-is:
+            //      [hh:mm:ss] | Top 1 richest players:
+            if (lines.Length > 0)
+            {
+                Printer.Title(lines[0]);
+            }
+
+            // 5) Print the “bar” line under it
+            Printer.Title("----------------------------------------");
+
+            // 6) Prepare a regex to match "1. USERNAME (OLD-UID) – $WEALTH"
+            var regex = new Regex(
+                @"^(\s*\d+\.\s+)([^\s]+)\s+\([^\)]+\)\s+–\s+(.*)$",
+                RegexOptions.Compiled
+            );
+
+            // 7) For each subsequent line (rank lines), re‐insert the **correct** UID:
+            for (int i = 1; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                var m = regex.Match(line);
+
+                if (m.Success)
+                {
+                    // a) capture rank prefix, username, and wealth
+                    string prefix = m.Groups[1].Value;   // e.g. "1. "
+                    string uname  = m.Groups[2].Value;   // e.g. "KNAPPE0"
+                    string wealth = m.Groups[3].Value;   // e.g. "$19,807.62"
+
+                    // b) Look up the actual UID (case‐insensitive) in all user‐files
+                    var userFile = UserManagerH
+                        .GetAllUserFiles()
+                        .FirstOrDefault(u =>
+                            string.Equals(u.Label, uname, StringComparison.OrdinalIgnoreCase));
+
+                    string correctUid = (userFile != null)
+                        ? userFile.Uid
+                        : "<unknown-uid>";
+
+                    // c) Rebuild: "1. KNAPPE0 (CORRECT-UID) – $19,807.62"
+                    string rebuiltLine = $"{prefix}{uname} ({correctUid}) – {wealth}";
+
+                    // d) Print that reconstructed line, with timestamp:
+                    Printer.Title(rebuiltLine);
+                }
+                else
+                {
+                    // If it doesn’t match our pattern, just print verbatim:
+                    Printer.Title(line);
+                }
+            }
+
+            // 8) Finally, print the closing “bar” line:
+            Printer.Title("----------------------------------------");
+        }    
 
         public static void ResetWorldCommandAction()
         {
-            //Make sure the user wants to reset the world
             Printer.Warning("Are you sure you want to reset the world?");
             Printer.Warning("Please type 'YES' or 'NO'");
 
         DeleteWorldQuestion:
             string response = Console.ReadLine();
-
             if (response == "NO") return;
-            else if (response != "YES")
+            if (response != "YES")
             {
                 Printer.Error($"{response} is not a valid option. The answer must be capitalized");
                 goto DeleteWorldQuestion;
             }
 
             BackupManager.BackupServer();
-
             Directory.Delete(Master.AssetsPath, true);
             Directory.Delete(Master.ConfigsPath, true);
             Directory.Delete(Master.TempPath, true);
-
             Environment.Exit(0);
         }
 
         public static void QuitCommandAction()
         {
             Master.IsClosing = true;
+            Printer.Warning("Waiting for all saves to quit");
 
-            Printer.Warning($"Waiting for all saves to quit");
-
-            foreach (ServerClient client in NetworkHelper.GetConnectedClientsSafe())
+            foreach (var client in NetworkHelper.GetConnectedClientsSafe())
             {
-                CommandData commandData = new CommandData();
-                commandData._commandMode = CommandMode.ForceSave;
-
+                var commandData = new CommandData
+                {
+                    _commandMode = CommandMode.ForceSave
+                };
                 client.Listener.EnqueuePacket(PacketHeader.ConsoleManager, commandData);
             }
 
-            while (NetworkHelper.GetConnectedClientsSafe().Length > 0) Thread.Sleep(1);
+            while (NetworkHelper.GetConnectedClientsSafe().Length > 0)
+                Thread.Sleep(1);
 
             Environment.Exit(0);
         }
 
-        public static void ForceQuitCommandAction() { Environment.Exit(0); }
+        public static void ForceQuitCommandAction()
+        {
+            Environment.Exit(0);
+        }
 
         public static void ClearCommandAction()
         {
             Console.Clear();
-
             Printer.Title("[Cleared console]");
         }
+
         public static void ThrowUserNotFoundError()
         {
             Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' was not found");
-            UserFile[] allUsers = UserManagerH.GetAllUserFiles();
+            var allUsers = UserManagerH.GetAllUserFiles();
             if (allUsers.Any(u => u.Label == ConsoleManager.commandParameters[0]))
+            {
                 Printer.Warning($"Username detected. You can only use UIDs for user commands. " +
                     $"Use the command `deeplist` to get the UID of {ConsoleManager.commandParameters[0]}.");
-            UserFile[] usersWithMatchingUsername = allUsers.Where(u => u.Label == ConsoleManager.commandParameters[0]).ToArray();
+            }
+
+            var usersWithMatchingUsername = allUsers
+                .Where(u => u.Label == ConsoleManager.commandParameters[0])
+                .ToArray();
             if (usersWithMatchingUsername.Length == 1)
             {
                 Printer.Warning($"Since only one person with the username {ConsoleManager.commandParameters[0]} exists, " +
-                    $"we were able to fetch his UID automatically: {usersWithMatchingUsername.First().Uid}");
+                    $"we were able to fetch their UID automatically: {usersWithMatchingUsername.First().Uid}");
             }
         }
     }

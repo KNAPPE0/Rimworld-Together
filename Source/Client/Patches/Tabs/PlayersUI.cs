@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿// File: Source/Client/Patches/Tabs/PlayersUI.cs
 using System.Linq;
 using GameClient.Managers;
 using GameClient.TCP;
@@ -12,7 +12,9 @@ namespace GameClient.Patches.Tabs
     public class PlayersUI : WITab
     {
         private Vector2 _scroll;
-        private static readonly Vector2 WinSize = new(432f, 540f);
+        private static readonly Vector2 WinSize    = new Vector2(432f, 540f);
+        private const float          Pad        = 6f;
+        private const float          ScrollbarW = 16f;
 
         public override bool IsVisible => true;
 
@@ -26,48 +28,64 @@ namespace GameClient.Patches.Tabs
         {
             if (Network.State != ClientNetworkState.Connected) return;
 
-            int oldSize            = GUI.skin.label.fontSize;
-            GUI.skin.label.fontSize = Mathf.RoundToInt(ChatCustomizationManager.FontSize);
+            // parse colors
+            var settings = ChatCustomizationManager.Settings;
+            bool hasBg = ColorUtility.TryParseHtmlString(settings.BackgroundColor, out var bgCol) && bgCol.a >= 0.1f;
+            bool hasFg = ColorUtility.TryParseHtmlString(settings.FontColor,       out var fgCol) && fgCol.a >= 0.1f;
 
-            var full = new Rect(0f, 0f, WinSize.x, WinSize.y);
-            Widgets.DrawBoxSolid(full, ChatCustomizationManager.BackgroundColor);
+            // draw background only if valid
+            if (hasBg)
+                Widgets.DrawBoxSolid(new Rect(0, 0, WinSize.x, WinSize.y), bgCol);
 
-            string title       = $"Players Online [{RecountManager.CurrentPlayers}]";
-            float  titleHeight = Text.CalcSize(title).y;
+            // font size
+            Text.Font = settings.FontSize switch
+            {
+                "Tiny"   => GameFont.Tiny,
+                "Medium" => GameFont.Medium,
+                _        => GameFont.Small,
+            };
 
-            Text.Font = GameFont.Medium;
-            GUI.color = ChatCustomizationManager.FontColor;
-            Widgets.Label(new Rect(10f, 10f, full.width - 20f, titleHeight), title);
+            // title
+            string title = $"Players Online [{RecountManager.CurrentPlayers}]";
+            float  titleH = Text.CalcSize(title).y;
+            GUI.color    = hasFg ? fgCol : Color.white;
+            Widgets.Label(new Rect(Pad, Pad, WinSize.x - 2*Pad, titleH), title);
             GUI.color = Color.white;
 
-            Widgets.DrawLineHorizontal(10f, 10f + titleHeight + 3f, full.width - 20f);
+            Widgets.DrawLineHorizontal(Pad, Pad + titleH + 3f, WinSize.x - 2*Pad);
 
-            Rect listRect = new Rect(10f, 10f + titleHeight + 10f,
-                                      full.width - 20f,
-                                      full.height - (titleHeight + 20f));
-            DrawList(listRect);
-
-            GUI.skin.label.fontSize = oldSize;
+            var listRect = new Rect(
+                Pad,
+                Pad + titleH + 10f,
+                WinSize.x - 2*Pad,
+                WinSize.y - (titleH + 2*Pad + 10f)
+            );
+            DrawList(listRect, hasFg ? fgCol : Color.white);
         }
 
-        private void DrawList(Rect mainRect)
+        private void DrawList(Rect mainRect, Color labelCol)
         {
-            List<string> list = RecountManager.CurrentPlayerNames.OrderBy(n => n).ToList();
-            float rowH = 30f;
-            float cont = 6f + list.Count * rowH;
+            var list       = RecountManager.CurrentPlayerNames.OrderBy(n => n).ToList();
+            const float rowH = 30f;
+            float contentH = list.Count * rowH + Pad;
+            float contentW = mainRect.width - ScrollbarW - Pad;
 
-            Widgets.BeginScrollView(mainRect, ref _scroll,
-                                    new Rect(0, 0, mainRect.width - 16f, cont));
+            Widgets.BeginScrollView(
+                mainRect,
+                ref _scroll,
+                new Rect(0, 0, contentW, contentH)
+            );
 
             float y = 0f;
-            for (int i = 0; i < list.Count; i++)
+            foreach (var name in list)
             {
-                if (i % 2 == 0)
-                    Widgets.DrawLightHighlight(new Rect(0, y, mainRect.width - 16f, rowH));
+                // zebra
+                if (((int)(y / rowH) & 1) == 0)
+                    Widgets.DrawLightHighlight(new Rect(0, y, contentW, rowH));
 
                 Text.Font = GameFont.Small;
-                GUI.color = ChatCustomizationManager.FontColor;
-                Widgets.Label(new Rect(10f, y + 5f, mainRect.width - 36f, rowH), list[i]);
+                GUI.color  = labelCol;
+                Widgets.Label(new Rect(Pad, y + 5f, contentW - Pad, rowH), name);
                 GUI.color = Color.white;
 
                 y += rowH;

@@ -1,4 +1,3 @@
-// File: Attributes.cs  (Shared File)
 using System;
 
 namespace Shared

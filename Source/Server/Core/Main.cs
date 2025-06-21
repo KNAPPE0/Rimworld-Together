@@ -66,7 +66,7 @@ namespace GameServer.Core
             Master.BackupUsersPath   = Path.Combine(Master.BackupsPath, "Users");
             Master.BackupServerPath  = Path.Combine(Master.BackupsPath, "Servers");
 
-            // create missing dirs (unchanged logic)
+            // Create missing dirs (unchanged logic)
             string[] paths =
             {
                 Master.AssetsPath, Master.ConfigsPath, Master.LogsPath, Master.BackupsPath, Master.TempPath,
@@ -329,7 +329,7 @@ namespace GameServer.Core
         {
             if (!StringChecker.CheckIfStringValid(Master.ServerConfig.Name))
             {
-                // placeholder for additional logic
+                // Placeholder for additional logic
             }
         }
     }

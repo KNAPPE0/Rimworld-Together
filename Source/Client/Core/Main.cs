@@ -11,7 +11,7 @@ using Verse.Steam;
 
 namespace GameClient.Core
 {
-    //Class that works as an entry point for the mod
+    // Class that works as an entry point for the mod
 
     public static class Main_
     {

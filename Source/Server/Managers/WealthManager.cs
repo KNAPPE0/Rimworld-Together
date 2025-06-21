@@ -1,4 +1,3 @@
-// File: WealthManager.cs  (Server File)
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -63,29 +62,16 @@ namespace GameServer.Managers
                 Printer.Error($"[WealthManager] Failed to save Wealth.json: {ex.Message}");
             }
         }
-
-        /// <summary>
-        /// Set (or update) a player’s wealth on the server side.
-        /// Also invokes OnWealthChanged so any listeners (e.g. Discord) can refresh.
-        /// </summary>
         public static void SetPlayerWealth(string uid, double amount)
         {
             _wealthData[uid] = amount;
             SaveWealthData();
             OnWealthChanged?.Invoke();
         }
-
-        /// <summary>
-        /// Return a player’s wealth (0.0 if not found).
-        /// </summary>
         public static double GetPlayerWealth(string uid)
         {
             return _wealthData.TryGetValue(uid, out var w) ? w : 0d;
         }
-
-        /// <summary>
-        /// Builds a simple multiline text leaderboard for wealth, used in console/commands.
-        /// </summary>
         public static string FormatLeaderboard(int topCount)
         {
             if (_wealthData == null || _wealthData.Count == 0)
@@ -98,7 +84,7 @@ namespace GameServer.Managers
 
             var lines = new List<string>
             {
-                $"Top {topList.Count} richest players:"  
+                $"Top {topList.Count} richest players:"
             };
 
             for (int i = 0; i < topList.Count; i++)
@@ -112,10 +98,6 @@ namespace GameServer.Managers
             return string.Join(Environment.NewLine, lines);
         }
 
-        /// <summary>
-        /// Similar to FormatLeaderboard, but omits UIDs and only shows username + wealth. 
-        /// Used when someone types “/leaderboard” in chat.
-        /// </summary>
         public static string FormatLeaderboardUsernames(int topCount)
         {
             if (_wealthData == null || _wealthData.Count == 0)
@@ -155,5 +137,6 @@ namespace GameServer.Managers
                 Printer.Error($"[WealthManager] Error parsing incoming packet: {ex.Message}");
             }
         }
-    }
+    } 
+    // TODO: GET RID OF WEALTH & it's managers/files AND TURN IT INTO STATS!
 }

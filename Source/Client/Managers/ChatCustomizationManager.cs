@@ -20,9 +20,7 @@ namespace GameClient.Managers
             }
         }
 
-        /// <summary>
-        /// Current chat customization settings.
-        /// </summary>
+        // Current chat customization settings.
         public static ChatCustomizationData Settings { get; private set; } = new ChatCustomizationData();
 
         static ChatCustomizationManager()
@@ -30,9 +28,7 @@ namespace GameClient.Managers
             LoadSettings();
         }
 
-        /// <summary>
-        /// Load settings from disk, or create defaults if none exist.
-        /// </summary>
+        // Load settings from disk, or create defaults if none exist.
         public static void LoadSettings()
         {
             try
@@ -59,9 +55,7 @@ namespace GameClient.Managers
             }
         }
 
-        /// <summary>
-        /// Save current settings to disk.
-        /// </summary>
+        // Save current settings to disk.
         public static void SaveSettings()
         {
             try
@@ -80,35 +74,23 @@ namespace GameClient.Managers
         }
     }
 
-    /// <summary>
-    /// Data container for chat customization options.
-    /// </summary>
+    // Data container for chat customization options.
     [Serializable]
     public class ChatCustomizationData
     {
-        /// <summary>
-        /// Font color in HTML hex (e.g., "#FFFFFF").
-        /// </summary>
+        // Font color in HTML hex (e.g., "#FFFFFF").
         public string FontColor = "#FFFFFF";
 
-        /// <summary>
-        /// Background color in HTML hex (e.g., "#000000").
-        /// </summary>
+        // Background color in HTML hex (e.g., "#000000").
         public string BackgroundColor = "#000000";
 
-        /// <summary>
-        /// Font size: "Tiny", "Small", or "Medium".
-        /// </summary>
+        // Font size: "Tiny", "Small", or "Medium".
         public string FontSize = "Medium";
 
-        /// <summary>
-        /// Width of the chat window.
-        /// </summary>
+        // Width of the chat window.
         public float WindowWidth = 700f;
 
-        /// <summary>
-        /// Height of the chat window.
-        /// </summary>
+        // Height of the chat window.
         public float WindowHeight = 500f;
     }
 }

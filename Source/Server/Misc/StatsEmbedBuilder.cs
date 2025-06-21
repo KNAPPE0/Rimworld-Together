@@ -1,4 +1,3 @@
-// File: StatsEmbedBuilder.cs  (Server File)
 using System;
 using System.Collections.Generic;
 using System.Linq;

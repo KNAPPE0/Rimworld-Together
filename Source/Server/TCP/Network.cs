@@ -49,14 +49,14 @@ namespace GameServer.TCP
                 return;
             }
 
-            // server full?
+            // Server full?
             if (NetworkHelper.GetConnectedClientsSafe().Length >= int.Parse(Master.ServerConfig.MaxPlayers))
             {
                 LoginManagerH.DenyConnectionWithReason(newClient, LoginResponse.ServerFull);
                 return;
             }
 
-            // world not loaded?
+            // World not loaded?
             if (Master.WorldValues == null && NetworkHelper.GetConnectedClientsSafe().Length > 0)
             {
                 LoginManagerH.DenyConnectionWithReason(newClient, LoginResponse.NoWorld);
@@ -67,7 +67,7 @@ namespace GameServer.TCP
             ConnectedClients.Add(newClient);
             Main_.ChangeTitle();
 
-            // kick off version check
+            // Kick off version check
             VersionManager.AskForClientVersion(newClient);
         }
 
@@ -79,11 +79,11 @@ namespace GameServer.TCP
                 client.Listener.DestroyConnection();
                 Main_.ChangeTitle();
 
-                // 1) In-game chat notification
+                // In-game chat notification
                 if (Master.ChatConfig.DisconnectNotifications)
                     ChatManager.BroadcastServerNotification($"{client.UserFile.Label} has left the server!");
 
-                // 2) Console / Discord notification
+                // Console / Discord notification
                 var leaveMsg = $"[Disconnect] {client.UserFile.Label} (UID: {client.UserFile.Uid}) has left the server!. " +
                                $"Players: {ConnectedClients.Count}";
                 Printer.Message(leaveMsg);

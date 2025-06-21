@@ -1,5 +1,4 @@
-﻿﻿// File: SaveManager.cs  (Client File)
-﻿using HarmonyLib;
+﻿﻿using HarmonyLib;
 using RimWorld;
 using Shared;
 using System;

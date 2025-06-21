@@ -13,25 +13,25 @@ using Shared;
 
 namespace GameClient.TCP
 {
-    //Main class that is used to handle the connection with the server
+    // Main class that is used to handle the connection with the server
 
     public static class Network
     {
-        //Variables that points what the state of the network might be for the client
+        // Variables that points what the state of the network might be for the client
 
         public static ClientNetworkState State;
 
-        //IP and Port that the connection will be bound to
+        // IP and Port that the connection will be bound to
 
         public static string Ip { get; set; } = "";
 
         public static string Port { get; set; } = "";
 
-        //TCP listener that will handle the connection with the server
+        // TCP listener that will handle the connection with the server
 
         public static Listener Listener { get; private set; }
 
-        //Entry point function of the network class
+        // Entry point function of the network class
 
         public static void StartConnection()
         {
@@ -54,7 +54,7 @@ namespace GameClient.TCP
             }
         }
 
-        //Tries to connect into the specified server
+        // Tries to connect into the specified server
 
         public static bool TryConnectToServer()
         {
@@ -70,7 +70,7 @@ namespace GameClient.TCP
             return true;
         }
 
-        //Disconnects client from the server
+        // Disconnects client from the server
 
         public static void DisconnectFromServerInstant()
         {

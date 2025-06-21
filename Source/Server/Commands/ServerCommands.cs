@@ -1,4 +1,3 @@
-// File: ServerCommands.cs  (Server File)
 using Shared; 
 using static GameServer.Commands.ConsoleCommands;
 using static Shared.CommonEnumerators;

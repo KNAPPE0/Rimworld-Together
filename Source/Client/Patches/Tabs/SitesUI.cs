@@ -1,5 +1,4 @@
-﻿// File: Source/Client/Patches/Tabs/SitesUI.cs
-using System.Linq;
+﻿using System.Linq;
 using GameClient.Managers;
 using GameClient.TCP;
 using RimWorld.Planet;

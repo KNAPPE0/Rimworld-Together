@@ -1,5 +1,4 @@
-﻿// File: Source/Client/Patches/Tabs/BasesUI.cs
-using System.Linq;
+﻿using System.Linq;
 using GameClient.Managers;
 using GameClient.TCP;
 using GameClient.Values;
@@ -29,16 +28,16 @@ namespace GameClient.Patches.Tabs
         {
             if (Network.State != ClientNetworkState.Connected) return;
 
-            // parse colors
+            // Parse colors
             var settings = ChatCustomizationManager.Settings;
             bool hasBg = ColorUtility.TryParseHtmlString(settings.BackgroundColor, out var bgCol) && bgCol.a >= 0.1f;
             bool hasFg = ColorUtility.TryParseHtmlString(settings.FontColor,       out var fgCol) && fgCol.a >= 0.1f;
 
-            // draw background only if valid
+            // Draw background only if valid/not blank
             if (hasBg)
                 Widgets.DrawBoxSolid(new Rect(0, 0, WinSize.x, WinSize.y), bgCol);
 
-            // choose font size
+            // Choose font size
             Text.Font = settings.FontSize switch
             {
                 "Tiny"   => GameFont.Tiny,
@@ -46,7 +45,7 @@ namespace GameClient.Patches.Tabs
                 _        => GameFont.Small,
             };
 
-            // draw title
+            // Draw title
             string title = $"Player Bases [{SettlementManager.PlayerSettlements.Count()}]";
             float titleH = Text.CalcSize(title).y;
             GUI.color   = hasFg ? fgCol : Color.white;
@@ -55,7 +54,7 @@ namespace GameClient.Patches.Tabs
 
             Widgets.DrawLineHorizontal(Pad, Pad + titleH + 3f, WinSize.x - 2*Pad);
 
-            // list area
+            // List area
             var listRect = new Rect(
                 Pad,
                 Pad + titleH + 10f,
@@ -81,11 +80,11 @@ namespace GameClient.Patches.Tabs
             float y = 0f;
             foreach (var stl in rows)
             {
-                // zebra
+                // Zebra
                 if (((int)(y / rowH) & 1) == 0)
                     Widgets.DrawLightHighlight(new Rect(0, y, contentW, rowH));
 
-                // label
+                // Label
                 Text.Font = GameFont.Small;
                 GUI.color  = labelCol;
                 Widgets.Label(

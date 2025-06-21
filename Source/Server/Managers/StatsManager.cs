@@ -27,7 +27,7 @@ namespace GameServer.Managers
             LoadAllStats();
         }
 
-        /// <summary>Expose all live stats (one per UID).</summary>
+        // Expose all live stats (one per UID).
         public static IEnumerable<StatisticsData> GetAllLiveStats()
         {
             return _latestStats.Values;
@@ -49,11 +49,11 @@ namespace GameServer.Managers
 
         private static void MergeStats(StatisticsData incoming)
         {
-            // update “latest”
+            // Update “latest”
             _latestStats[incoming._uid] = incoming;
             SaveAllStats();
 
-            // bucket into daily snapshot
+            // Bucket into daily snapshot
             var dt = DateTimeOffset.FromUnixTimeSeconds(incoming._timestampUtc).UtcDateTime;
             string dateKey = dt.ToString("yyyy-MM-dd");
             if (!_dailySnapshots.ContainsKey(dateKey))
@@ -109,7 +109,7 @@ namespace GameServer.Managers
             }
         }
 
-        /// <summary>Top N players by wealth on a specific date.</summary>
+        // Top N players by wealth on a specific date.
         public static List<StatisticsData> GetTopForDate(string dateKey, int topN)
         {
             if (!_dailySnapshots.TryGetValue(dateKey, out var dayList))
@@ -117,7 +117,7 @@ namespace GameServer.Managers
             return dayList.OrderByDescending(s => s._wealth).Take(topN).ToList();
         }
 
-        /// <summary>Live top N players by wealth.</summary>
+        // Live top N players by wealth.
         public static List<StatisticsData> GetLiveTop(int topN)
         {
             return _latestStats.Values.OrderByDescending(s => s._wealth).Take(topN).ToList();

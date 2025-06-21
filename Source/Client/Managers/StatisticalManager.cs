@@ -1,4 +1,3 @@
-// File: StatisticalManager.cs  (Client File)
 using System;
 using GameClient.Values;
 using GameClient.TCP;
@@ -11,11 +10,7 @@ namespace GameClient.Managers
 {
     public static class StatisticalManager
     {
-        /// <summary>
-        /// Gathers in-game statistics (wealth, colonists, playtime, days passed, etc.)
-        /// and sends them to the server as a single packet.
-        /// Call this just before (or right after) SaveManager.SendSaveToServer().
-        /// </summary>
+        // Gathers in-game statistics (wealth, colonists, playtime, days passed, etc.) and sends them to the server as a single packet. Call's this just before (or right after) SaveManager.SendSaveToServer().
         public static void SendCurrentStats()
         {
             if (Current.Game == null) return;

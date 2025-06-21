@@ -4,11 +4,11 @@ using static Shared.CommonEnumerators;
 
 namespace GameClient.Managers
 {
-    //Class that handles loging responses from the server
+    // Class that handles loging responses from the server
 
     public static class LoginManager
     {
-        //Parses the received packet into an order
+        // Parses the received packet into an order
 
         [HandlesPacket(PacketHeader.LoginManager)]
         private static void ParsePacket(byte[] bytes)

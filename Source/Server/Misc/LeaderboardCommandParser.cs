@@ -1,4 +1,3 @@
-// File: LeaderboardCommandParser.cs  (Server File)
 using System;
 using System.Globalization;
 
@@ -6,15 +5,6 @@ namespace GameServer.Misc
 {
     public static class LeaderboardCommandParser
     {
-        /// <summary>
-        /// Given tokens after “leaderboard”, outputs (limit, sortKey).
-        /// Examples:
-        ///   "leaderboard"          → (10, "wealth")
-        ///   "leaderboard 5"        → (5, "wealth")
-        ///   "leaderboard days"     → (10, "daysPassed")
-        ///   "leaderboard 3 playtime" → (3, "playtimeSeconds")
-        ///   Any unrecognized sortKey defaults to "wealth".
-        /// </summary>
         public static void Parse(string[] parts, out int limit, out string sortKey)
         {
             limit   = 10;

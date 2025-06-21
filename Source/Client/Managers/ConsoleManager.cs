@@ -6,10 +6,10 @@ using static Shared.CommonEnumerators;
 
 namespace GameClient.Managers
 {
-    //Class that handles how the client will answer to incoming server commands
+    // Class that handles how the client will answer to incoming server commands
     public static class ConsoleManager
     {
-        //Parses the received packet into a command to execute
+        // Parses the received packet into a command to execute
 
         [HandlesPacket(PacketHeader.ConsoleManager)]
         private static void ParsePacket(byte[] bytes)
@@ -36,7 +36,7 @@ namespace GameClient.Managers
             }
         }
 
-        //Executes the command depending on the type
+        // Executes the command depending on the type
 
         private static void OnOpCommand()
         {

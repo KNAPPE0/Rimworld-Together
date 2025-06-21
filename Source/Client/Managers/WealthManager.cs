@@ -1,4 +1,3 @@
-// File: WealthManager.cs  (Client File)
 using System;
 using GameClient.TCP;
 using Shared;
@@ -12,9 +11,7 @@ namespace GameClient.Managers
 {
     public static class WealthManager
     {
-        /// <summary>
-        /// Send one map’s wealth (if it’s a player home) to the server.
-        /// </summary>
+        // Send one map’s wealth (if it’s a player home) to the server.
         public static void Send(Map map)
         {
             if (map == null) return;
@@ -30,9 +27,7 @@ namespace GameClient.Managers
             Network.Listener.EnqueuePacket(PacketHeader.WealthManager, packet);
         }
 
-        /// <summary>
-        /// Call this to broadcast all home maps’ wealth. Typically before sending a save.
-        /// </summary>
+        // Call this to broadcast all home maps’ wealth. Typically before sending a save.
         public static void SendCurrentWealth()
         {
             foreach (var map in Find.Maps)

@@ -1,4 +1,3 @@
-﻿// File: SaveManager.cs  (Server File)
 ﻿using GameServer.Core;
 using GameServer.Misc;
 using GameServer.TCP;
@@ -14,9 +13,7 @@ namespace GameServer.Managers
         public readonly static string fileExtension      = ".mpsave";
         public readonly static string tempFileExtension  = ".mpsavetemp";
 
-        /// <summary>
-        /// Handles both sending a save TO the client and receiving a save FROM the client.
-        /// </summary>
+        // Handles both sending a save TO the client and receiving a save FROM the client.
         [HandlesPacket(PacketHeader.SaveManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes)
         {

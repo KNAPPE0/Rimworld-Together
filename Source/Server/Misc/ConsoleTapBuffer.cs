@@ -1,4 +1,3 @@
-// File: ConsoleTapBuffer.cs  (Server File)
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -22,7 +21,7 @@ namespace GameServer.Misc
 
         void OnConsoleTap(Printer.LogKind kind, string txt)
         {
-            // ❶ Skip any output while a console command is actively sending its own block
+            // Skip any output while a console command is actively sending its own block
             if (!string.IsNullOrEmpty(Printer.DiscordConsoleUser)) return;
             if (SendToDiscord == null) return;
 

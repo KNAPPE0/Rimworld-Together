@@ -1,4 +1,3 @@
-﻿// File: UserFile.cs  (Server File)
 ﻿using GameServer.Managers;
 using Shared;
 using System.Collections.Generic;

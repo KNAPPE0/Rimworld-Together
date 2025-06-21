@@ -8,7 +8,7 @@ namespace GameServer.Managers
 
     public static class MapManager
     {
-        //Variables
+        // Variables
 
         public readonly static string fileExtension = ".mpmap";
 

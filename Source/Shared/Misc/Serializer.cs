@@ -4,7 +4,7 @@ using System.IO;
 
 namespace Shared
 {
-    //Class that handles all of the mod's serialization functions
+    // Class that handles all of the mod's serialization functions
 
     public static class Serializer
     {
@@ -18,7 +18,7 @@ namespace Shared
             Formatting = Formatting.Indented
         };
 
-        //Serialize from and to byte arrays
+        // Serialize from and to byte arrays
 
         public static byte[] ConvertObjectToBytes(object toConvert, bool compression = false)
         {

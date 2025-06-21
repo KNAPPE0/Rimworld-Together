@@ -82,7 +82,7 @@ namespace GameServer.Misc
                 Console.WriteLine($"[{ts}] | {text}");
                 Console.ForegroundColor = ConsoleColor.White;
 
-                // capture console-command output for Discord
+                // Capture console-command output for Discord
                 if (!string.IsNullOrEmpty(DiscordConsoleUser) &&
                     Master.DiscordConfig?.Enabled == true)
                     DiscordConsoleBuffer.Add(text);

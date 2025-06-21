@@ -44,7 +44,7 @@ namespace GameServer.Managers
 
         public static string[] defaultTextTools => _defaultTextTools;
 
-        // packets
+        // Packets
         [HandlesPacket(PacketHeader.ChatManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes)
         {
@@ -58,7 +58,7 @@ namespace GameServer.Managers
 
         private static void ExecuteChatCommand(ServerClient client, string[] cmd)
         {
-            if (!_cmdLock.WaitOne(50))          // short wait avoids dead-lock
+            if (!_cmdLock.WaitOne(50))          // Short wait avoids dead-lock
             {
                 Printer.Warning("Chat command lock contention – dropped command.");
                 return;
@@ -83,7 +83,7 @@ namespace GameServer.Managers
             finally { _cmdLock.Release(); }
         }
 
-        // broadcast helpers
+        // Broadcast helpers
         private static void BroadcastChatMessage(ServerClient client, string msg)
         {
             if (Master.ServerConfig == null) return;
@@ -100,7 +100,7 @@ namespace GameServer.Managers
             _ = WriteToLogsAsync(client.UserFile.Label, msg);
             ChatManagerHelper.ShowChatInConsole(client.UserFile.Label, msg);
 
-            // mirror to Discord chat channel (opt-in)
+            // Mirror to Discord chat channel (optional)
             if (DiscordConfig?.Enabled == true)
                 _ = DiscordManager.SendChatMessageAsync(client.UserFile.Label, msg);
         }
@@ -145,7 +145,7 @@ namespace GameServer.Managers
             ChatManagerHelper.ShowChatInConsole(who, msg);
         }
 
-        // console helpers
+        // Console helpers
         public static void SendConsoleMessage(ServerClient client, string msg)
         {
             var data = new ChatData
@@ -170,7 +170,7 @@ namespace GameServer.Managers
             client.Listener.EnqueuePacket(PacketHeader.ChatManager, data);
         }
 
-        // async file logging
+        // Async file logging
         private static Task WriteToLogsAsync(string user, string msg)
             => Task.Run(() =>
             {

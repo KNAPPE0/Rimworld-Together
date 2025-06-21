@@ -1,5 +1,4 @@
-﻿// File: Source/Client/Patches/Tabs/PlayersUI.cs
-using System.Linq;
+﻿using System.Linq;
 using GameClient.Managers;
 using GameClient.TCP;
 using RimWorld.Planet;
@@ -28,16 +27,16 @@ namespace GameClient.Patches.Tabs
         {
             if (Network.State != ClientNetworkState.Connected) return;
 
-            // parse colors
+            // Parse colors
             var settings = ChatCustomizationManager.Settings;
             bool hasBg = ColorUtility.TryParseHtmlString(settings.BackgroundColor, out var bgCol) && bgCol.a >= 0.1f;
             bool hasFg = ColorUtility.TryParseHtmlString(settings.FontColor,       out var fgCol) && fgCol.a >= 0.1f;
 
-            // draw background only if valid
+            // Draw background only if valid
             if (hasBg)
                 Widgets.DrawBoxSolid(new Rect(0, 0, WinSize.x, WinSize.y), bgCol);
 
-            // font size
+            // Font size
             Text.Font = settings.FontSize switch
             {
                 "Tiny"   => GameFont.Tiny,
@@ -45,7 +44,7 @@ namespace GameClient.Patches.Tabs
                 _        => GameFont.Small,
             };
 
-            // title
+            // Title
             string title = $"Players Online [{RecountManager.CurrentPlayers}]";
             float  titleH = Text.CalcSize(title).y;
             GUI.color    = hasFg ? fgCol : Color.white;
@@ -79,7 +78,7 @@ namespace GameClient.Patches.Tabs
             float y = 0f;
             foreach (var name in list)
             {
-                // zebra
+                // Zebra
                 if (((int)(y / rowH) & 1) == 0)
                     Widgets.DrawLightHighlight(new Rect(0, y, contentW, rowH));
 

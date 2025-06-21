@@ -17,7 +17,7 @@ namespace GameServer.Managers
             HandleUser(client, data);
         }
 
-        // flow control (needed hardly)
+        // Flow control (needed hardly)
         public static void HandleUser(ServerClient client, LoginData data)
         {
             if (!UserManagerH.CheckLoginData(client, data)) return;
@@ -66,18 +66,18 @@ namespace GameServer.Managers
             UserManager.SendPlayerRecount();
             GlobalDataManager.SendServerGlobalData(client);
 
-            // MOTD + default join lines
+            // MOTD + Default join lines
             foreach (string str in ChatManager.DefaultJoinMessages)
                 ChatManager.SendConsoleMessage(client, str);
 
             if (Master.ChatConfig.EnableMoTD)
                 ChatManager.SendServerMessage(client, $"MoTD > {Master.ChatConfig.MessageOfTheDay}");
 
-            // in-game join notification
+            // In-game join notification
             if (Master.ChatConfig.LoginNotifications)
                 ChatManager.BroadcastServerNotification($"{client.UserFile.Label} has joined the server!");
 
-            // console / Discord notification (extra feature you added)
+            // Console / Discord notification (extra feature you added)
             if (Master.DiscordConfig?.Enabled == true)
             {
                 int count = NetworkHelper.GetConnectedClientsSafe().Length;

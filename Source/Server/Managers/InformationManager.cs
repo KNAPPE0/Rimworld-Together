@@ -21,6 +21,10 @@ namespace GameServer.Managers
                 case InformationData.InfoStepMode.Wealth:
                     SendWealth(client, data);
                     break;
+
+                case InformationData.InfoStepMode.Stats:
+                    StatisticalManager.SendStats(client, data);
+                    break;
             }
         }
 
@@ -36,9 +40,10 @@ namespace GameServer.Managers
 
         private static void SendWealth(ServerClient client, InformationData data)
         {
-            MapFile mapToFind = MapManager.GetMapFromTile(data._settlementTile);
+            // fast read stats cache instead of tryna read full MapFile (You can crash servers if map data is too big and multiple people are calling for it)
+            MapStatsFile stats = MapManager.GetOrCreateMapStatsFromTile(data._settlementTile);
 
-            data._settlementWealth = mapToFind != null ? mapToFind.Wealth : -1;
+            data._settlementWealth = stats != null ? stats.Wealth : -1;
 
             client.Listener.EnqueuePacket(PacketHeader.InformationManager, data);
         }

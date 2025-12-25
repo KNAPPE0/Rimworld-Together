@@ -13,7 +13,7 @@ namespace GameClient.Misc
 {
     public static class MapSaveLoader
     {
-        public static MapFile MapToString(Map map, bool factionThings, bool nonFactionThings, bool factionHumans, bool nonFactionHumans, 
+        public static MapFile MapToString(Map map, bool factionThings, bool nonFactionThings, bool factionHumans, bool nonFactionHumans,
             bool factionAnimals, bool nonFactionAnimals)
         {
             MapFile mapFile = new MapFile();
@@ -23,6 +23,11 @@ namespace GameClient.Misc
             mapFile.Size = ValueParser.IntVec3ToArray(map.Size);
 
             mapFile.Wealth = (int)map.wealthWatcher.WealthTotal;
+
+            mapFile.WealthExact = map.wealthWatcher.WealthTotal;
+
+            mapFile.GameTicks = Find.TickManager != null ? Find.TickManager.TicksGame : -1;
+            mapFile.LastSavedUtcTicks = DateTime.UtcNow.Ticks;
 
             mapFile.CurWeatherDefName = map.weatherManager.curWeather.defName;
 
@@ -39,7 +44,7 @@ namespace GameClient.Misc
             return mapFile;
         }
 
-        public static Map StringToMap(MapFile mapFile, bool factionThings, bool nonFactionThings, bool factionHumans, bool nonFactionHumans, 
+        public static Map StringToMap(MapFile mapFile, bool factionThings, bool nonFactionThings, bool factionHumans, bool nonFactionHumans,
             bool factionAnimals, bool nonFactionAnimals, bool lessLoot = false)
         {
             Map map = SetEmptyMap(mapFile, SessionHandler.ChosenSettlement.Tile);

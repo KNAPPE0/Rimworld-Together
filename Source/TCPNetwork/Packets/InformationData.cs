@@ -1,8 +1,10 @@
+using Shared.Files;
+
 namespace TCPNetwork.Packets
 {
     public class InformationData
     {
-        public enum InfoStepMode { Connection, Wealth }
+        public enum InfoStepMode { Connection, Wealth, Stats }
 
         public InfoStepMode _stepMode { get; set; } = InfoStepMode.Connection;
 
@@ -11,5 +13,7 @@ namespace TCPNetwork.Packets
         public int _settlementWealth { get; set; } = -1;
 
         public int _settlementTile { get; set; } = -1;
+
+        public MapStatsFile _settlementStats { get; set; } = null;
     }
 }

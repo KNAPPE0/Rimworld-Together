@@ -12,6 +12,12 @@ namespace Shared.Files
 
         public int Wealth { get; set; } = -1;
 
+        public double WealthExact { get; set; } = -1;
+
+        public int GameTicks { get; set; } = -1;
+
+        public long LastSavedUtcTicks { get; set; } = 0;
+
         public string CurWeatherDefName { get; set; } = string.Empty;
 
         public ModsConfigFile Mods { get; set; } = null;

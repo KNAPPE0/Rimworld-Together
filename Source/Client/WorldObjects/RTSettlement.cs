@@ -37,7 +37,7 @@ namespace GameClient.WorldObjects
             {
                 if (cachedMat == null)
                 {
-                    cachedMat = MaterialPool.MatFrom(base.Faction.def.settlementTexturePath, 
+                    cachedMat = MaterialPool.MatFrom(base.Faction.def.settlementTexturePath,
                         ShaderDatabase.WorldOverlayTransparentLit, base.Faction.Color, 3550);
                 }
 
@@ -179,32 +179,19 @@ namespace GameClient.WorldObjects
                 }
             };
 
-            Command_Action command_Info = new Command_Action
+            Command_Action command_Stats = new Command_Action
             {
-                defaultLabel = "Info",
-                defaultDesc = "Shows if the player is connected",
+                defaultLabel = "Stats",
+                defaultDesc = "Shows this settlement's stats",
                 icon = ContentFinder<Texture2D>.Get("Commands/Info"),
                 action = delegate
                 {
                     SessionHandler.ChosenSettlement = this;
-                    InformationManager.AskForInformation();
+                    StatisticalManager.AskForStats();
                 }
             };
 
-            Command_Action command_Wealth = new Command_Action
-            {
-                defaultLabel = "Wealth",
-                defaultDesc = "Shows the selected settlement's wealth",
-                icon = ContentFinder<Texture2D>.Get("Commands/Wealth"),
-                action = delegate
-                {
-                    SessionHandler.ChosenSettlement = this;
-                    InformationManager.AskForWealth();
-                }
-            };
-
-            gizmos.Add(command_Info);
-            gizmos.Add(command_Wealth);
+            gizmos.Add(command_Stats);
             gizmos.Add(command_Goodwill);
             gizmos.Add(command_Event);
             gizmos.Add(command_Aid);

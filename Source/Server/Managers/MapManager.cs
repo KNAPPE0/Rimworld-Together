@@ -5,6 +5,9 @@ using static Shared.CommonEnumerators;
 using Shared.Files;
 using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
+using System;
+using System.IO;
+using System.Linq;
 
 namespace GameServer.Managers
 {
@@ -21,7 +24,10 @@ namespace GameServer.Managers
         public static void SaveUserMap(ServerClient client, MapFile file)
         {
             file.Username = client.UserFile.Username;
-            Serializer.ObjectBytesToFile(Path.Combine(Master.MapsPath, file.Tile + CommonValues.DefaultSaveFormat), file);
+            string mapPath = Path.Combine(Master.MapsPath, file.Tile + CommonValues.DefaultSaveFormat);
+            Serializer.ObjectBytesToFile(mapPath, file);
+
+            TryWriteStatsSnapshot(file);
 
             InformationDisplayer.DisplaySaveMap(client);
         }
@@ -29,6 +35,10 @@ namespace GameServer.Managers
         public static void DeleteMap(MapFile mapFile)
         {
             File.Delete(Path.Combine(Master.MapsPath, mapFile.Tile + CommonValues.DefaultSaveFormat));
+
+            string statsPath = GetStatsPathForTile(mapFile.Tile);
+            if (File.Exists(statsPath)) File.Delete(statsPath);
+
             InformationDisplayer.DisplayRemoveMap(mapFile.Tile.ToString());
         }
 
@@ -49,6 +59,88 @@ namespace GameServer.Managers
             string path = Path.Combine(Master.MapsPath, mapTileToGet + CommonValues.DefaultSaveFormat);
             if (File.Exists(path)) return Serializer.FileBytesToObject<MapFile>(path);
             else return null;
+        }
+
+        public static MapStatsFile GetOrCreateMapStatsFromTile(int mapTileToGet)
+        {
+            string statsPath = GetStatsPathForTile(mapTileToGet);
+
+            try
+            {
+                if (File.Exists(statsPath))
+                    return Serializer.FileBytesToObject<MapStatsFile>(statsPath);
+            }
+            catch
+            {
+            }
+
+            MapFile map = GetMapFromTile(mapTileToGet);
+            if (map == null) return null;
+
+            MapStatsFile stats = BuildStatsFromMapFile(map);
+            TryWriteStatsSnapshot(stats);
+
+            return stats;
+        }
+
+        private static void TryWriteStatsSnapshot(MapFile mapFile)
+        {
+            try
+            {
+                MapStatsFile stats = BuildStatsFromMapFile(mapFile);
+                TryWriteStatsSnapshot(stats);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void TryWriteStatsSnapshot(MapStatsFile stats)
+        {
+            try
+            {
+                if (stats == null || stats.Tile < 0) return;
+
+                string statsPath = GetStatsPathForTile(stats.Tile);
+                Serializer.ObjectBytesToFile(statsPath, stats);
+            }
+            catch
+            {
+            }
+        }
+
+        private static MapStatsFile BuildStatsFromMapFile(MapFile mapFile)
+        {
+            MapStatsFile stats = new MapStatsFile();
+
+            stats.Tile = mapFile.Tile;
+            stats.Username = mapFile.Username ?? string.Empty;
+
+            stats.Wealth = mapFile.Wealth;
+
+            stats.WealthExact = mapFile.WealthExact >= 0 ? mapFile.WealthExact : -1;
+
+            stats.GameTicks = mapFile.GameTicks;
+            stats.LastSavedUtcTicks = mapFile.LastSavedUtcTicks > 0 ? mapFile.LastSavedUtcTicks : DateTime.UtcNow.Ticks;
+
+            stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Length : -1;
+            stats.NonFactionThingCount = mapFile.NonFactionThings != null ? mapFile.NonFactionThings.Length : -1;
+
+            stats.FactionHumanCount = mapFile.FactionHumans != null ? mapFile.FactionHumans.Length : -1;
+            stats.NonFactionHumanCount = mapFile.NonFactionHumans != null ? mapFile.NonFactionHumans.Length : -1;
+
+            stats.FactionAnimalCount = mapFile.FactionAnimals != null ? mapFile.FactionAnimals.Length : -1;
+            stats.NonFactionAnimalCount = mapFile.NonFactionAnimals != null ? mapFile.NonFactionAnimals.Length : -1;
+
+            stats.ColonistCount = stats.FactionHumanCount;
+
+
+            return stats;
+        }
+
+        private static string GetStatsPathForTile(int tile)
+        {
+            return Path.Combine(Master.MapsPath, $"{tile}.stats{CommonValues.DefaultSaveFormat}");
         }
     }
 }

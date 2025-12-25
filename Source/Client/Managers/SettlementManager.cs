@@ -48,7 +48,7 @@ namespace GameClient.Managers
         {
             PlayerSettlements.Clear();
 
-            WorldObject[] settlements = (WorldObject[])Find.World.worldObjects.AllWorldObjects.FindAll(fetch => 
+            WorldObject[] settlements = (WorldObject[])Find.World.worldObjects.AllWorldObjects.FindAll(fetch =>
                 fetch.def.defName == "RTSettlement").ToArray();
 
             foreach (RTSettlement settlement in settlements)
@@ -66,7 +66,11 @@ namespace GameClient.Managers
                 WorldObjectDef def = DefDatabase<WorldObjectDef>.AllDefs.First(fetch => fetch.defName == "RTSettlement");
                 RTSettlement settlement = (RTSettlement)WorldObjectMaker.MakeWorldObject(def);
                 settlement.Tile = toAdd.Tile;
-                settlement.Name = $"{toAdd.Username}'s settlement";
+
+                if (!string.IsNullOrWhiteSpace(toAdd.Name))
+                    settlement.Name = toAdd.Name;
+                else
+                    settlement.Name = $"{toAdd.Username}'s settlement";
                 settlement.SetFaction(PlanetManagerHelper.GetPlayerFactionFromGoodwill(toAdd.Goodwill));
 
                 PlayerSettlements.Add(settlement);
@@ -82,7 +86,7 @@ namespace GameClient.Managers
                 RTSettlement toGet = (RTSettlement)Find.WorldObjects.AllWorldObjects.First(fetch => fetch.Tile == toRemove.Tile &&
                     SessionHandler.PlayerFactions.Contains(fetch.Faction));
 
-                PlayerSettlements.Remove(toGet); 
+                PlayerSettlements.Remove(toGet);
                 Find.WorldObjects.Remove(toGet);
                 toGet.Destroy();
             }
@@ -93,7 +97,15 @@ namespace GameClient.Managers
         {
             SettlementFile file = new SettlementFile();
             file.Tile = _.Tile;
-            file.Username = _.Label.Replace("'s settlement", "");
+
+            string label = _.Label ?? string.Empty;
+
+            if (label.EndsWith("'s settlement"))
+                file.Username = label.Replace("'s settlement", "").Trim();
+            else
+                file.Username = string.Empty;
+
+            file.Name = label;
 
             if (_.Faction == SessionHandler.EnemyFaction) file.Goodwill = Goodwill.Enemy;
             else if (_.Faction == SessionHandler.AllyFaction) file.Goodwill = Goodwill.Ally;
@@ -108,6 +120,9 @@ namespace GameClient.Managers
         {
             PlayerSettlementData settlementData = new PlayerSettlementData();
             settlementData._settlementFile.Tile = settlementTile;
+
+            settlementData._settlementFile.Name = TryGetLocalColonyName(settlementTile);
+
             settlementData._stepMode = SettlementStepMode.Add;
 
             ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
@@ -122,6 +137,23 @@ namespace GameClient.Managers
             ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
 
             SaveManager.ForceSave();
+        }
+
+        private static string TryGetLocalColonyName(int tile)
+        {
+            try
+            {
+                Map map = Find.Maps.FirstOrDefault(m => m != null && m.IsPlayerHome && m.Tile == tile);
+                if (map != null && map.Parent != null && !string.IsNullOrWhiteSpace(map.Parent.Label))
+                    return map.Parent.Label;
+
+                WorldObject obj = Find.WorldObjects.AllWorldObjects.FirstOrDefault(o => o != null && o.Tile == tile);
+                if (obj != null && !string.IsNullOrWhiteSpace(obj.Label))
+                    return obj.Label;
+            }
+            catch { }
+
+            return string.Empty;
         }
     }
 

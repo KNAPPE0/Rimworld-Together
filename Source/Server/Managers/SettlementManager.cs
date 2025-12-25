@@ -29,13 +29,16 @@ namespace GameServer.Managers
 
         public static void AddSettlement(ServerClient client, PlayerSettlementData settlementData)
         {
-            if (CheckIfTileIsInUse(settlementData._settlementFile.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to add a settlement at tile {settlementData._settlementFile.Tile}, but that tile already has a settlement");
+            if (CheckIfTileIsInUse(settlementData._settlementFile.Tile))
+                ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to add a settlement at tile {settlementData._settlementFile.Tile}, but that tile already has a settlement");
             else
             {
                 SettlementFile settlementFile = new SettlementFile();
                 settlementFile.Tile = settlementData._settlementFile.Tile;
                 settlementFile.Username = client.UserFile.Username;
-                settlementFile.Username = client.UserFile.Username;
+
+                settlementFile.Name = settlementData._settlementFile.Name ?? string.Empty;
+
                 settlementData._settlementFile = settlementFile;
 
                 Serializer.SerializeToFile(Path.Combine(Master.SettlementsPath, settlementFile.Tile + CommonValues.DefaultSaveFormat), settlementFile);

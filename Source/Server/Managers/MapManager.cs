@@ -116,11 +116,14 @@ namespace GameServer.Managers
             stats.Tile = mapFile.Tile;
             stats.Username = mapFile.Username ?? string.Empty;
 
-            stats.Wealth = mapFile.Wealth;
+            stats.SettlementName = mapFile.SettlementName ?? string.Empty;
+            stats.FactionName = mapFile.FactionName ?? string.Empty;
 
+            stats.Wealth = mapFile.Wealth;
             stats.WealthExact = mapFile.WealthExact >= 0 ? mapFile.WealthExact : -1;
 
             stats.GameTicks = mapFile.GameTicks;
+            stats.RealPlayTimeInteractingSeconds = mapFile.RealPlayTimeInteractingSeconds >= 0 ? mapFile.RealPlayTimeInteractingSeconds : -1;
             stats.LastSavedUtcTicks = mapFile.LastSavedUtcTicks > 0 ? mapFile.LastSavedUtcTicks : DateTime.UtcNow.Ticks;
 
             stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Length : -1;
@@ -133,7 +136,6 @@ namespace GameServer.Managers
             stats.NonFactionAnimalCount = mapFile.NonFactionAnimals != null ? mapFile.NonFactionAnimals.Length : -1;
 
             stats.ColonistCount = stats.FactionHumanCount;
-
 
             return stats;
         }

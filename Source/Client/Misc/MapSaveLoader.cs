@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using GameClient.Managers;
 using RimWorld;
 using Shared;
@@ -23,10 +24,13 @@ namespace GameClient.Misc
             mapFile.Size = ValueParser.IntVec3ToArray(map.Size);
 
             mapFile.Wealth = (int)map.wealthWatcher.WealthTotal;
-
             mapFile.WealthExact = map.wealthWatcher.WealthTotal;
 
+            mapFile.SettlementName = GetSettlementName(map);
+            mapFile.FactionName = GetFactionName(map);
+
             mapFile.GameTicks = Find.TickManager != null ? Find.TickManager.TicksGame : -1;
+            mapFile.RealPlayTimeInteractingSeconds = GetRealPlayTimeInteractingSeconds();
             mapFile.LastSavedUtcTicks = DateTime.UtcNow.Ticks;
 
             mapFile.CurWeatherDefName = map.weatherManager.curWeather.defName;
@@ -171,6 +175,100 @@ namespace GameClient.Misc
         {
             try { mapFile.Mods = ModManagerH.GetRunningModList(); }
             catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+        }
+
+
+        private static string GetSettlementName(Map map)
+        {
+            try
+            {
+                object mapInfo = GetMemberValue(map, "Info", "info");
+                if (mapInfo == null) return string.Empty;
+
+                object parent = GetMemberValue(mapInfo, "parent", "Parent");
+                if (parent == null) return string.Empty;
+
+                object label = GetMemberValue(parent, "Label", "label");
+                return label as string ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string GetFactionName(Map map)
+        {
+            try
+            {
+                object mapInfo = GetMemberValue(map, "Info", "info");
+                if (mapInfo == null) return Faction.OfPlayer != null ? (Faction.OfPlayer.Name ?? string.Empty) : string.Empty;
+
+                object parent = GetMemberValue(mapInfo, "parent", "Parent");
+                if (parent == null) return Faction.OfPlayer != null ? (Faction.OfPlayer.Name ?? string.Empty) : string.Empty;
+
+                object factionObj = GetMemberValue(parent, "Faction", "faction");
+                if (factionObj == null) return Faction.OfPlayer != null ? (Faction.OfPlayer.Name ?? string.Empty) : string.Empty;
+
+                object nameObj = GetMemberValue(factionObj, "Name", "name");
+                string name = nameObj as string;
+
+                if (string.IsNullOrWhiteSpace(name) && Faction.OfPlayer != null)
+                    name = Faction.OfPlayer.Name;
+
+                return name ?? string.Empty;
+            }
+            catch
+            {
+                return Faction.OfPlayer != null ? (Faction.OfPlayer.Name ?? string.Empty) : string.Empty;
+            }
+        }
+
+        private static double GetRealPlayTimeInteractingSeconds()
+        {
+            try
+            {
+                if (Current.Game == null) return -1;
+
+                object gameInfo = GetMemberValue(Current.Game, "Info", "info");
+                if (gameInfo == null) return -1;
+
+                object v = GetMemberValue(gameInfo, "RealPlayTimeInteracting", "realPlayTimeInteracting");
+                if (v == null) return -1;
+
+                if (v is float f) return f;
+                if (v is double d) return d;
+
+                return -1;
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        private static object GetMemberValue(object obj, params string[] names)
+        {
+            if (obj == null) return null;
+
+            Type t = obj.GetType();
+
+            foreach (string n in names)
+            {
+                try
+                {
+                    PropertyInfo p = t.GetProperty(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (p != null) return p.GetValue(obj);
+
+                    FieldInfo f = t.GetField(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (f != null) return f.GetValue(obj);
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
         }
 
         //Setters

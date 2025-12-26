@@ -13,6 +13,8 @@ namespace GameServer.Managers
 {
     public static class MapManager
     {
+        private const double MaxDeltaSecondsToCount = 10800d;
+
         [HandlesPacket(PacketHeader.MapManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
@@ -77,7 +79,7 @@ namespace GameServer.Managers
             MapFile map = GetMapFromTile(mapTileToGet);
             if (map == null) return null;
 
-            MapStatsFile stats = BuildStatsFromMapFile(map);
+            MapStatsFile stats = BuildStatsFromMapFile(map, previous: null);
             TryWriteStatsSnapshot(stats);
 
             return stats;
@@ -87,7 +89,20 @@ namespace GameServer.Managers
         {
             try
             {
-                MapStatsFile stats = BuildStatsFromMapFile(mapFile);
+                MapStatsFile previous = null;
+
+                try
+                {
+                    string statsPath = GetStatsPathForTile(mapFile.Tile);
+                    if (File.Exists(statsPath))
+                        previous = Serializer.FileBytesToObject<MapStatsFile>(statsPath);
+                }
+                catch
+                {
+                    previous = null;
+                }
+
+                MapStatsFile stats = BuildStatsFromMapFile(mapFile, previous);
                 TryWriteStatsSnapshot(stats);
             }
             catch
@@ -109,22 +124,75 @@ namespace GameServer.Managers
             }
         }
 
-        private static MapStatsFile BuildStatsFromMapFile(MapFile mapFile)
+        private static MapStatsFile BuildStatsFromMapFile(MapFile mapFile, MapStatsFile previous)
         {
             MapStatsFile stats = new MapStatsFile();
 
             stats.Tile = mapFile.Tile;
+
             stats.Username = mapFile.Username ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(stats.Username) && previous != null && !string.IsNullOrWhiteSpace(previous.Username))
+                stats.Username = previous.Username;
 
             stats.SettlementName = mapFile.SettlementName ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(stats.SettlementName) && previous != null && !string.IsNullOrWhiteSpace(previous.SettlementName))
+                stats.SettlementName = previous.SettlementName;
+
+            if (string.IsNullOrWhiteSpace(stats.SettlementName))
+            {
+                try
+                {
+                    SettlementFile s = SettlementManager.GetSettlementFileFromTile(mapFile.Tile);
+                    if (s != null && !string.IsNullOrWhiteSpace(s.Name))
+                        stats.SettlementName = s.Name;
+                    if (s != null && string.IsNullOrWhiteSpace(stats.Username) && !string.IsNullOrWhiteSpace(s.Username))
+                        stats.Username = s.Username;
+                }
+                catch
+                {
+                }
+            }
+
             stats.FactionName = mapFile.FactionName ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(stats.FactionName) && previous != null && !string.IsNullOrWhiteSpace(previous.FactionName))
+                stats.FactionName = previous.FactionName;
 
             stats.Wealth = mapFile.Wealth;
             stats.WealthExact = mapFile.WealthExact >= 0 ? mapFile.WealthExact : -1;
 
             stats.GameTicks = mapFile.GameTicks;
-            stats.RealPlayTimeInteractingSeconds = mapFile.RealPlayTimeInteractingSeconds >= 0 ? mapFile.RealPlayTimeInteractingSeconds : -1;
-            stats.LastSavedUtcTicks = mapFile.LastSavedUtcTicks > 0 ? mapFile.LastSavedUtcTicks : DateTime.UtcNow.Ticks;
+
+            long newLastSaved = mapFile.LastSavedUtcTicks > 0 ? mapFile.LastSavedUtcTicks : DateTime.UtcNow.Ticks;
+            stats.LastSavedUtcTicks = newLastSaved;
+
+            double playtime = -1;
+
+            if (mapFile.RealPlayTimeInteractingSeconds >= 0)
+            {
+                playtime = mapFile.RealPlayTimeInteractingSeconds;
+
+                if (previous != null && previous.RealPlayTimeInteractingSeconds >= 0)
+                    playtime = Math.Max(previous.RealPlayTimeInteractingSeconds, playtime);
+            }
+            else
+            {
+                if (previous != null && previous.RealPlayTimeInteractingSeconds >= 0)
+                    playtime = previous.RealPlayTimeInteractingSeconds;
+                else
+                    playtime = 0;
+
+                if (previous != null && previous.LastSavedUtcTicks > 0)
+                {
+                    double delta = (newLastSaved - previous.LastSavedUtcTicks) / (double)TimeSpan.TicksPerSecond;
+
+                    if (delta < 0) delta = 0;
+                    if (delta > MaxDeltaSecondsToCount) delta = 0;
+
+                    playtime += delta;
+                }
+            }
+
+            stats.RealPlayTimeInteractingSeconds = playtime;
 
             stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Length : -1;
             stats.NonFactionThingCount = mapFile.NonFactionThings != null ? mapFile.NonFactionThings.Length : -1;

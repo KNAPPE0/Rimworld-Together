@@ -25,6 +25,10 @@ namespace GameServer.Managers
                 case InformationData.InfoStepMode.Stats:
                     StatisticalManager.SendStats(client, data);
                     break;
+
+                case InformationData.InfoStepMode.Leaderboard:
+                    LeaderboardManager.SendLeaderboard(client, data);
+                    break;
             }
         }
 

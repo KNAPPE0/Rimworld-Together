@@ -4,6 +4,7 @@ using Verse;
 using System.Collections.Generic;
 using System.Linq;
 using GameClient.Managers;
+using TCPNetwork.Packets;
 
 namespace GameClient.Patches.Tabs
 {
@@ -66,6 +67,8 @@ namespace GameClient.Patches.Tabs
             Widgets.DrawLineVertical(rect.x + 160f, rect.y + 25f, rect.height);
 
             DrawPlayerCount(rect);
+            DrawLeaderboardButton(rect);
+
             DrawPlayerList(new(rect.x, rect.y + 25f, 160f, rect.height - 50f));
             DrawMessageList(new(rect.x + 160f, rect.y + 32f, rect.width - 160f, rect.height - 60f));
 
@@ -82,6 +85,27 @@ namespace GameClient.Patches.Tabs
 
             Text.Font = GameFont.Small;
             Widgets.Label(new(rect.x, rect.y, Text.CalcSize(toShow).x, Text.CalcSize(toShow).y), $"<color=grey>{toShow}</color>");
+        }
+
+        private void DrawLeaderboardButton(Rect rect)
+        {
+            Text.Font = GameFont.Small;
+
+            string pinText = "Auto Scroll";
+            float pinWidthApprox = Text.CalcSize(pinText).x * 2f;
+
+            Rect btnRect = new Rect(rect.xMax - pinWidthApprox - 130f, rect.y + 2f, 120f, 22f);
+
+            if (Widgets.ButtonText(btnRect, "Leaderboard"))
+            {
+                LeaderboardManager.AskForLeaderboard(
+                    InformationData.LeaderboardSortMode.WealthExact,
+                    10,
+                    0,
+                    InformationData.LeaderboardOrder.Desc);
+            }
+
+            TooltipHandler.TipRegion(btnRect, "Open server leaderboard (uses stats snapshots).");
         }
 
         private void DrawPlayerList(Rect mainRect)

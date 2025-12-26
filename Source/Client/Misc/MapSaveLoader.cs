@@ -26,14 +26,14 @@ namespace GameClient.Misc
             mapFile.Wealth = (int)map.wealthWatcher.WealthTotal;
             mapFile.WealthExact = map.wealthWatcher.WealthTotal;
 
-            mapFile.SettlementName = GetSettlementName(map);
-            mapFile.FactionName = GetFactionName(map);
-
             mapFile.GameTicks = Find.TickManager != null ? Find.TickManager.TicksGame : -1;
-            mapFile.RealPlayTimeInteractingSeconds = GetRealPlayTimeInteractingSeconds();
             mapFile.LastSavedUtcTicks = DateTime.UtcNow.Ticks;
 
             mapFile.CurWeatherDefName = map.weatherManager.curWeather.defName;
+
+            mapFile.SettlementName = GetCommunityNameSafe(map);
+            mapFile.FactionName = GetFactionNameSafe();
+            mapFile.RealPlayTimeInteractingSeconds = GetRealPlaytimeSecondsSafe(map);
 
             GetMapTerrain(mapFile, map);
 
@@ -175,100 +175,6 @@ namespace GameClient.Misc
         {
             try { mapFile.Mods = ModManagerH.GetRunningModList(); }
             catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
-        }
-
-
-        private static string GetSettlementName(Map map)
-        {
-            try
-            {
-                object mapInfo = GetMemberValue(map, "Info", "info");
-                if (mapInfo == null) return string.Empty;
-
-                object parent = GetMemberValue(mapInfo, "parent", "Parent");
-                if (parent == null) return string.Empty;
-
-                object label = GetMemberValue(parent, "Label", "label");
-                return label as string ?? string.Empty;
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
-
-        private static string GetFactionName(Map map)
-        {
-            try
-            {
-                object mapInfo = GetMemberValue(map, "Info", "info");
-                if (mapInfo == null) return Faction.OfPlayer != null ? (Faction.OfPlayer.Name ?? string.Empty) : string.Empty;
-
-                object parent = GetMemberValue(mapInfo, "parent", "Parent");
-                if (parent == null) return Faction.OfPlayer != null ? (Faction.OfPlayer.Name ?? string.Empty) : string.Empty;
-
-                object factionObj = GetMemberValue(parent, "Faction", "faction");
-                if (factionObj == null) return Faction.OfPlayer != null ? (Faction.OfPlayer.Name ?? string.Empty) : string.Empty;
-
-                object nameObj = GetMemberValue(factionObj, "Name", "name");
-                string name = nameObj as string;
-
-                if (string.IsNullOrWhiteSpace(name) && Faction.OfPlayer != null)
-                    name = Faction.OfPlayer.Name;
-
-                return name ?? string.Empty;
-            }
-            catch
-            {
-                return Faction.OfPlayer != null ? (Faction.OfPlayer.Name ?? string.Empty) : string.Empty;
-            }
-        }
-
-        private static double GetRealPlayTimeInteractingSeconds()
-        {
-            try
-            {
-                if (Current.Game == null) return -1;
-
-                object gameInfo = GetMemberValue(Current.Game, "Info", "info");
-                if (gameInfo == null) return -1;
-
-                object v = GetMemberValue(gameInfo, "RealPlayTimeInteracting", "realPlayTimeInteracting");
-                if (v == null) return -1;
-
-                if (v is float f) return f;
-                if (v is double d) return d;
-
-                return -1;
-            }
-            catch
-            {
-                return -1;
-            }
-        }
-
-        private static object GetMemberValue(object obj, params string[] names)
-        {
-            if (obj == null) return null;
-
-            Type t = obj.GetType();
-
-            foreach (string n in names)
-            {
-                try
-                {
-                    PropertyInfo p = t.GetProperty(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    if (p != null) return p.GetValue(obj);
-
-                    FieldInfo f = t.GetField(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    if (f != null) return f.GetValue(obj);
-                }
-                catch
-                {
-                }
-            }
-
-            return null;
         }
 
         //Setters
@@ -474,6 +380,91 @@ namespace GameClient.Misc
                 map.roofGrid.Drawer.SetDirty();
             }
             catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+        }
+
+
+        private static string GetFactionNameSafe()
+        {
+            try
+            {
+                if (Faction.OfPlayer != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(Faction.OfPlayer.Name)) return Faction.OfPlayer.Name;
+                    if (Faction.OfPlayer.def != null && !string.IsNullOrWhiteSpace(Faction.OfPlayer.def.label)) return Faction.OfPlayer.def.label;
+                }
+            }
+            catch { }
+
+            return string.Empty;
+        }
+
+        private static string GetCommunityNameSafe(Map map)
+        {
+            try
+            {
+                if (map == null) return string.Empty;
+
+                try
+                {
+                    PropertyInfo parentProp = map.GetType().GetProperty("Parent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    object parent = parentProp != null ? parentProp.GetValue(map, null) : null;
+
+                    if (parent != null)
+                    {
+                        PropertyInfo labelProp = parent.GetType().GetProperty("Label", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        object labelObj = labelProp != null ? labelProp.GetValue(parent, null) : null;
+                        string label = labelObj as string;
+
+                        if (!string.IsNullOrWhiteSpace(label)) return label;
+                    }
+                }
+                catch { }
+
+                object infoObj = null;
+
+                PropertyInfo infoPropLower = map.GetType().GetProperty("info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                PropertyInfo infoPropUpper = map.GetType().GetProperty("Info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                if (infoPropLower != null) infoObj = infoPropLower.GetValue(map, null);
+                else if (infoPropUpper != null) infoObj = infoPropUpper.GetValue(map, null);
+
+                if (infoObj != null)
+                {
+                    PropertyInfo parentProp = infoObj.GetType().GetProperty("parent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                                           ?? infoObj.GetType().GetProperty("Parent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                    object parent = parentProp != null ? parentProp.GetValue(infoObj, null) : null;
+
+                    if (parent != null)
+                    {
+                        PropertyInfo labelProp = parent.GetType().GetProperty("Label", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        object labelObj = labelProp != null ? labelProp.GetValue(parent, null) : null;
+                        string label = labelObj as string;
+
+                        if (!string.IsNullOrWhiteSpace(label)) return label;
+                    }
+                }
+            }
+            catch { }
+
+            return string.Empty;
+        }
+
+        private static double GetRealPlaytimeSecondsSafe(Map map)
+        {
+            try
+            {
+                if (map == null) return -1;
+
+                RT_MapPlaytimeComponent comp = map.GetComponent<RT_MapPlaytimeComponent>();
+                if (comp == null) return -1;
+
+                return comp.TotalSeconds;
+            }
+            catch
+            {
+                return -1;
+            }
         }
     }
 }

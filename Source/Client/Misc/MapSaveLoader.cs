@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using GameClient.Managers;
 using RimWorld;
 using Shared.Files;
@@ -13,7 +14,7 @@ namespace GameClient.Misc
 {
     public static class MapSaveLoader
     {
-        public static MapFile MapToString(Map map, bool factionThings, bool nonFactionThings, bool factionHumans, bool nonFactionHumans, 
+        public static MapFile MapToString(Map map, bool factionThings, bool nonFactionThings, bool factionHumans, bool nonFactionHumans,
             bool factionAnimals, bool nonFactionAnimals)
         {
             MapFile mapFile = new MapFile();
@@ -23,10 +24,18 @@ namespace GameClient.Misc
             mapFile.Size = ValueParser.IntVec3ToArray(map.Size);
 
             mapFile.Wealth = (int)map.wealthWatcher.WealthTotal;
+            mapFile.WealthExact = map.wealthWatcher.WealthTotal;
+
+            mapFile.GameTicks = Find.TickManager != null ? Find.TickManager.TicksGame : -1;
+            mapFile.LastSavedUtcTicks = DateTime.UtcNow.Ticks;
 
             mapFile.WeatherByte = (byte)DefDatabase<WeatherDef>.AllDefs.FirstIndexOf(fetch => fetch == map.weatherManager.curWeather);
 
             mapFile.Mods = ModManagerH.GetRunningModList();
+
+            mapFile.SettlementName = GetCommunityNameSafe(map);
+            mapFile.FactionName = GetFactionNameSafe();
+            mapFile.RealPlayTimeInteractingSeconds = GetRealPlaytimeSecondsSafe(map);
 
             GetMapTerrain(mapFile, map);
 
@@ -39,7 +48,7 @@ namespace GameClient.Misc
             return mapFile;
         }
 
-        public static Map StringToMap(MapFile mapFile, bool factionThings, bool nonFactionThings, bool factionHumans, bool nonFactionHumans, 
+        public static Map StringToMap(MapFile mapFile, bool factionThings, bool nonFactionThings, bool factionHumans, bool nonFactionHumans,
             bool factionAnimals, bool nonFactionAnimals, bool lessLoot = false)
         {
             Map map = SetEmptyMap(mapFile, SessionHandler.ChosenSettlement.Tile);
@@ -331,6 +340,91 @@ namespace GameClient.Misc
                 map.roofGrid.Drawer.SetDirty();
             }
             catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+        }
+
+
+        private static string GetFactionNameSafe()
+        {
+            try
+            {
+                if (Faction.OfPlayer != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(Faction.OfPlayer.Name)) return Faction.OfPlayer.Name;
+                    if (Faction.OfPlayer.def != null && !string.IsNullOrWhiteSpace(Faction.OfPlayer.def.label)) return Faction.OfPlayer.def.label;
+                }
+            }
+            catch { }
+
+            return string.Empty;
+        }
+
+        private static string GetCommunityNameSafe(Map map)
+        {
+            try
+            {
+                if (map == null) return string.Empty;
+
+                try
+                {
+                    PropertyInfo parentProp = map.GetType().GetProperty("Parent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    object parent = parentProp != null ? parentProp.GetValue(map, null) : null;
+
+                    if (parent != null)
+                    {
+                        PropertyInfo labelProp = parent.GetType().GetProperty("Label", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        object labelObj = labelProp != null ? labelProp.GetValue(parent, null) : null;
+                        string label = labelObj as string;
+
+                        if (!string.IsNullOrWhiteSpace(label)) return label;
+                    }
+                }
+                catch { }
+
+                object infoObj = null;
+
+                PropertyInfo infoPropLower = map.GetType().GetProperty("info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                PropertyInfo infoPropUpper = map.GetType().GetProperty("Info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                if (infoPropLower != null) infoObj = infoPropLower.GetValue(map, null);
+                else if (infoPropUpper != null) infoObj = infoPropUpper.GetValue(map, null);
+
+                if (infoObj != null)
+                {
+                    PropertyInfo parentProp = infoObj.GetType().GetProperty("parent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                                           ?? infoObj.GetType().GetProperty("Parent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                    object parent = parentProp != null ? parentProp.GetValue(infoObj, null) : null;
+
+                    if (parent != null)
+                    {
+                        PropertyInfo labelProp = parent.GetType().GetProperty("Label", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        object labelObj = labelProp != null ? labelProp.GetValue(parent, null) : null;
+                        string label = labelObj as string;
+
+                        if (!string.IsNullOrWhiteSpace(label)) return label;
+                    }
+                }
+            }
+            catch { }
+
+            return string.Empty;
+        }
+
+        private static double GetRealPlaytimeSecondsSafe(Map map)
+        {
+            try
+            {
+                if (map == null) return -1;
+
+                RT_MapPlaytimeComponent comp = map.GetComponent<RT_MapPlaytimeComponent>();
+                if (comp == null) return -1;
+
+                return comp.TotalSeconds;
+            }
+            catch
+            {
+                return -1;
+            }
         }
     }
 }

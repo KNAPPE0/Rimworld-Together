@@ -1,10 +1,13 @@
 ﻿using GameServer.Core;
 using GameServer.Misc;
 using Shared;
-using static Shared.CommonEnumerators;
 using Shared.Files;
-using TCPNetwork.Packets;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
 namespace GameServer.Managers
 {
@@ -29,82 +32,90 @@ namespace GameServer.Managers
 
         public static void AddSettlement(ServerClient client, PlayerSettlementData settlementData)
         {
-            if (CheckIfTileIsInUse(settlementData._settlementFile.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to add a settlement at tile {settlementData._settlementFile.Tile}, but that tile already has a settlement");
-            else
+            if (client == null || settlementData == null) return;
+
+            int tile = settlementData._settlementFile.Tile;
+
+            if (CheckIfTileIsInUse(tile))
             {
-                SettlementFile settlementFile = new SettlementFile();
-                settlementFile.Tile = settlementData._settlementFile.Tile;
-                settlementFile.Username = client.UserFile.Username;
-                settlementFile.Username = client.UserFile.Username;
-                settlementData._settlementFile = settlementFile;
-
-                Serializer.SerializeToFile(Path.Combine(Master.SettlementsPath, settlementFile.Tile + CommonValues.DefaultSaveFormat), settlementFile);
-
-                settlementData._stepMode = SettlementStepMode.Add;
-                foreach (ServerClient cClient in ServerNetwork.Instance.GetConnectedClientsSafe())
-                {
-                    if (cClient == client) continue;
-                    else
-                    {
-                        settlementData._settlementFile.Goodwill = GoodwillManager.GetSettlementGoodwill(cClient, settlementFile);
-
-                        cClient.Listener.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
-                    }
-                }
-
-                InformationDisplayer.DisplayAddSettlement(settlementFile.Tile.ToString());
+                ResponseShortcutManager.SendIllegalPacket(
+                    client,
+                    $"Player {client.UserFile.Username} attempted to add a settlement at tile {tile}, but that tile already has a settlement");
+                return;
             }
+
+            MapManager.DeleteMapByTile(tile);
+
+            SettlementFile settlementFile = new SettlementFile();
+            settlementFile.Tile = tile;
+            settlementFile.Username = client.UserFile.Username;
+            settlementFile.Name = settlementData._settlementFile.Name ?? string.Empty;
+
+            settlementData._settlementFile = settlementFile;
+
+            Directory.CreateDirectory(Master.SettlementsPath);
+            Serializer.SerializeToFile(Path.Combine(Master.SettlementsPath, settlementFile.Tile + CommonValues.DefaultSaveFormat), settlementFile);
+
+            settlementData._stepMode = SettlementStepMode.Add;
+
+            foreach (ServerClient cClient in ServerNetwork.Instance.GetConnectedClientsSafe())
+            {
+                if (cClient == client) continue;
+
+                settlementData._settlementFile.Goodwill = GoodwillManager.GetSettlementGoodwill(cClient, settlementFile);
+                cClient.Listener.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
+            }
+
+            InformationDisplayer.DisplayAddSettlement(settlementFile.Tile.ToString());
         }
 
         public static void RemoveSettlement(ServerClient client, PlayerSettlementData settlementData)
         {
-            if (!CheckIfTileIsInUse(settlementData._settlementFile.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"Settlement at tile {settlementData._settlementFile.Tile} was attempted to be removed, but the tile doesn't contain a settlement");
+            if (settlementData == null) return;
 
-            SettlementFile settlementFile = GetSettlementFileFromTile(settlementData._settlementFile.Tile);
+            int tile = settlementData._settlementFile.Tile;
 
-            if (client != null)
+            if (!CheckIfTileIsInUse(tile))
             {
-                if (settlementFile.Username != client.UserFile.Username)
-                {
-                    ResponseShortcutManager.SendIllegalPacket(client, $"Settlement at tile {settlementData._settlementFile.Tile} attempted to be removed by " +
-                        $"{client.UserFile.Username}, but {settlementFile.Username} owns the settlement");
-                }
-
-                else
-                {
-                    Delete();
-                    SendRemovalSignal();
-                }
+                if (client != null)
+                    ResponseShortcutManager.SendIllegalPacket(client, $"Settlement at tile {tile} was attempted to be removed, but the tile doesn't contain a settlement");
+                return;
             }
 
-            else
+            SettlementFile settlementFile = GetSettlementFileFromTile(tile);
+            if (settlementFile == null) return;
+
+            if (client != null && settlementFile.Username != client.UserFile.Username)
             {
-                Delete();
-                SendRemovalSignal();
+                ResponseShortcutManager.SendIllegalPacket(
+                    client,
+                    $"Settlement at tile {tile} attempted to be removed by {client.UserFile.Username}, but {settlementFile.Username} owns the settlement");
+                return;
             }
 
-            void Delete()
+            try
             {
                 File.Delete(Path.Combine(Master.SettlementsPath, settlementFile.Tile + CommonValues.DefaultSaveFormat));
-
-                InformationDisplayer.DisplayRemoveSettlement(settlementFile.Tile.ToString());
             }
+            catch { }
 
-            void SendRemovalSignal()
-            {
-                settlementData._stepMode = SettlementStepMode.Remove;
+            MapManager.DeleteMapByTile(settlementFile.Tile);
 
-                ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.SettlementManager, settlementData, client);
-            }
+            settlementData._stepMode = SettlementStepMode.Remove;
+            ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.SettlementManager, settlementData, client);
+
+            InformationDisplayer.DisplayRemoveSettlement(settlementFile.Tile.ToString());
         }
 
         public static bool CheckIfTileIsInUse(int tileToCheck)
         {
+            if (!Directory.Exists(Master.SettlementsPath)) return false;
+
             string[] settlements = Directory.GetFiles(Master.SettlementsPath);
             foreach (string settlement in settlements)
             {
                 SettlementFile settlementJSON = Serializer.SerializeFromFile<SettlementFile>(settlement);
-                if (settlementJSON.Tile == tileToCheck) return true;
+                if (settlementJSON != null && settlementJSON.Tile == tileToCheck) return true;
             }
 
             return false;
@@ -112,11 +123,13 @@ namespace GameServer.Managers
 
         public static SettlementFile GetSettlementFileFromTile(int tileToGet)
         {
+            if (!Directory.Exists(Master.SettlementsPath)) return null;
+
             string[] settlements = Directory.GetFiles(Master.SettlementsPath);
             foreach (string settlement in settlements)
             {
                 SettlementFile settlementFile = Serializer.SerializeFromFile<SettlementFile>(settlement);
-                if (settlementFile.Tile == tileToGet) return settlementFile;
+                if (settlementFile != null && settlementFile.Tile == tileToGet) return settlementFile;
             }
 
             return null;
@@ -124,11 +137,13 @@ namespace GameServer.Managers
 
         public static SettlementFile GetSettlementFileFromUsername(string usernameToGet)
         {
+            if (!Directory.Exists(Master.SettlementsPath)) return null;
+
             string[] settlements = Directory.GetFiles(Master.SettlementsPath);
             foreach (string settlement in settlements)
             {
                 SettlementFile settlementFile = Serializer.SerializeFromFile<SettlementFile>(settlement);
-                if (settlementFile.Username == usernameToGet) return settlementFile;
+                if (settlementFile != null && settlementFile.Username == usernameToGet) return settlementFile;
             }
 
             return null;
@@ -138,8 +153,14 @@ namespace GameServer.Managers
         {
             List<SettlementFile> settlementList = new List<SettlementFile>();
 
+            if (!Directory.Exists(Master.SettlementsPath)) return settlementList.ToArray();
+
             string[] settlements = Directory.GetFiles(Master.SettlementsPath);
-            foreach (string settlement in settlements) settlementList.Add(Serializer.SerializeFromFile<SettlementFile>(settlement));
+            foreach (string settlement in settlements)
+            {
+                SettlementFile sf = Serializer.SerializeFromFile<SettlementFile>(settlement);
+                if (sf != null) settlementList.Add(sf);
+            }
 
             return settlementList.ToArray();
         }
@@ -148,11 +169,13 @@ namespace GameServer.Managers
         {
             List<SettlementFile> settlementList = new List<SettlementFile>();
 
+            if (!Directory.Exists(Master.SettlementsPath)) return settlementList.ToArray();
+
             string[] settlements = Directory.GetFiles(Master.SettlementsPath);
             foreach (string settlement in settlements)
             {
                 SettlementFile settlementFile = Serializer.SerializeFromFile<SettlementFile>(settlement);
-                if (settlementFile.Username == usernameToCheck) settlementList.Add(settlementFile);
+                if (settlementFile != null && settlementFile.Username == usernameToCheck) settlementList.Add(settlementFile);
             }
 
             return settlementList.ToArray();

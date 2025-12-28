@@ -1,6 +1,7 @@
 using GameServer.Core;
 using Shared;
 using Shared.Files;
+using Shared.Files.Maps;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -333,14 +334,14 @@ namespace GameServer.Managers
             }
             stats.LastSavedUtcTicks = savedTicks;
 
-            stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Length : -1;
-            stats.NonFactionThingCount = mapFile.NonFactionThings != null ? mapFile.NonFactionThings.Length : -1;
+            stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Count : -1;
+            stats.NonFactionThingCount = mapFile.NonFactionThings != null ? mapFile.NonFactionThings.Count : -1;
 
-            stats.FactionHumanCount = mapFile.FactionHumans != null ? mapFile.FactionHumans.Length : -1;
-            stats.NonFactionHumanCount = mapFile.NonFactionHumans != null ? mapFile.NonFactionHumans.Length : -1;
+            stats.FactionHumanCount = mapFile.FactionHumans != null ? mapFile.FactionHumans.Count : -1;
+            stats.NonFactionHumanCount = mapFile.NonFactionHumans != null ? mapFile.NonFactionHumans.Count : -1;
 
-            stats.FactionAnimalCount = mapFile.FactionAnimals != null ? mapFile.FactionAnimals.Length : -1;
-            stats.NonFactionAnimalCount = mapFile.NonFactionAnimals != null ? mapFile.NonFactionAnimals.Length : -1;
+            stats.FactionAnimalCount = mapFile.FactionAnimals != null ? mapFile.FactionAnimals.Count : -1;
+            stats.NonFactionAnimalCount = mapFile.NonFactionAnimals != null ? mapFile.NonFactionAnimals.Count : -1;
 
             stats.ColonistCount = stats.FactionHumanCount;
 

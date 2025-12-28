@@ -29,15 +29,57 @@ namespace GameServer.Managers
 
             Directory.CreateDirectory(Master.MapsPath);
 
+            int tile = data._mapTile;
+
+            MapFile mapFile = data._mapFile;
+
+            if (!IsMapFileValid(mapFile))
+            {
+                if (tile < 0 && mapFile != null && mapFile.Tile >= 0) tile = mapFile.Tile;
+
+                if (tile >= 0 && data._rawData != null && data._rawData.Length > 0)
+                {
+                    try
+                    {
+                        mapFile = Serializer.ConvertBytesToObject<MapFile>(data._rawData);
+                    }
+                    catch
+                    {
+                        mapFile = null;
+                    }
+                }
+            }
+
+            if (mapFile == null) return;
+
+            if (mapFile.Tile < 0 && tile >= 0) mapFile.Tile = tile;
+            if (mapFile.Tile < 0) return;
+
+            mapFile.Username = client.UserFile?.Username ?? mapFile.Username ?? string.Empty;
+
+            if (mapFile.LastSavedUtcTicks <= 0)
+                mapFile.LastSavedUtcTicks = DateTime.UtcNow.Ticks;
+
+            SaveUserMap(client, mapFile);
+        }
+
+        public static void SaveUserMap(ServerClient client, MapFile file)
+        {
+            if (client == null || file == null) return;
+            if (file.Tile < 0) return;
+
+            Directory.CreateDirectory(Master.MapsPath);
+
             try
             {
-                File.WriteAllBytes(Path.Combine(Master.MapsPath, data._mapTile + CommonValues.DefaultSaveFormat), data._rawData);
+                string mapPath = Path.Combine(Master.MapsPath, file.Tile + CommonValues.DefaultSaveFormat);
+                Serializer.ObjectBytesToFile(mapPath, file);
             }
             catch
             {
             }
 
-            TryWriteStatsSnapshotFromRaw(client, data);
+            TryWriteStatsSnapshot(file);
 
             InformationDisplayer.DisplaySaveMap(client);
         }
@@ -84,8 +126,10 @@ namespace GameServer.Managers
         public static byte[] GetMapBytesFromTile(int mapTileToGet)
         {
             string path = Path.Combine(Master.MapsPath, mapTileToGet + CommonValues.DefaultSaveFormat);
-            if (File.Exists(path)) return File.ReadAllBytes(path);
-            return null;
+            if (!File.Exists(path)) return null;
+
+            try { return File.ReadAllBytes(path); }
+            catch { return null; }
         }
 
         public static MapFile GetMapFromTile(int mapTileToGet)
@@ -128,36 +172,32 @@ namespace GameServer.Managers
             MapFile map = GetMapFromTile(mapTileToGet);
             if (map == null) return null;
 
-            MapStatsFile stats = BuildStatsFromMapFile(map);
+            long savedTicks = map.LastSavedUtcTicks;
+            if (savedTicks <= 0)
+            {
+                try
+                {
+                    string mapPath = Path.Combine(Master.MapsPath, mapTileToGet + CommonValues.DefaultSaveFormat);
+                    savedTicks = File.Exists(mapPath) ? File.GetLastWriteTimeUtc(mapPath).Ticks : DateTime.UtcNow.Ticks;
+                }
+                catch { savedTicks = DateTime.UtcNow.Ticks; }
+            }
+
+            MapStatsFile stats = BuildStatsFromMapFile(map, mapTileToGet, savedTicks);
             TryWriteStatsSnapshot(stats);
 
             return stats;
-        }
-
-        private static void TryWriteStatsSnapshotFromRaw(ServerClient client, MapData data)
-        {
-            try
-            {
-                if (data == null || data._rawData == null || data._rawData.Length == 0) return;
-
-                MapFile map = Serializer.ConvertBytesToObject<MapFile>(data._rawData);
-                if (map == null) return;
-
-                map.Tile = data._mapTile;
-                map.Username = client?.UserFile?.Username ?? map.Username ?? string.Empty;
-
-                TryWriteStatsSnapshot(map);
-            }
-            catch
-            {
-            }
         }
 
         private static void TryWriteStatsSnapshot(MapFile mapFile)
         {
             try
             {
-                MapStatsFile stats = BuildStatsFromMapFile(mapFile);
+                if (mapFile == null) return;
+
+                long savedTicks = mapFile.LastSavedUtcTicks > 0 ? mapFile.LastSavedUtcTicks : DateTime.UtcNow.Ticks;
+
+                MapStatsFile stats = BuildStatsFromMapFile(mapFile, mapFile.Tile, savedTicks);
                 TryWriteStatsSnapshot(stats);
             }
             catch
@@ -184,13 +224,14 @@ namespace GameServer.Managers
             }
         }
 
-        private static MapStatsFile BuildStatsFromMapFile(MapFile mapFile)
+        private static MapStatsFile BuildStatsFromMapFile(MapFile mapFile, int tileFallback, long savedTicksFallback)
         {
             MapStatsFile stats = new MapStatsFile();
 
-            stats.Tile = mapFile.Tile;
-            stats.Username = mapFile.Username ?? string.Empty;
+            int tile = mapFile.Tile >= 0 ? mapFile.Tile : tileFallback;
+            stats.Tile = tile;
 
+            stats.Username = mapFile.Username ?? string.Empty;
             stats.SettlementName = mapFile.SettlementName ?? string.Empty;
             stats.FactionName = mapFile.FactionName ?? string.Empty;
 
@@ -200,25 +241,58 @@ namespace GameServer.Managers
             stats.GameTicks = mapFile.GameTicks;
             stats.RealPlayTimeInteractingSeconds = mapFile.RealPlayTimeInteractingSeconds >= 0 ? mapFile.RealPlayTimeInteractingSeconds : -1;
 
-            stats.LastSavedUtcTicks = mapFile.LastSavedUtcTicks > 0 ? mapFile.LastSavedUtcTicks : DateTime.UtcNow.Ticks;
+            stats.LastSavedUtcTicks = savedTicksFallback > 0 ? savedTicksFallback : DateTime.UtcNow.Ticks;
 
-            stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Length : -1;
-            stats.NonFactionThingCount = mapFile.NonFactionThings != null ? mapFile.NonFactionThings.Length : -1;
+            stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Count : -1;
+            stats.NonFactionThingCount = mapFile.NonFactionThings != null ? mapFile.NonFactionThings.Count : -1;
 
-            stats.FactionHumanCount = mapFile.FactionHumans != null ? mapFile.FactionHumans.Length : -1;
-            stats.NonFactionHumanCount = mapFile.NonFactionHumans != null ? mapFile.NonFactionHumans.Length : -1;
+            stats.FactionHumanCount = mapFile.FactionHumans != null ? mapFile.FactionHumans.Count : -1;
+            stats.NonFactionHumanCount = mapFile.NonFactionHumans != null ? mapFile.NonFactionHumans.Count : -1;
 
-            stats.FactionAnimalCount = mapFile.FactionAnimals != null ? mapFile.FactionAnimals.Length : -1;
-            stats.NonFactionAnimalCount = mapFile.NonFactionAnimals.Length != null ? mapFile.NonFactionAnimals.Length : -1;
+            stats.FactionAnimalCount = mapFile.FactionAnimals != null ? mapFile.FactionAnimals.Count : -1;
+            stats.NonFactionAnimalCount = mapFile.NonFactionAnimals != null ? mapFile.NonFactionAnimals.Count : -1;
 
             stats.ColonistCount = stats.FactionHumanCount;
 
+            TryBackfillFromSettlement(tile, stats);
+
             return stats;
+        }
+
+        private static void TryBackfillFromSettlement(int tile, MapStatsFile stats)
+        {
+            try
+            {
+                SettlementFile sf = SettlementManager.GetSettlementFileFromTile(tile);
+                if (sf == null) return;
+
+                if (string.IsNullOrWhiteSpace(stats.Username))
+                    stats.Username = sf.Username ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(stats.SettlementName) && !string.IsNullOrWhiteSpace(sf.Name))
+                    stats.SettlementName = sf.Name;
+            }
+            catch
+            {
+            }
         }
 
         private static string GetStatsPathForTile(int tile)
         {
             return Path.Combine(Master.MapsPath, $"{tile}.stats{CommonValues.DefaultSaveFormat}");
+        }
+
+        private static bool IsMapFileValid(MapFile file)
+        {
+            if (file == null) return false;
+            if (file.Tile >= 0) return true;
+
+            if (file.Size != null && file.Size.Length > 0) return true;
+            if (file.Wealth >= 0) return true;
+            if (file.WealthExact >= 0) return true;
+            if (file.GameTicks >= 0) return true;
+
+            return false;
         }
     }
 }

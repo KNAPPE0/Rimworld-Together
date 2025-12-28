@@ -12,7 +12,7 @@ namespace GameClient.Dialogs
 
         private readonly MapStatsFile _stats;
         private readonly bool? _isOnline;
-        private readonly string _localSettlementName;
+        private readonly string _localSettlementLabel;
 
         private readonly List<StatsSection> _sections = new List<StatsSection>();
 
@@ -26,12 +26,12 @@ namespace GameClient.Dialogs
         private const float RowHeight = 26f;
         private const float RowPaddingX = 10f;
 
-        public RT_Dialog_ColonyStats(MapStatsFile stats, bool? isOnline, string settlementName = null)
+        public RT_Dialog_ColonyStats(MapStatsFile stats, bool? isOnline, string settlementLabel = null)
         {
             Title = "Colony Stats";
             _stats = stats;
             _isOnline = isOnline;
-            _localSettlementName = settlementName;
+            _localSettlementLabel = settlementLabel;
 
             closeOnAccept = false;
             closeOnCancel = false;
@@ -164,9 +164,10 @@ namespace GameClient.Dialogs
 
             string username = string.IsNullOrWhiteSpace(_stats.Username) ? "Unknown" : _stats.Username;
 
-            string colonyName = "Unknown";
-            if (!string.IsNullOrWhiteSpace(_localSettlementName)) colonyName = _localSettlementName;
-            else if (!string.IsNullOrWhiteSpace(_stats.SettlementName)) colonyName = _stats.SettlementName;
+            string settlementLabel = string.IsNullOrWhiteSpace(_localSettlementLabel) ? "Unknown" : _localSettlementLabel;
+
+            string communityName = string.IsNullOrWhiteSpace(_stats.SettlementName) ? "Unknown" : _stats.SettlementName;
+            string factionName = string.IsNullOrWhiteSpace(_stats.FactionName) ? "Unknown" : _stats.FactionName;
 
             string status = "Unknown";
             if (_isOnline.HasValue)
@@ -174,18 +175,21 @@ namespace GameClient.Dialogs
 
             string wealth = FormatWealth(_stats);
 
-            int days;
-            int hours;
-            int minutes;
-            FormatTicksCompact(_stats.GameTicks, out days, out hours, out minutes);
+            string playtimeStr = FormatRealPlaytime(_stats.RealPlayTimeInteractingSeconds);
 
-            string daysStr = _stats.GameTicks < 0 ? "Unknown" : days.ToString("N0");
-            string playtimeStr = _stats.GameTicks < 0 ? "Unknown" : $"{hours}h {minutes}m";
+            string daysStr = "Unknown";
+            if (_stats.GameTicks >= 0)
+            {
+                int days = _stats.GameTicks / 60000;
+                daysStr = days.ToString("N0");
+            }
 
             string lastSaved = FormatUtcTicks(_stats.LastSavedUtcTicks);
 
             StatsSection overview = new StatsSection("Overview");
-            overview.Rows.Add(new StatsRow("Colony", colonyName));
+            overview.Rows.Add(new StatsRow("Settlement", settlementLabel)); // RWT label (username's settlement)
+            overview.Rows.Add(new StatsRow("Community", communityName));    // Player-chosen settlement name
+            overview.Rows.Add(new StatsRow("Faction", factionName));        // Player-chosen faction name
             overview.Rows.Add(new StatsRow("Player", username));
             overview.Rows.Add(new StatsRow("Status", status));
             overview.Rows.Add(new StatsRow("Wealth", wealth));
@@ -218,40 +222,27 @@ namespace GameClient.Dialogs
             return "$" + stats.Wealth.ToString("N0");
         }
 
+        private static string FormatRealPlaytime(double seconds)
+        {
+            if (seconds < 0) return "Unknown";
+
+            try
+            {
+                TimeSpan ts = TimeSpan.FromSeconds(seconds);
+                int hours = (int)Math.Floor(ts.TotalHours);
+                int minutes = ts.Minutes;
+                return $"{hours}h {minutes}m";
+            }
+            catch
+            {
+                return "Unknown";
+            }
+        }
+
         private static string FormatInt(int value)
         {
             if (value < 0) return "Unknown";
             return value.ToString("N0");
-        }
-
-        private static void FormatTicksCompact(int ticks, out int days, out int hours, out int minutes)
-        {
-            days = 0;
-            hours = 0;
-            minutes = 0;
-
-            if (ticks < 0) return;
-
-            days = ticks / 60000;
-
-            int remainder = ticks - (days * 60000);
-
-            hours = remainder / 2500;
-            remainder = remainder - (hours * 2500);
-
-            double mins = remainder / (2500d / 60d);
-            minutes = (int)Math.Round(mins);
-
-            if (minutes >= 60)
-            {
-                minutes = 0;
-                hours++;
-            }
-            if (hours >= 24)
-            {
-                hours = 0;
-                days++;
-            }
         }
 
         private static string FormatUtcTicks(long utcTicks)

@@ -25,6 +25,10 @@ namespace GameClient.Managers
                 case InformationData.InfoStepMode.Stats:
                     StatisticalManager.ReceiveStats(data);
                     break;
+
+                case InformationData.InfoStepMode.Leaderboard:
+                    LeaderboardManager.ReceiveLeaderboard(data);
+                    break;
             }
         }
 

@@ -49,6 +49,9 @@ namespace GameClient.Managers
 
         public static void SendMessage(string messageToSend)
         {
+            if (LeaderboardManager.TryHandleChatCommand(messageToSend))
+                return;
+
             RTChatDefSounds.ChatSend.PlayOneShotOnCamera();
 
             ChatData chatData = new ChatData();

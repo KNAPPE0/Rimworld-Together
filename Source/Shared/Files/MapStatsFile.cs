@@ -6,13 +6,16 @@ namespace Shared.Files
 
         public string Username { get; set; } = string.Empty;
 
-        public string SettlementName { get; set; } = string.Empty;
+        public string SettlementName { get; set; } = string.Empty; // "Mushroomtas"
+        public string FactionName { get; set; } = string.Empty;    // "Eratolior"
 
         public int Wealth { get; set; } = -1;
 
         public double WealthExact { get; set; } = -1;
 
         public int GameTicks { get; set; } = -1;
+
+        public double RealPlayTimeInteractingSeconds { get; set; } = -1;
 
         public int ColonistCount { get; set; } = -1;
 

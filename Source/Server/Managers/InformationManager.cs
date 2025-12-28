@@ -25,6 +25,10 @@ namespace GameServer.Managers
                 case InformationData.InfoStepMode.Stats:
                     StatisticalManager.SendStats(client, data);
                     break;
+
+                case InformationData.InfoStepMode.Leaderboard:
+                    LeaderboardManager.SendLeaderboard(client, data);
+                    break;
             }
         }
 
@@ -40,7 +44,6 @@ namespace GameServer.Managers
 
         private static void SendWealth(ServerClient client, InformationData data)
         {
-            // fast read stats cache instead of tryna read full MapFile (You can crash servers if map data is too big and multiple people are calling for it)
             MapStatsFile stats = MapManager.GetOrCreateMapStatsFromTile(data._settlementTile);
 
             data._settlementWealth = stats != null ? stats.Wealth : -1;

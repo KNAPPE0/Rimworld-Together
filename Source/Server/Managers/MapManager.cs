@@ -1,13 +1,13 @@
 ﻿using GameServer.Core;
 using GameServer.Misc;
 using Shared;
-using static Shared.CommonEnumerators;
 using Shared.Files;
-using TCPNetwork.Packets;
-using TCPNetwork.Files.Client;
 using System;
 using System.IO;
 using System.Linq;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
 namespace GameServer.Managers
 {
@@ -17,13 +17,15 @@ namespace GameServer.Managers
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             MapData data = Serializer.ConvertBytesToObject<MapData>(bytes);
-
             SaveUserMap(client, data._mapFile);
         }
 
         public static void SaveUserMap(ServerClient client, MapFile file)
         {
             file.Username = client.UserFile.Username;
+
+            Directory.CreateDirectory(Master.MapsPath);
+
             string mapPath = Path.Combine(Master.MapsPath, file.Tile + CommonValues.DefaultSaveFormat);
             Serializer.ObjectBytesToFile(mapPath, file);
 
@@ -34,24 +36,47 @@ namespace GameServer.Managers
 
         public static void DeleteMap(MapFile mapFile)
         {
-            File.Delete(Path.Combine(Master.MapsPath, mapFile.Tile + CommonValues.DefaultSaveFormat));
+            if (mapFile == null) return;
+            DeleteMapByTile(mapFile.Tile);
+        }
 
-            string statsPath = GetStatsPathForTile(mapFile.Tile);
-            if (File.Exists(statsPath)) File.Delete(statsPath);
+        public static void DeleteMapByTile(int tile)
+        {
+            if (tile < 0) return;
 
-            InformationDisplayer.DisplayRemoveMap(mapFile.Tile.ToString());
+            try
+            {
+                string mapPath = Path.Combine(Master.MapsPath, tile + CommonValues.DefaultSaveFormat);
+                if (File.Exists(mapPath)) File.Delete(mapPath);
+            }
+            catch { }
+
+            try
+            {
+                string statsPath = GetStatsPathForTile(tile);
+                if (File.Exists(statsPath)) File.Delete(statsPath);
+            }
+            catch { }
+
+            try
+            {
+                LeaderboardManager.RemoveTile(tile);
+            }
+            catch { }
+
+            InformationDisplayer.DisplayRemoveMap(tile.ToString());
         }
 
         public static string[] GetAllMaps()
         {
+            if (!Directory.Exists(Master.MapsPath)) return Array.Empty<string>();
             return Directory.GetFiles(Master.MapsPath);
         }
 
         public static bool CheckIfMapExists(int mapTileToCheck)
         {
             string toFind = GetAllMaps().FirstOrDefault(fetch => Path.GetFileNameWithoutExtension(fetch) == mapTileToCheck.ToString());
-            if (toFind != null) return true;
-            else return false;
+            return toFind != null;
         }
 
         public static MapFile GetMapFromTile(int mapTileToGet)
@@ -103,6 +128,8 @@ namespace GameServer.Managers
 
                 string statsPath = GetStatsPathForTile(stats.Tile);
                 Serializer.ObjectBytesToFile(statsPath, stats);
+
+                LeaderboardManager.UpsertFromStats(stats);
             }
             catch
             {
@@ -116,11 +143,14 @@ namespace GameServer.Managers
             stats.Tile = mapFile.Tile;
             stats.Username = mapFile.Username ?? string.Empty;
 
-            stats.Wealth = mapFile.Wealth;
+            stats.SettlementName = mapFile.SettlementName ?? string.Empty;
+            stats.FactionName = mapFile.FactionName ?? string.Empty;
 
+            stats.Wealth = mapFile.Wealth;
             stats.WealthExact = mapFile.WealthExact >= 0 ? mapFile.WealthExact : -1;
 
             stats.GameTicks = mapFile.GameTicks;
+            stats.RealPlayTimeInteractingSeconds = mapFile.RealPlayTimeInteractingSeconds >= 0 ? mapFile.RealPlayTimeInteractingSeconds : -1;
             stats.LastSavedUtcTicks = mapFile.LastSavedUtcTicks > 0 ? mapFile.LastSavedUtcTicks : DateTime.UtcNow.Ticks;
 
             stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Length : -1;
@@ -133,7 +163,6 @@ namespace GameServer.Managers
             stats.NonFactionAnimalCount = mapFile.NonFactionAnimals != null ? mapFile.NonFactionAnimals.Length : -1;
 
             stats.ColonistCount = stats.FactionHumanCount;
-
 
             return stats;
         }

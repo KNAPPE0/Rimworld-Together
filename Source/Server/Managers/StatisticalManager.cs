@@ -12,13 +12,14 @@ namespace GameServer.Managers
             try
             {
                 string username = string.Empty;
-                string settlementName = string.Empty;
 
-                SettlementFile settlementToFind = SettlementManager.GetSettlementFileFromTile(data._settlementTile);
+                SettlementFile settlementToFind = null;
+                try { settlementToFind = SettlementManager.GetSettlementFileFromTile(data._settlementTile); }
+                catch { }
+
                 if (settlementToFind != null)
                 {
                     username = settlementToFind.Username ?? string.Empty;
-                    settlementName = settlementToFind.Name ?? string.Empty;
 
                     ServerClient clientToFind = ServerNetwork.Instance.GetConnectedClientFromUsername(username);
                     data._isPlayerOnline = clientToFind != null;
@@ -29,21 +30,14 @@ namespace GameServer.Managers
                 }
 
                 MapStatsFile stats = null;
-
-                try
-                {
-                    stats = MapManager.GetOrCreateMapStatsFromTile(data._settlementTile);
-                }
-                catch
-                {
-                }
+                try { stats = MapManager.GetOrCreateMapStatsFromTile(data._settlementTile); }
+                catch { }
 
                 if (stats == null)
                 {
                     stats = new MapStatsFile();
                     stats.Tile = data._settlementTile;
                     stats.Username = username;
-                    stats.SettlementName = settlementName;
                 }
                 else
                 {
@@ -51,10 +45,10 @@ namespace GameServer.Managers
 
                     if (string.IsNullOrWhiteSpace(stats.Username))
                         stats.Username = username;
-
-                    if (!string.IsNullOrWhiteSpace(settlementName))
-                        stats.SettlementName = settlementName;
                 }
+
+                if (string.IsNullOrWhiteSpace(stats.SettlementName) && settlementToFind != null && !string.IsNullOrWhiteSpace(settlementToFind.Name))
+                    stats.SettlementName = settlementToFind.Name;
 
                 data._settlementStats = stats;
 

@@ -1,72 +1,182 @@
-using GameClient.Dialogs;
+ï»¿using GameClient.Dialogs;
 using Shared;
 using Shared.Files;
 using System;
 using System.Globalization;
 using System.Linq;
 using TCPNetwork.Packets;
-using static Shared.CommonEnumerators;
+using Verse;
 
 namespace GameClient.Managers
 {
     public static class LeaderboardManager
     {
+        private const int RequestTimeoutMs = 8000;
 
-        public static void AskForLeaderboard()
+        private static bool _requestInFlight;
+        private static int _lastRequestMs;
+
+        public static InformationData.LeaderboardSortMode CurrentSort { get; private set; } = InformationData.LeaderboardSortMode.WealthExact;
+        public static InformationData.LeaderboardOrder CurrentOrder { get; private set; } = InformationData.LeaderboardOrder.Desc;
+
+        public static int CurrentLimit { get; private set; } = 10;
+        public static int CurrentOffset { get; private set; } = 0;
+
+        public static int Total { get; private set; } = -1;
+        public static LeaderboardEntryFile[] Entries { get; private set; } = Array.Empty<LeaderboardEntryFile>();
+
+        public static void OpenLeaderboardDialog(bool requestFresh = true)
         {
-            AskForLeaderboard(
-                InformationData.LeaderboardSortMode.WealthExact,
-                InformationData.LeaderboardOrder.Desc,
-                10,
-                0
-            );
+            TryOpenDialog();
+
+            if (requestFresh)
+            {
+                AskForLeaderboard(CurrentSort, CurrentOrder, CurrentLimit, CurrentOffset);
+            }
+        }
+
+        private static void TryOpenDialog()
+        {
+            try
+            {
+                if (Find.WindowStack == null) return;
+
+                if (!Find.WindowStack.IsOpen<RT_Dialog_Leaderboard>())
+                    Find.WindowStack.Add(new RT_Dialog_Leaderboard());
+            }
+            catch
+            {
+            }
+        }
+
+        public static bool TryHandleChatCommand(string messageToSend)
+        {
+            if (string.IsNullOrWhiteSpace(messageToSend))
+                return false;
+
+            string msg = messageToSend.Trim();
+
+            if (!msg.StartsWith("/"))
+                return false;
+
+            string[] parts = msg.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0)
+                return false;
+
+            string cmd = parts[0].ToLowerInvariant();
+            if (cmd != "/lb" && cmd != "/leaderboard")
+                return false;
+
+            InformationData.LeaderboardSortMode sort = CurrentSort;
+            InformationData.LeaderboardOrder order = CurrentOrder;
+            int limit = CurrentLimit;
+
+            for (int i = 1; i < parts.Length; i++)
+            {
+                string token = parts[i].ToLowerInvariant();
+
+                if (token == "asc" || token == "a")
+                {
+                    order = InformationData.LeaderboardOrder.Asc;
+                    continue;
+                }
+
+                if (token == "desc" || token == "d")
+                {
+                    order = InformationData.LeaderboardOrder.Desc;
+                    continue;
+                }
+
+                if (int.TryParse(token, out int parsedLimit))
+                {
+                    limit = parsedLimit;
+                    continue;
+                }
+
+                sort = ParseSort(token, sort);
+            }
+
+            if (limit <= 0) limit = 10;
+            if (limit > 100) limit = 100;
+
+            TryOpenDialog();
+            AskForLeaderboard(sort, order, limit, 0);
+            return true;
+        }
+
+        private static InformationData.LeaderboardSortMode ParseSort(string token, InformationData.LeaderboardSortMode fallback)
+        {
+            switch (token)
+            {
+                case "wealth":
+                case "w":
+                    return InformationData.LeaderboardSortMode.Wealth;
+
+                case "exact":
+                case "wealthexact":
+                case "wx":
+                    return InformationData.LeaderboardSortMode.WealthExact;
+
+                case "colonists":
+                case "cols":
+                case "c":
+                    return InformationData.LeaderboardSortMode.Colonists;
+
+                case "playtime":
+                case "time":
+                case "pt":
+                    return InformationData.LeaderboardSortMode.PlaytimeTicks;
+
+                case "days":
+                case "dys":
+                    return InformationData.LeaderboardSortMode.Days;
+
+                case "settlement":
+                case "community":
+                case "colony":
+                case "name":
+                    return InformationData.LeaderboardSortMode.SettlementName;
+
+                case "faction":
+                case "fac":
+                    return InformationData.LeaderboardSortMode.FactionName;
+
+                case "lastsaved":
+                case "saved":
+                case "last":
+                    return InformationData.LeaderboardSortMode.LastSavedUtcTicks;
+
+                default:
+                    return fallback;
+            }
         }
 
         public static void AskForLeaderboard(
             InformationData.LeaderboardSortMode sort,
             InformationData.LeaderboardOrder order,
-            int limit = 10,
-            int offset = 0)
-        {
-            RequestLeaderboard(sort, order, limit, offset);
-        }
-
-        public static void AskForLeaderboard(
-            InformationData.LeaderboardSortMode sort,
-            int limit,
-            InformationData.LeaderboardOrder order,
-            int offset = 0)
-        {
-            RequestLeaderboard(sort, order, limit, offset);
-        }
-
-        public static void AskForLeaderboard(
-            InformationData.LeaderboardSortMode sort,
-            int limit,
-            int offset,
-            InformationData.LeaderboardOrder order)
-        {
-            RequestLeaderboard(sort, order, limit, offset);
-        }
-
-        public static void AskForLeaderboard(
-            InformationData.LeaderboardSortMode sort,
             int limit,
             int offset)
         {
-            RequestLeaderboard(sort, InformationData.LeaderboardOrder.Desc, limit, offset);
-        }
+            int now = Environment.TickCount;
 
-        public static void RequestLeaderboard(
-            InformationData.LeaderboardSortMode sort,
-            InformationData.LeaderboardOrder order,
-            int limit = 10,
-            int offset = 0)
-        {
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait("Waiting for server"));
+            if (_requestInFlight && (now - _lastRequestMs) < RequestTimeoutMs)
+                return;
+
+            _requestInFlight = true;
+            _lastRequestMs = now;
+
+            if (limit <= 0) limit = 10;
+            if (limit > 100) limit = 100;
+            if (offset < 0) offset = 0;
+
+            CurrentSort = sort;
+            CurrentOrder = order;
+            CurrentLimit = limit;
+            CurrentOffset = offset;
 
             InformationData data = new InformationData();
             data._stepMode = InformationData.InfoStepMode.Leaderboard;
+
             data._leaderboardSort = sort;
             data._leaderboardOrder = order;
             data._leaderboardLimit = limit;
@@ -77,129 +187,57 @@ namespace GameClient.Managers
 
         public static void ReceiveLeaderboard(InformationData data)
         {
-            RT_Dialog_Wait.Instance?.Close();
+            _requestInFlight = false;
 
-            LeaderboardEntryFile[] entries = data._leaderboardEntries ?? new LeaderboardEntryFile[0];
-
-            ChatManager.AddMessageToChat(
-                "Server",
-                $"Leaderboard: {data._leaderboardSort} ({data._leaderboardOrder}) — showing {entries.Length} / {data._leaderboardTotal}",
-                ChatColor.Server,
-                ChatColor.Server);
-
-            if (entries.Length == 0)
+            if (data == null)
             {
-                ChatManager.AddMessageToChat(
-                    "Server",
-                    "No leaderboard entries found yet (are .stats files being written?).",
-                    ChatColor.Server,
-                    ChatColor.Server);
+                Total = -1;
+                Entries = Array.Empty<LeaderboardEntryFile>();
                 return;
             }
 
-            foreach (LeaderboardEntryFile e in entries)
-            {
-                string who = string.IsNullOrWhiteSpace(e.Username) ? "Unknown" : e.Username;
-                string community = string.IsNullOrWhiteSpace(e.SettlementName) ? "Unknown" : e.SettlementName;
-                string faction = string.IsNullOrWhiteSpace(e.FactionName) ? "Unknown" : e.FactionName;
+            Total = data._leaderboardTotal;
+            Entries = data._leaderboardEntries ?? Array.Empty<LeaderboardEntryFile>();
 
-                string wealth = FormatWealth(e);
-                string colonists = e.ColonistCount < 0 ? "?" : e.ColonistCount.ToString("N0", CultureInfo.InvariantCulture);
-
-                ChatManager.AddMessageToChat(
-                    "Server",
-                    $"#{e.Rank} {who} | Community: {community} | Faction: {faction} | Wealth: {wealth} | Colonists: {colonists}",
-                    ChatColor.Server,
-                    ChatColor.Server);
-            }
+            CurrentSort = data._leaderboardSort;
+            CurrentOrder = data._leaderboardOrder;
+            CurrentLimit = data._leaderboardLimit;
+            CurrentOffset = data._leaderboardOffset;
         }
 
-        public static bool TryHandleChatCommand(string message)
+        [OnUpdate]
+        private static void UpdateTimeout()
         {
-            if (string.IsNullOrWhiteSpace(message)) return false;
+            if (!_requestInFlight) return;
 
-            string raw = message.Trim();
-            if (!raw.StartsWith("/lb", StringComparison.OrdinalIgnoreCase) &&
-                !raw.StartsWith("/leaderboard", StringComparison.OrdinalIgnoreCase))
-                return false;
+            int now = Environment.TickCount;
+            if ((now - _lastRequestMs) < RequestTimeoutMs) return;
 
-            string[] parts = raw.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-            InformationData.LeaderboardSortMode sort = InformationData.LeaderboardSortMode.WealthExact;
-            InformationData.LeaderboardOrder order = InformationData.LeaderboardOrder.Desc;
-            int limit = 10;
-
-            foreach (string p in parts.Skip(1))
-            {
-                if (int.TryParse(p, out int maybeLimit))
-                {
-                    limit = maybeLimit;
-                    continue;
-                }
-
-                if (p.Equals("asc", StringComparison.OrdinalIgnoreCase)) { order = InformationData.LeaderboardOrder.Asc; continue; }
-                if (p.Equals("desc", StringComparison.OrdinalIgnoreCase)) { order = InformationData.LeaderboardOrder.Desc; continue; }
-
-                if (EnumTryParseSort(p, out InformationData.LeaderboardSortMode parsedSort))
-                    sort = parsedSort;
-            }
-
-            AskForLeaderboard(sort, order, limit, 0);
-            return true;
+            _requestInFlight = false;
         }
 
-        private static bool EnumTryParseSort(string token, out InformationData.LeaderboardSortMode mode)
+        public static bool CanPagePrev()
         {
-            mode = InformationData.LeaderboardSortMode.WealthExact;
-
-            if (string.IsNullOrWhiteSpace(token)) return false;
-
-            string t = token.Trim().ToLowerInvariant();
-
-            switch (t)
-            {
-                case "wealth":
-                    mode = InformationData.LeaderboardSortMode.Wealth; return true;
-
-                case "wealthexact":
-                case "exactwealth":
-                case "wealth_exact":
-                    mode = InformationData.LeaderboardSortMode.WealthExact; return true;
-
-                case "colonists":
-                case "colonist":
-                    mode = InformationData.LeaderboardSortMode.Colonists; return true;
-
-                case "ticks":
-                case "playtimeticks":
-                    mode = InformationData.LeaderboardSortMode.PlaytimeTicks; return true;
-
-                case "days":
-                    mode = InformationData.LeaderboardSortMode.Days; return true;
-
-                case "settlement":
-                case "settlementname":
-                case "community":
-                case "communityname":
-                    mode = InformationData.LeaderboardSortMode.SettlementName; return true;
-
-                case "faction":
-                case "factionname":
-                    mode = InformationData.LeaderboardSortMode.FactionName; return true;
-
-                case "lastsaved":
-                case "lastsavedutcticks":
-                    mode = InformationData.LeaderboardSortMode.LastSavedUtcTicks; return true;
-            }
-
-            return false;
+            return CurrentOffset > 0;
         }
 
-        private static string FormatWealth(LeaderboardEntryFile e)
+        public static bool CanPageNext()
         {
-            if (e.WealthExact >= 0) return "$" + e.WealthExact.ToString("N2", CultureInfo.InvariantCulture);
-            if (e.Wealth >= 0) return "$" + e.Wealth.ToString("N0", CultureInfo.InvariantCulture);
-            return "Unknown";
+            if (Total < 0) return false;
+            return (CurrentOffset + CurrentLimit) < Total;
+        }
+
+        public static void PrevPage()
+        {
+            int next = CurrentOffset - CurrentLimit;
+            if (next < 0) next = 0;
+            AskForLeaderboard(CurrentSort, CurrentOrder, CurrentLimit, next);
+        }
+
+        public static void NextPage()
+        {
+            int next = CurrentOffset + CurrentLimit;
+            AskForLeaderboard(CurrentSort, CurrentOrder, CurrentLimit, next);
         }
     }
 }

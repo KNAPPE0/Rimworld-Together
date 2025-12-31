@@ -26,9 +26,6 @@ namespace Synchronous.Managers
                 data.CurrentGameSpeed = (int)speed;
                 data.TimeTicks = Find.TickManager.TicksSinceSettle;
 
-                Printer.Warning(data.CurrentGameSpeed);
-                Printer.Warning(data.TimeTicks);
-
                 ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerGameSpeed, data);
             }
         }

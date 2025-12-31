@@ -64,9 +64,17 @@ namespace TCPNetwork
             PacketHeader.ServerBrowserReachability
         };
 
-        public Listener(ServerClient clientToUse, TcpClient connection, Action<PacketHeader, byte[], ServerClient> onReadPacket, Action<bool> onWritePacket,
-            Action<ServerClient> onConnect, Action<ServerClient> onDisconnect, Action<object, LogImportanceMode> onMessage,
-            Action<object, LogImportanceMode> onWarning, Action<object, LogImportanceMode> onError, ListenerMode mode)
+        public Listener(
+            ServerClient clientToUse,
+            TcpClient connection,
+            Action<PacketHeader, byte[], ServerClient> onReadPacket,
+            Action<bool> onWritePacket,
+            Action<ServerClient> onConnect,
+            Action<ServerClient> onDisconnect,
+            Action<object, LogImportanceMode> onMessage,
+            Action<object, LogImportanceMode> onWarning,
+            Action<object, LogImportanceMode> onError,
+            ListenerMode mode)
         {
             this.Connection = connection;
             this.TargetClient = clientToUse;
@@ -96,7 +104,7 @@ namespace TCPNetwork
             PacketQueue.Enqueue(new KeyValuePair<byte, byte[]>((byte)header, Serializer.ConvertObjectToBytes(obj)));
         }
 
-        public void EnqueueBytes(PacketHeader header, byte[] bytes)
+        public void EnqueuePacket(PacketHeader header, byte[] bytes)
         {
             if (IsDisconnecting)
                 return;
@@ -128,19 +136,33 @@ namespace TCPNetwork
                         var packetBuffer = new byte[BitConverter.ToInt32(lengthBuffer, 0)];
                         ReadFullPacket(packetBuffer);
 
-                        // This prevents tab-out / unfocus from disconnecting due to main thread not processing packets. (Found this on accident, no clue why it wasn't here anymore, but it pissed me off when I was debugging)
+                        // This prevents tab-out / unfocus from disconnecting due to main thread not processing packets.
                         CurrentKeepAliveTime = 0;
 
-                        if (!IgnoreLogPackets.Contains(header)) OnMessage($"[Packet] > Received packet {header}", LogImportanceMode.Verbose);
-                        else OnMessage($"[Packet] > Received packet {header}", LogImportanceMode.Extreme);
+                        if (!IgnoreLogPackets.Contains(header))
+                            OnMessage($"[Packet] > Received packet {header}", LogImportanceMode.Verbose);
+                        else
+                            OnMessage($"[Packet] > Received packet {header}", LogImportanceMode.Extreme);
 
-                        try { OnReadPacket(header, packetBuffer, TargetClient); }
-                        catch (Exception e) { OnWarning(e, LogImportanceMode.Extreme); }
+                        try
+                        {
+                            OnReadPacket(header, packetBuffer, TargetClient);
+                        }
+                        catch (Exception e)
+                        {
+                            OnWarning(e, LogImportanceMode.Extreme);
+                        }
                     }
                 }
             }
-            catch (ObjectDisposedException e) { OnWarning("Disposed of connection", LogImportanceMode.Extreme); }
-            catch (Exception e) { OnWarning(e, LogImportanceMode.Extreme); }
+            catch (ObjectDisposedException)
+            {
+                OnWarning("Disposed of connection", LogImportanceMode.Extreme);
+            }
+            catch (Exception e)
+            {
+                OnWarning(e, LogImportanceMode.Extreme);
+            }
 
             DisconnectNow();
         }
@@ -178,19 +200,22 @@ namespace TCPNetwork
                         Stream.Write(packetData.Value, 0, packetData.Value.Length);
 
                         // Log the packet data
-                        if (!IgnoreLogPackets.Contains((PacketHeader)(packetData.Key))) OnMessage($"[Packet] Sent packet > {(PacketHeader)(packetData.Key)}", LogImportanceMode.Verbose);
-                        else OnMessage($"[Packet] > Sent packet {(PacketHeader)(packetData.Key)}", LogImportanceMode.Extreme);
+                        if (!IgnoreLogPackets.Contains((PacketHeader)packetData.Key))
+                            OnMessage($"[Packet] Sent packet > {(PacketHeader)packetData.Key}", LogImportanceMode.Verbose);
+                        else
+                            OnMessage($"[Packet] > Sent packet {(PacketHeader)packetData.Key}", LogImportanceMode.Extreme);
                     }
 
                     if (IsDisconnecting)
-                    {
                         DisconnectNow();
-                    }
 
                     OnWritePacket(false);
                 }
             }
-            catch (Exception e) { OnWarning(e, LogImportanceMode.Extreme); }
+            catch (Exception e)
+            {
+                OnWarning(e, LogImportanceMode.Extreme);
+            }
 
             DisconnectNow();
         }
@@ -206,7 +231,10 @@ namespace TCPNetwork
                     EnqueuePacket(PacketHeader.KeepAliveManager, keepAliveData);
                 }
             }
-            catch (Exception e) { OnWarning(e, LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                OnWarning(e, LogImportanceMode.Verbose);
+            }
         }
 
         private void CheckKAFlag()
@@ -217,11 +245,16 @@ namespace TCPNetwork
                 {
                     Thread.Sleep(1);
 
-                    if (CurrentKeepAliveTime < KeepAliveMaxTime) CurrentKeepAliveTime++;
-                    else break;
+                    if (CurrentKeepAliveTime < KeepAliveMaxTime)
+                        CurrentKeepAliveTime++;
+                    else
+                        break;
                 }
             }
-            catch (Exception e) { OnWarning(e, LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                OnWarning(e, LogImportanceMode.Verbose);
+            }
 
             DisconnectNow();
         }
@@ -235,11 +268,16 @@ namespace TCPNetwork
                 while (readBytes < content.Length)
                 {
                     int read = Stream.Read(content, readBytes, content.Length - readBytes);
-                    if (read == 0) throw new ArgumentOutOfRangeException();
+                    if (read == 0)
+                        throw new ArgumentOutOfRangeException();
+
                     readBytes += read;
                 }
             }
-            catch (Exception e) { OnWarning(e, LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                OnWarning(e, LogImportanceMode.Verbose);
+            }
         }
 
         /// <summary>
@@ -255,15 +293,14 @@ namespace TCPNetwork
         /// </summary>
         public void DisconnectNow()
         {
-            if (DisconnectFlag) return;
-            else
-            {
-                DisconnectFlag = true;
-                Connection.Dispose();
-                Stream.Dispose();
+            if (DisconnectFlag)
+                return;
 
-                this.OnDisconnect(TargetClient);
-            }
+            DisconnectFlag = true;
+            Connection.Dispose();
+            Stream.Dispose();
+
+            this.OnDisconnect(TargetClient);
         }
     }
 }

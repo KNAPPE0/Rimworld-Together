@@ -67,7 +67,7 @@ namespace GameClient.Managers
             SaveData data = new SaveData();
             data._header._stepMode = SaveStepMode.Reset;
 
-            ClientNetwork.Instance.ClientListener.EnqueueBytes(PacketHeader.SaveManager, data.SerializeSavePacket());
+            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SaveManager, data.SerializeSavePacket());
         }
 
         public static double GetRealPlayTimeInteractingFromSave(string filePath)
@@ -155,7 +155,7 @@ namespace GameClient.Managers
             data._header = new SaveDataHeader(SaveStepMode.Receive, SessionHandler.IsExiting);
             data._fileBytes = GZip.CompressBytes(saveBytes);
 
-            ClientNetwork.Instance.ClientListener.EnqueueBytes(PacketHeader.SaveManager, data.SerializeSavePacket());
+            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SaveManager, data.SerializeSavePacket());
         }
 
         private static void OnSaveReceived(SaveDataHeader header, byte[] save)

@@ -102,7 +102,7 @@ namespace GameServer.Managers
             data._fileBytes = File.ReadAllBytes(savePath);
             if (!Master.ServerConfig.SyncLocalSave) data._header._forceUseSave = true;
 
-            client.Listener.EnqueueBytes(PacketHeader.SaveManager, data.SerializeSavePacket());
+            client.Listener.EnqueuePacket(PacketHeader.SaveManager, data.SerializeSavePacket());
         }
         
         public static void ReceiveSaveFromClient(ServerClient client, SaveDataHeader header, Span<byte> data)

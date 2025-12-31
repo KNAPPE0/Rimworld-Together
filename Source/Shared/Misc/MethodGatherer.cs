@@ -1,3 +1,4 @@
+using Shared.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +25,6 @@ namespace Shared
         {
             if (type == AssemblyType.Client)
             {
-                Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().SingleOrDefault(fetch => fetch.GetName().Name == "GameClient");
                 MethodInfo[] clientMethods = GetPacketHandlerAttributes(GetAllGameTypes()).ToArray();
                 ClientMethodDictionary = new Dictionary<PacketHeader, MethodInfo>();
                 for (int i = 0; i < clientMethods.Length; i++)
@@ -32,6 +32,8 @@ namespace Shared
                     ClientMethodDictionary.Add(clientMethods[i].GetCustomAttribute<HandlesPacket>().header,
                         clientMethods[i]);
                 }
+
+                foreach (KeyValuePair<PacketHeader, MethodInfo> pair in ClientMethodDictionary) Printer.Warning($"{pair.Key} - {pair.Value}");
 
                 OnStartMethods = GetSessionStartMethods(GetAllGameTypes());
                 OnEndMethods = GetSessionEndMethods(GetAllGameTypes());

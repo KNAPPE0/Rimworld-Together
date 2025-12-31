@@ -3,6 +3,7 @@ using GameClient.Core;
 using GameClient.Misc;
 using RimWorld;
 using Shared;
+using Shared.Misc;
 using Synchronous.Misc;
 using Synchronous.Objects;
 using System;
@@ -37,6 +38,8 @@ namespace Synchronous.Managers
         [HandlesPacket(PacketHeader.SPlayerDraft)]
         private static void Receive(byte[] bytes)
         {
+            Printer.Warning(1);
+
             PlayerDraft[] drafts = Serializer.ConvertBytesToObject<PlayerDraft[]>(bytes);
 
             PatchHandler.ExecuteInBypass(delegate

@@ -69,9 +69,8 @@ namespace Shared
             Assembly toUse = AppDomain.CurrentDomain.GetAssemblies().SingleOrDefault(fetch => fetch.GetName().Name == "GameClient");
             allTypes.AddRange(toUse.GetTypes().ToList());
 
-            //REIMPLEMENT WHEN ADDING SYNCHRONOUS BACK
-            //toUse = AppDomain.CurrentDomain.GetAssemblies().SingleOrDefault(fetch => fetch.GetName().Name == "Synchronous");
-            //allTypes.AddRange(toUse.GetTypes().ToList());
+            toUse = AppDomain.CurrentDomain.GetAssemblies().SingleOrDefault(fetch => fetch.GetName().Name == "Synchronous");
+            allTypes.AddRange(toUse.GetTypes().ToList());
 
             return allTypes.ToArray();
         }

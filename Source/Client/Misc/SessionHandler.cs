@@ -78,6 +78,8 @@ namespace GameClient.Misc
 
         public static bool IsExiting { get; set; } = false;
 
+        public static bool IsSynchronousHost { get; set; } = true;
+
         public static void SetValues(ServerGlobalData serverGlobalData)
         {
             IsAdmin = serverGlobalData._isClientAdmin;
@@ -123,6 +125,7 @@ namespace GameClient.Misc
             LastTradeStep = TradeMode.None;
             ChatManager.ShouldScrollChat = true;
             IsExiting = false;
+            IsSynchronousHost = false;
 
             Patch_Page_SelectScenario_DoWindowContents.executedMessage = false;
             Patch_DialogOptions_DoModOptions.executedMessage = false;

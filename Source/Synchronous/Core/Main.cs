@@ -18,7 +18,6 @@ namespace Synchronous.Core
     {
         public static Harmony Instance { get; private set; } = null;
 
-        [OnSessionStart]
         private static void Start() { ToggleHarmonyPatches(true); }
 
         [OnSessionEnd]

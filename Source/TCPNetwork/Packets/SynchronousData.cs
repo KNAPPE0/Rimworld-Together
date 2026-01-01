@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Shared.Files.Maps;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,7 @@ namespace TCPNetwork.Packets
 {
     public class SynchronousData
     {
-        public enum StepMode { Ask, Accept, Reject }
+        public enum StepMode { Ask, Accept, Reject, Start }
 
         public StepMode _stepMode { get; set; } = StepMode.Ask;
 
@@ -16,6 +17,6 @@ namespace TCPNetwork.Packets
 
         public int _toTile { get; set; } = -1;
 
-        public byte[] _rawData { get; set; } = null;
+        public byte[] _contents { get; set; } = null;
     }
 }

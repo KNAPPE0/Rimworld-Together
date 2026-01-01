@@ -23,9 +23,14 @@ namespace Shared
 
         //Serialize from and to byte arrays
 
-        public static byte[] ConvertObjectToBytes(object toConvert)
+        public static byte[] ConvertObjectToBytes(object toConvert, bool compression = true)
         {
-            try { return MessagePackSerializer.Serialize(toConvert, ContractlessStandardResolver.Options.WithCompression(MessagePackCompression.Lz4Block)); }
+            try 
+            { 
+                if (compression) return MessagePackSerializer.Serialize(toConvert, ContractlessStandardResolver.Options.WithCompression(MessagePackCompression.Lz4Block));
+                else return MessagePackSerializer.Serialize(toConvert, ContractlessStandardResolver.Options); 
+            }
+
             catch (Exception e) 
             { 
                 Printer.Error(e);
@@ -33,9 +38,14 @@ namespace Shared
             }
         }
 
-        public static T ConvertBytesToObject<T>(byte[] bytes)
+        public static T ConvertBytesToObject<T>(byte[] bytes, bool compression = true)
         {
-            try { return MessagePackSerializer.Deserialize<T>(bytes, ContractlessStandardResolver.Options.WithCompression(MessagePackCompression.Lz4Block)); }
+            try 
+            { 
+                if (compression) return MessagePackSerializer.Deserialize<T>(bytes, ContractlessStandardResolver.Options.WithCompression(MessagePackCompression.Lz4Block));
+                else return MessagePackSerializer.Deserialize<T>(bytes, ContractlessStandardResolver.Options);
+            }
+
             catch (Exception e)
             {
                 Printer.Error(e);

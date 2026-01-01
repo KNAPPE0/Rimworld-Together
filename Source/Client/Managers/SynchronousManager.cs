@@ -3,13 +3,16 @@ using GameClient.Misc;
 using RimWorld.Planet;
 using Shared;
 using Shared.Files.Maps;
+using Shared.Misc;
 using System;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TCPNetwork.Packets;
 using Verse;
+using Verse.Noise;
 using static Shared.CommonEnumerators;
 
 namespace GameClient.Managers
@@ -34,6 +37,10 @@ namespace GameClient.Managers
                 case SynchronousData.StepMode.Reject:
                     OnReject(data);
                     break;
+
+                case SynchronousData.StepMode.Start:
+                    StartSession();
+                    break;
             }
         }
 
@@ -54,13 +61,16 @@ namespace GameClient.Managers
 
             Action actionYes = delegate
             {
-                MapFile map = MapSaveLoader.MapToString(Finder.GetMapFromID(data._toTile), true, true, true, true, true, true);
+                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait());
+
+                Map map = Find.AnyPlayerHomeMap;
+                MapManager.SendMapToServer(map);
+                SessionHandler.SynchronousMap = map;
 
                 SynchronousData _ = new SynchronousData();
                 _._stepMode = SynchronousData.StepMode.Accept;
                 _._fromTile = data._toTile;
                 _._toTile = data._fromTile;
-                _._rawData = Serializer.ConvertObjectToBytes(map);
 
                 ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, _);
             };
@@ -83,9 +93,13 @@ namespace GameClient.Managers
         {
             RT_Dialog_Wait.Instance.Close();
 
-            Map map = MapSaveLoader.StringToMap(Serializer.ConvertBytesToObject<MapFile>(data._rawData), true, true, true, true, true, true);
+            Map map = MapSaveLoader.StringToMap(Serializer.ConvertBytesToObject<MapFile>(data._contents), true, true, true, true, true, true);
             CaravanEnterMapUtility.Enter(SessionHandler.ChosenCaravan, map, CaravanEnterMode.Edge, CaravanDropInventoryMode.DoNotDrop, draftColonists: true);
             CameraJumper.TryJump(map.Center, map, CameraJumper.MovementMode.Pan);
+
+            SessionHandler.SynchronousMap = map;
+
+            OnStart();
         }
 
         private static void OnReject(SynchronousData data)
@@ -94,6 +108,24 @@ namespace GameClient.Managers
 
             string[] description = new string[] { "Reject!" };
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message(null, description));
+        }
+
+        private static void StartSession()
+        {
+            RT_Dialog_Wait.Instance.Close();
+        }
+
+        private static void OnStart()
+        {
+            SynchronousData data = new SynchronousData();
+            data._stepMode = SynchronousData.StepMode.Start;
+
+            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, data);
+        }
+
+        private static void OnEnd()
+        {
+
         }
     }
 }

@@ -35,6 +35,10 @@ namespace GameServer.Managers
                 case SynchronousData.StepMode.Reject:
                     RejectSynchronousSession(client, data);
                     break;
+
+                case SynchronousData.StepMode.Start:
+                    StartSynchronousSession(client, data);
+                    break;
             }
         }
 
@@ -64,6 +68,10 @@ namespace GameServer.Managers
             _._stepMode = SynchronousData.StepMode.Accept;
             _._fromTile = data._fromTile;
             _._toTile = data._toTile;
+            _._contents = MapManager.GetMapFromTile(data._fromTile);
+
+            client.SynchronousClient = toFind;
+            toFind.SynchronousClient = client;
 
             toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
         }
@@ -79,6 +87,14 @@ namespace GameServer.Managers
             _._toTile = data._toTile;
 
             toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
+        }
+
+        private static void StartSynchronousSession(ServerClient client, SynchronousData data)
+        {
+            SynchronousData _ = new SynchronousData();
+            _._stepMode = SynchronousData.StepMode.Start;
+
+            client.SynchronousClient.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
         }
 
         [HandlesPacket(PacketHeader.SPlayerDraft)]

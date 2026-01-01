@@ -78,7 +78,9 @@ namespace GameClient.Misc
 
         public static bool IsExiting { get; set; } = false;
 
-        public static bool IsSynchronousHost { get; set; } = true;
+        public static bool IsSynchronousHost { get; set; } = false;
+
+        public static Map SynchronousMap { get; set; } = null;
 
         public static void SetValues(ServerGlobalData serverGlobalData)
         {
@@ -126,6 +128,7 @@ namespace GameClient.Misc
             ChatManager.ShouldScrollChat = true;
             IsExiting = false;
             IsSynchronousHost = false;
+            SynchronousMap = null;
 
             Patch_Page_SelectScenario_DoWindowContents.executedMessage = false;
             Patch_DialogOptions_DoModOptions.executedMessage = false;

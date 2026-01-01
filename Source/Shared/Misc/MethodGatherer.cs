@@ -33,8 +33,6 @@ namespace Shared
                         clientMethods[i]);
                 }
 
-                foreach (KeyValuePair<PacketHeader, MethodInfo> pair in ClientMethodDictionary) Printer.Warning($"{pair.Key} - {pair.Value}");
-
                 OnStartMethods = GetSessionStartMethods(GetAllGameTypes());
                 OnEndMethods = GetSessionEndMethods(GetAllGameTypes());
                 PerFrameMethods = GetPerFrameMethods(GetAllGameTypes());

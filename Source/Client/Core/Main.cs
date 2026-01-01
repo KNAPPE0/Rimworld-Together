@@ -60,9 +60,7 @@ namespace GameClient.Core
 
             string modRoot = TryGetModRootFromActiveList();
             if (string.IsNullOrEmpty(modRoot))
-            {
                 modRoot = TryGetModRootFromAssemblyLocation();
-            }
 
             if (string.IsNullOrEmpty(modRoot))
             {
@@ -74,9 +72,12 @@ namespace GameClient.Core
             Master.ModScriptsPath = string.IsNullOrEmpty(modRoot) ? string.Empty : Path.Combine(Master.ModMainPath, "Scripts");
             Master.ModAssemblyPath = string.IsNullOrEmpty(modRoot) ? string.Empty : Path.Combine(Master.ModMainPath, "Current", "Assemblies");
 
-            if (!Directory.Exists(Master.AppdataRTPath)) Directory.CreateDirectory(Master.AppdataRTPath);
+            if (!Directory.Exists(Master.AppdataRTPath))
+                Directory.CreateDirectory(Master.AppdataRTPath);
 
-            if (Directory.Exists(Master.AppdataTempPath)) Directory.Delete(Master.AppdataTempPath, true);
+            if (Directory.Exists(Master.AppdataTempPath))
+                Directory.Delete(Master.AppdataTempPath, true);
+
             Directory.CreateDirectory(Master.AppdataTempPath);
             Directory.CreateDirectory(Master.AppdataVersionPath);
         }
@@ -86,13 +87,12 @@ namespace GameClient.Core
             try
             {
                 string idA = Master.ModPackageID ?? string.Empty;
-                string idB = string.IsNullOrEmpty(idA) ? string.Empty : (idA + "_steam");
+                string idB = string.IsNullOrEmpty(idA) ? string.Empty : idA + "_steam";
 
-                var match = LoadedModManager.RunningMods
-                    .FirstOrDefault(m =>
-                        (!string.IsNullOrEmpty(m.PackageId) &&
-                         (string.Equals(m.PackageId, idA, StringComparison.OrdinalIgnoreCase) ||
-                          string.Equals(m.PackageId, idB, StringComparison.OrdinalIgnoreCase))));
+                var match = LoadedModManager.RunningMods.FirstOrDefault(m =>
+                    !string.IsNullOrEmpty(m.PackageId) &&
+                    (string.Equals(m.PackageId, idA, StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(m.PackageId, idB, StringComparison.OrdinalIgnoreCase)));
 
                 return match?.RootDir;
             }
@@ -107,10 +107,12 @@ namespace GameClient.Core
             try
             {
                 string asmPath = typeof(Main_).Assembly.Location;
-                if (string.IsNullOrEmpty(asmPath)) return null;
+                if (string.IsNullOrEmpty(asmPath))
+                    return null;
 
                 string dir = Path.GetDirectoryName(asmPath);
-                if (string.IsNullOrEmpty(dir)) return null;
+                if (string.IsNullOrEmpty(dir))
+                    return null;
 
                 DirectoryInfo di = new DirectoryInfo(dir);
                 DirectoryInfo current = di.Parent;

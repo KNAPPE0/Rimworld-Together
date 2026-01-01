@@ -1,5 +1,7 @@
 ﻿using GameClient.Misc;
 using HarmonyLib;
+using Shared;
+using Shared.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,24 +16,28 @@ namespace Synchronous.Core
     [StaticConstructorOnStartup]
     public static class Main_
     {
-        static Main_() 
-        {
-            ApplyHarmonyPathches();
-        }
+        public static Harmony Instance { get; private set; } = null;
 
-        private static void ApplyHarmonyPathches()
-        {
-            Harmony harmony = new Harmony(Master.ModID);
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
-        }
+        [OnSessionStart]
+        private static void Start() { ToggleHarmonyPatches(true); }
 
-        public static bool CheckIfPatchShouldApply()
+        [OnSessionEnd]
+        private static void Stop() { ToggleHarmonyPatches(false); }
+
+        private static void ToggleHarmonyPatches(bool mode)
         {
-            return true;
-            if (SessionHandler.CurrentNetworkState != ClientNetworkState.Connected) return false;
-            else if (Master.SelectedMap == null) return false;
-            else if (Master.IsInActivity == false) return false;
-            else return true;
+            if (mode)
+            {
+                if (Instance == null) Instance = new Harmony(Master.ModID);
+                Instance.PatchCategory("Synchronous");
+                Printer.Warning("Patched Synchronous methods", LogImportanceMode.Verbose);
+            }
+
+            else
+            {
+                Instance.UnpatchCategory("Synchronous");
+                Printer.Warning("Unpatched Synchronous methods", LogImportanceMode.Verbose);
+            }
         }
     }
 }

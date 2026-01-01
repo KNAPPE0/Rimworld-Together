@@ -19,12 +19,12 @@ namespace Synchronous.Managers
 
         public static MentalState LatestMentalState { get; set; } = null;
 
-        public static void Ask(Pawn pawn, MentalStateDef def, PlayerMentalState.MentalMode mode)
+        public static void Ask(Pawn pawn, byte value, PlayerMentalState.MentalMode mode)
         {
             PlayerMentalState playerMentalState = new PlayerMentalState();
             playerMentalState.MapID = pawn.Map.uniqueID;
             playerMentalState.PawnID = pawn.ThingID;
-            playerMentalState.MentalStateDefName = def.defName;
+            playerMentalState.MentalStateByte = value;
             playerMentalState.Mode = mode;
 
             ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerMentalState, playerMentalState);
@@ -46,7 +46,7 @@ namespace Synchronous.Managers
         {
             Map map = Finder.GetMapFromID(data.MapID);
             Pawn pawn = Finder.GetPawnFromID(map, data.PawnID);
-            MentalStateDef def = Finder.GetMentalStateDefFromName(data.MentalStateDefName);
+            MentalStateDef def = Finder.GetMentalStateDefFromByte(data.MentalStateByte);
 
             if (def != null) pawn.mindState.mentalStateHandler.TryStartMentalState(def);
         }
@@ -55,7 +55,7 @@ namespace Synchronous.Managers
         {
             Map map = Finder.GetMapFromID(data.MapID);
             Pawn pawn = Finder.GetPawnFromID(map, data.PawnID);
-            MentalStateDef def = Finder.GetMentalStateDefFromName(data.MentalStateDefName);
+            MentalStateDef def = Finder.GetMentalStateDefFromByte(data.MentalStateByte);
 
             if (def != null)
             {

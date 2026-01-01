@@ -9,8 +9,6 @@ namespace Synchronous.Core
 {
     public static class Master
     {
-        public static bool IsInActivity { get; set; } = false;
-
         public static Map SelectedMap { get; set; } = null;
 
         public static string ModID { get; private set; } = "RimWorld Together Synchronous";

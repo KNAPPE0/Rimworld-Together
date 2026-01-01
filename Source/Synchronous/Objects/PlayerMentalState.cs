@@ -12,10 +12,10 @@ namespace Synchronous.Objects
 
         public MentalMode Mode { get; set; } = MentalMode.Add;
 
-        public int MapID { get; set; } = 0;
+        public int MapID { get; set; } = -1;
 
         public string PawnID { get; set; } = string.Empty;
 
-        public string MentalStateDefName { get; set; } = string.Empty;
+        public byte MentalStateByte { get; set; } = byte.MaxValue;
     }
 }

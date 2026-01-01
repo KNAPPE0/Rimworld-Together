@@ -8,14 +8,8 @@ namespace Synchronous.Objects
 {
     public class PlayerWeather
     {
-        public PlayerWeather(int mapID, string weatherDefName)
-        {
-            MapID = mapID;
-            WeatherDefName = weatherDefName;
-        }
+        public int MapID { get; set; } = -1;
 
-        public int MapID { get; set; } = 0;
-
-        public string WeatherDefName { get; set; } = string.Empty;
+        public byte WeatherByte { get; set; } = byte.MaxValue;
     }
 }

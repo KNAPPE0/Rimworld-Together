@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Synchronous.Patches
 {
+    [HarmonyPatchCategory("Synchronous")]
     [HarmonyPatch(typeof(Pawn_DraftController), nameof(Pawn_DraftController.Drafted), MethodType.Setter)]
     public static class P_Pawn_DraftController_Drafted
     {

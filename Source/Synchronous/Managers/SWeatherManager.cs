@@ -15,9 +15,13 @@ namespace Synchronous.Managers
 {
     public static class SWeatherManager
     {
-        public static void Ask(WeatherDef def)
+        public static void Ask(byte value)
         {
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerWeather, new PlayerWeather(Find.CurrentMap.uniqueID, def.defName));
+            PlayerWeather weather = new PlayerWeather();
+            weather.MapID = Find.CurrentMap.uniqueID;
+            weather.WeatherByte = value;
+
+            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerWeather, weather);
         }
 
         [HandlesPacket(PacketHeader.SPlayerWeather)]
@@ -27,7 +31,7 @@ namespace Synchronous.Managers
 
             PatchHandler.ExecuteInBypass(delegate
             {
-                WeatherDef def = DefDatabase<WeatherDef>.AllDefs.First(fetch => fetch.defName == data.WeatherDefName);
+                WeatherDef def = Finder.GetWeatherDefFromByte(data.WeatherByte);
                 Finder.GetMapFromID(data.MapID).weatherManager.TransitionTo(def);
             });
         }

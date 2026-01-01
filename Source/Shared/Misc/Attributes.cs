@@ -56,5 +56,6 @@ namespace Shared
         SPlayerMentalState,
         SPlayerGameSpeed,
         ServerBrowserReachability,
+        SynchronousManager,
     }
 }

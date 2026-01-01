@@ -6,12 +6,14 @@ using Synchronous.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Verse;
 
 namespace Synchronous.Patches
 {
+    [HarmonyPatchCategory("Synchronous")]
     [HarmonyPatch(typeof(WeatherManager), nameof(WeatherManager.TransitionTo))]
     public static class P_WeatherManager_TransitionTo
     {
@@ -24,7 +26,8 @@ namespace Synchronous.Patches
                 if (!SessionHandler.IsSynchronousHost) return false;
                 else
                 {
-                    SWeatherManager.Ask(newWeather);
+                    byte value = (byte)DefDatabase<WeatherDef>.AllDefs.FirstIndexOf(fetch => fetch == newWeather);
+                    SWeatherManager.Ask(value);
                     return false;
                 }
             }

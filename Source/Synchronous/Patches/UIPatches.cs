@@ -11,18 +11,15 @@ using static Shared.CommonEnumerators;
 
 namespace Synchronous.Patches
 {
+    [HarmonyPatchCategory("Synchronous")]
     [HarmonyPatch(typeof(GlobalControls), nameof(GlobalControls.GlobalControlsOnGUI))]
     public static class Patch_GlobalControls_GlobalControlsOnGUI
     {
         [HarmonyPrefix]
         public static bool GlobalControlsOnGUI()
         {
-            if (!Main_.CheckIfPatchShouldApply()) return true;
-            else
-            {
-                DiagnosticsHandler.DrawDiagnosticsUI();
-                return true;
-            }
+            DiagnosticsHandler.DrawDiagnosticsUI();
+            return true;
         }
     }
 }

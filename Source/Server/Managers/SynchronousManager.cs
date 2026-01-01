@@ -1,18 +1,86 @@
-﻿using Shared;
+﻿using GameServer.Core;
+using Shared;
+using Shared.Files;
 using Shared.Misc;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
 namespace GameServer.Managers
 {
     public static class SynchronousManager
     {
+        [HandlesPacket(PacketHeader.SynchronousManager)]
+        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        {
+            SynchronousData data = Serializer.ConvertBytesToObject<SynchronousData>(bytes);
+
+            switch (data._stepMode)
+            {
+                case SynchronousData.StepMode.Ask:
+                    TryStartSynchronousSession(client, data);
+                    break;
+
+                case SynchronousData.StepMode.Accept:
+                    AcceptSynchronousSession(client, data);
+                    break;
+
+                case SynchronousData.StepMode.Reject:
+                    RejectSynchronousSession(client, data);
+                    break;
+            }
+        }
+
+        private static void TryStartSynchronousSession(ServerClient client, SynchronousData data)
+        {
+            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(data._toTile);
+            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username);
+
+            if (toFind == null) ResponseShortcutManager.SendUnavailablePacket(client);
+            else
+            {
+                SynchronousData _ = new SynchronousData();
+                _._stepMode = SynchronousData.StepMode.Ask;
+                _._fromTile = SettlementManager.GetSettlementFileFromUsername(client.UserFile.Username).Tile;
+                _._toTile = data._toTile;
+
+                toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
+            }
+        }
+
+        private static void AcceptSynchronousSession(ServerClient client, SynchronousData data)
+        {
+            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(data._toTile);
+            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username);
+
+            SynchronousData _ = new SynchronousData();
+            _._stepMode = SynchronousData.StepMode.Accept;
+            _._fromTile = data._fromTile;
+            _._toTile = data._toTile;
+
+            toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
+        }
+
+        private static void RejectSynchronousSession(ServerClient client, SynchronousData data)
+        {
+            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(data._toTile);
+            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username);
+
+            SynchronousData _ = new SynchronousData();
+            _._stepMode = SynchronousData.StepMode.Reject;
+            _._fromTile = data._fromTile;
+            _._toTile = data._toTile;
+
+            toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
+        }
+
         [HandlesPacket(PacketHeader.SPlayerDraft)]
         private static void SPlayerDraft(ServerClient client, byte[] bytes, PacketHeader header)
         {

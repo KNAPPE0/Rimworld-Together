@@ -33,7 +33,15 @@ namespace Synchronous.Managers
             }
         }
 
-        public static void Ask(Pawn pawn, bool mode) { PlayerDrafts.Add(new PlayerDraft(pawn.Map.uniqueID, pawn.ThingID, mode)); }
+        public static void Ask(Pawn pawn, bool mode) 
+        {
+            PlayerDraft draft = new PlayerDraft();
+            draft.MapID = pawn.Map.uniqueID;
+            draft.PawnID = pawn.ThingID;
+            draft.DraftValue = mode;
+
+            PlayerDrafts.Add(draft); 
+        }
 
         [HandlesPacket(PacketHeader.SPlayerDraft)]
         private static void Receive(byte[] bytes)

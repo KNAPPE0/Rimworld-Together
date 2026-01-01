@@ -16,11 +16,13 @@ namespace GameClient.Dialogs
 
         public RT_Dialog_Message(string title, string[] messages, Action onConfirm = null)
         {
-            Title = title;
+            Title = string.IsNullOrEmpty(title) ? "Message" : title;
             Messages = messages ?? Array.Empty<string>();
             OnAccept = onConfirm;
 
-            if (Messages.Length == 0) Messages = new[] { "" };
+            if (Messages.Length == 0)
+                Messages = new[] { string.Empty };
+
             CurrentMessage = Messages[Index];
 
             closeOnAccept = false;

@@ -21,9 +21,14 @@ namespace GameClient.Misc
 
         public static Thing[] GetAllThingsInMap(Map map) { return map.listerThings.AllThings.ToArray(); }
 
-        public static MentalStateDef GetMentalStateDefFromName(string defname)
+        public static MentalStateDef GetMentalStateDefFromByte(byte value)
         {
-            return DefDatabase<MentalStateDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == defname);
+            return DefDatabase<MentalStateDef>.AllDefs.ToList()[value];
+        }
+
+        public static WeatherDef GetWeatherDefFromByte(byte value)
+        {
+            return DefDatabase<WeatherDef>.AllDefs.ToList()[value];
         }
 
         public static RTSettlement GetRTSettlementFromTile(int tile) 

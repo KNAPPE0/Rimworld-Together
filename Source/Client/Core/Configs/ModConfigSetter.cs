@@ -65,6 +65,7 @@ namespace GameClient.Core.Configs
             if (listingStandard.ButtonTextLabeled("Verbosity mode", $"{ModConfigGetter.CurrentVerboseMode}")) ShowVerboseFloatMenu();
             if (listingStandard.ButtonTextLabeled("Open logs folder", "Open")) StartProcess(Master.AppdataPath);
             if (listingStandard.ButtonTextLabeled("Simulated lag", $"{ModConfigGetter.CurrentSimulatedLag}")) ShowSimulatedLagMenu();
+            if (listingStandard.ButtonTextLabeled("Toggle synchronous patches", $"{ModConfigGetter.SynchronousPatchesEnabled}")) ToggleSynchronousPatches();
 
             listingStandard.GapLine();
             listingStandard.Label("Tweaks");
@@ -155,6 +156,11 @@ namespace GameClient.Core.Configs
             };
 
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_Inputs("Choose where to export the file at", new string[] { "Path" }, new bool[] { false }, toDo));
+        }
+
+        private void ToggleSynchronousPatches() 
+        { 
+            ModConfigGetter.SynchronousPatchesEnabled = !ModConfigGetter.SynchronousPatchesEnabled;
         }
 
         private void ShowResetAccountQuestion()

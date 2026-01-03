@@ -1,6 +1,5 @@
 ﻿using GameClient.Misc;
 using GameClient.WorldObjects;
-using RimWorld;
 using RimWorld.Planet;
 using Shared;
 using Shared.Files;
@@ -10,7 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 using TCPNetwork.Packets;
 using Verse;
-using Verse.Noise;
 using static Shared.CommonEnumerators;
 
 namespace GameClient.Managers
@@ -23,6 +21,7 @@ namespace GameClient.Managers
         private static void ParsePacket(byte[] bytes)
         {
             PlayerSettlementData data = Serializer.ConvertBytesToObject<PlayerSettlementData>(bytes);
+            if (data == null) return;
 
             switch (data._stepMode)
             {
@@ -38,6 +37,8 @@ namespace GameClient.Managers
 
         public static void AddSettlements(SettlementFile[] settlements)
         {
+            if (settlements == null) return;
+
             foreach (SettlementFile toAdd in settlements)
             {
                 SpawnSingleSettlement(toAdd);
@@ -48,19 +49,23 @@ namespace GameClient.Managers
         {
             PlayerSettlements.Clear();
 
-            WorldObject[] settlements = (WorldObject[])Find.World.worldObjects.AllWorldObjects.FindAll(fetch =>
-                fetch.def.defName == "RTSettlement").ToArray();
+            WorldObject[] settlements = Finder.GetAllRTSettlements()?.ToArray() ?? Array.Empty<WorldObject>();
 
-            foreach (RTSettlement settlement in settlements)
+            foreach (WorldObject settlement in settlements)
             {
+                if (settlement == null) continue;
+
                 SettlementFile toRemove = new SettlementFile();
                 toRemove.Tile = settlement.Tile;
+
                 RemoveSingleSettlement(toRemove);
             }
         }
 
         public static void SpawnSingleSettlement(SettlementFile toAdd)
         {
+            if (toAdd == null) return;
+
             try
             {
                 WorldObjectDef def = DefDatabase<WorldObjectDef>.AllDefs.First(fetch => fetch.defName == "RTSettlement");
@@ -71,30 +76,42 @@ namespace GameClient.Managers
                     settlement.Name = toAdd.Name;
                 else
                     settlement.Name = $"{toAdd.Username}'s settlement";
+
                 settlement.SetFaction(PlanetManagerHelper.GetPlayerFactionFromGoodwill(toAdd.Goodwill));
 
                 PlayerSettlements.Add(settlement);
                 Find.WorldObjects.Add(settlement);
             }
-            catch (Exception e) { Printer.Error($"Failed to spawn settlement at {toAdd.Tile}. Reason: {e}"); }
+            catch (Exception e)
+            {
+                Printer.Error($"Failed to spawn settlement at {toAdd.Tile}. Reason: {e}");
+            }
         }
 
         public static void RemoveSingleSettlement(SettlementFile toRemove)
         {
+            if (toRemove == null) return;
+
             try
             {
-                RTSettlement toGet = (RTSettlement)Find.WorldObjects.AllWorldObjects.First(fetch => fetch.Tile == toRemove.Tile &&
-                    SessionHandler.PlayerFactions.Contains(fetch.Faction));
+                RTSettlement toGet = Finder.GetRTSettlementFromTile(toRemove.Tile);
+                if (toGet == null) return;
 
                 PlayerSettlements.Remove(toGet);
+
                 Find.WorldObjects.Remove(toGet);
                 toGet.Destroy();
             }
-            catch (Exception e) { Printer.Error($"Failed to remove settlement at {toRemove.Tile}. Reason: {e}"); }
+            catch (Exception e)
+            {
+                Printer.Error($"Failed to remove settlement at {toRemove.Tile}. Reason: {e}");
+            }
         }
 
         public static void RegenSettlement(RTSettlement _)
         {
+            if (_ == null) return;
+
             SettlementFile file = new SettlementFile();
             file.Tile = _.Tile;
 

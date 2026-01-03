@@ -57,36 +57,40 @@ namespace GameClient.Dialogs
             Rect viewRect = new Rect(0f, 0f, scrollRect.width - 16f, _viewHeight);
 
             Widgets.BeginScrollView(scrollRect, ref _localScroll, viewRect);
-
-            float y = 0f;
-            float split = Mathf.Clamp(viewRect.width * 0.58f, 240f, viewRect.width - 160f);
-
-            int globalRowIndex = 0;
-
-            foreach (StatsSection section in _sections)
+            try
             {
-                DrawSectionHeader(viewRect, ref y, section.Title);
+                float y = 0f;
+                float split = Mathf.Clamp(viewRect.width * 0.58f, 240f, viewRect.width - 160f);
 
-                for (int i = 0; i < section.Rows.Count; i++)
+                int globalRowIndex = 0;
+
+                foreach (StatsSection section in _sections)
                 {
-                    StatsRow row = section.Rows[i];
-                    Rect rowRect = new Rect(0f, y, viewRect.width, RowHeight);
+                    DrawSectionHeader(viewRect, ref y, section.Title);
 
-                    if (globalRowIndex % 2 == 0)
-                        Widgets.DrawAltRect(rowRect);
+                    for (int i = 0; i < section.Rows.Count; i++)
+                    {
+                        StatsRow row = section.Rows[i];
+                        Rect rowRect = new Rect(0f, y, viewRect.width, RowHeight);
 
-                    Widgets.DrawHighlightIfMouseover(rowRect);
+                        if (globalRowIndex % 2 == 0)
+                            Widgets.DrawAltRect(rowRect);
 
-                    DrawRow(rowRect, row.Key, row.Value, split);
+                        Widgets.DrawHighlightIfMouseover(rowRect);
 
-                    y += RowHeight;
-                    globalRowIndex++;
+                        DrawRow(rowRect, row.Key, row.Value, split);
+
+                        y += RowHeight;
+                        globalRowIndex++;
+                    }
+
+                    y += 8f;
                 }
-
-                y += 8f;
             }
-
-            Widgets.EndScrollView();
+            finally
+            {
+                Widgets.EndScrollView();
+            }
 
             Rect footer = new Rect(0f, rect.height - FooterHeight, rect.width, FooterHeight);
 
@@ -97,9 +101,7 @@ namespace GameClient.Dialogs
             }
 
             if (Widgets.ButtonText(new Rect(footer.xMax - SmallButtonSize.x, footer.y + 8f, SmallButtonSize.x, SmallButtonSize.y), "OK"))
-            {
                 Close();
-            }
         }
 
         private void DrawSectionHeader(Rect viewRect, ref float y, string title)
@@ -163,9 +165,7 @@ namespace GameClient.Dialogs
             }
 
             string username = string.IsNullOrWhiteSpace(_stats.Username) ? "Unknown" : _stats.Username;
-
             string settlementLabel = string.IsNullOrWhiteSpace(_localSettlementLabel) ? "Unknown" : _localSettlementLabel;
-
             string communityName = string.IsNullOrWhiteSpace(_stats.SettlementName) ? "Unknown" : _stats.SettlementName;
             string factionName = string.IsNullOrWhiteSpace(_stats.FactionName) ? "Unknown" : _stats.FactionName;
 
@@ -174,7 +174,6 @@ namespace GameClient.Dialogs
                 status = _isOnline.Value ? "Online" : "Offline";
 
             string wealth = FormatWealth(_stats);
-
             string playtimeStr = FormatRealPlaytime(_stats.RealPlayTimeInteractingSeconds);
 
             string daysStr = "Unknown";
@@ -187,9 +186,9 @@ namespace GameClient.Dialogs
             string lastSaved = FormatUtcTicks(_stats.LastSavedUtcTicks);
 
             StatsSection overview = new StatsSection("Overview");
-            overview.Rows.Add(new StatsRow("Settlement", settlementLabel)); // RWT label (username's settlement)
-            overview.Rows.Add(new StatsRow("Community", communityName));    // Player-chosen settlement name
-            overview.Rows.Add(new StatsRow("Faction", factionName));        // Player-chosen faction name
+            overview.Rows.Add(new StatsRow("Settlement", settlementLabel));
+            overview.Rows.Add(new StatsRow("Community", communityName));
+            overview.Rows.Add(new StatsRow("Faction", factionName));
             overview.Rows.Add(new StatsRow("Player", username));
             overview.Rows.Add(new StatsRow("Status", status));
             overview.Rows.Add(new StatsRow("Wealth", wealth));
@@ -265,10 +264,7 @@ namespace GameClient.Dialogs
             public string Title;
             public List<StatsRow> Rows = new List<StatsRow>();
 
-            public StatsSection(string title)
-            {
-                Title = title;
-            }
+            public StatsSection(string title) { Title = title; }
         }
 
         private class StatsRow
@@ -276,11 +272,7 @@ namespace GameClient.Dialogs
             public string Key;
             public string Value;
 
-            public StatsRow(string key, string value)
-            {
-                Key = key;
-                Value = value;
-            }
+            public StatsRow(string key, string value) { Key = key; Value = value; }
         }
     }
 }

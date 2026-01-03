@@ -1,5 +1,6 @@
 ﻿using GameClient.Misc;
 using GameClient.WorldObjects;
+using RimWorld;
 using RimWorld.Planet;
 using Shared;
 using Shared.Files;

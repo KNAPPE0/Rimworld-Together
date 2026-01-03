@@ -9,14 +9,11 @@ namespace GameClient.Patches.Tabs
 {
     public class SitesUI : WITab
     {
-        private Vector2 scrollPosition;
+        private Vector2 _scroll = Vector2.zero;
 
         private static readonly Vector2 WinSize = new Vector2(432f, 540f);
 
-        private string tabTitle;
-
         public override bool IsVisible => true;
-
         protected override bool StillValid => true;
 
         public SitesUI()
@@ -27,66 +24,83 @@ namespace GameClient.Patches.Tabs
 
         protected override void FillTab()
         {
-            tabTitle = $"Player Sites [{SiteManager.PlayerSites.Count()}]";
+            Rect outer = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
 
-            float horizontalLineDif = Text.CalcSize(tabTitle).y + 3f + 10f;
-
-            Rect outRect = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
-            Rect rect = new Rect(10f, 10f, outRect.width - 16f, Mathf.Max(0f, outRect.height));
+            int count = SiteManager.PlayerSites?.Count() ?? 0;
+            string title = $"Player Sites [{count}]";
 
             Text.Font = GameFont.Medium;
-            Widgets.Label(rect, tabTitle);
-            Widgets.DrawLineHorizontal(rect.x, horizontalLineDif, rect.width);
-            GenerateList(new Rect(new Vector2(rect.x, rect.y + 30f), new Vector2(rect.width, rect.height - 30f)));
+            float titleH = Text.CalcHeight(title, outer.width);
+            Rect titleRect = new Rect(outer.x, outer.y, outer.width, titleH);
+            Widgets.Label(titleRect, title);
+
+            float lineY = titleRect.yMax + 4f;
+            Widgets.DrawLineHorizontal(outer.x, lineY, outer.width);
+
+            Rect outRect = new Rect(outer.x, lineY + 6f, outer.width, outer.yMax - (lineY + 6f));
+            DrawList(outRect);
         }
 
-        private void GenerateList(Rect mainRect)
+        private void DrawList(Rect mainRect)
         {
-            var orderedDictionary = SiteManager.PlayerSites.OrderBy(x => x.Label);
+            RTSite[] sites = (SiteManager.PlayerSites ?? Enumerable.Empty<RTSite>())
+                .OrderBy(s => s?.Label ?? string.Empty)
+                .ToArray();
 
-            float height = 6f + orderedDictionary.Count() * 30f;
-            Rect viewRect = new Rect(mainRect.x, mainRect.y, mainRect.width - 16f, height);
+            const float rowH = 30f;
+            float height = 6f + sites.Length * rowH;
 
-            Widgets.BeginScrollView(mainRect, ref scrollPosition, viewRect);
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
 
-            float num = 0;
-            float num2 = scrollPosition.y - 30f;
-            float num3 = scrollPosition.y + mainRect.height;
-            int num4 = 0;
-
-            foreach (RTSite playerSite in orderedDictionary)
+            Widgets.BeginScrollView(mainRect, ref _scroll, viewRect);
+            try
             {
-                if (num > num2 && num < num3)
+                float y = 0f;
+
+                float yMin = _scroll.y - rowH;
+                float yMax = _scroll.y + mainRect.height;
+
+                for (int i = 0; i < sites.Length; i++)
                 {
-                    Rect rect = new Rect(0f, mainRect.y + num, viewRect.width, 30f);
-                    DrawCustomRow(rect, playerSite, num4);
+                    if (y > yMin && y < yMax)
+                    {
+                        Rect row = new Rect(0f, y, viewRect.width, rowH);
+                        DrawRow(row, sites[i], i);
+                    }
+                    y += rowH;
                 }
-
-                num += 30f;
-                num4++;
             }
-
-            Widgets.EndScrollView();
+            finally
+            {
+                Widgets.EndScrollView();
+            }
         }
 
-        private void DrawCustomRow(Rect rect, RTSite playerSite, int index)
+        private static void DrawRow(Rect row, RTSite site, int index)
         {
             Text.Font = GameFont.Small;
 
-            if (index % 2 == 0) Widgets.DrawLightHighlight(rect);
-            Rect fixedRect = new Rect(new Vector2(rect.x + 10f, rect.y + 5f), new Vector2(rect.width - 52f, rect.height));
+            if (index % 2 == 0) Widgets.DrawLightHighlight(row);
+            Widgets.DrawHighlightIfMouseover(row);
 
-            float buttonX = 47f;
-            float buttonY = 30f;
-            Widgets.Label(fixedRect, $"{playerSite.Label} - {playerSite.Tile}");
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonX, rect.y), new Vector2(buttonX, buttonY)), "Focus"))
+            string label = site?.Label ?? "Unknown";
+            int tile = site?.Tile ?? -1;
+
+            Rect labelRect = new Rect(row.x + 10f, row.y + 5f, row.width - 62f, row.height - 5f);
+            Widgets.Label(labelRect, $"{label} - {tile}");
+
+            Rect btnRect = new Rect(row.xMax - 52f, row.y, 52f, row.height);
+            if (Widgets.ButtonText(btnRect, "Focus"))
             {
-                foreach (Site site in Find.World.worldObjects.Sites)
+                if (tile >= 0)
                 {
-                    if (site.Tile == playerSite.Tile)
+                    foreach (Site wSite in Find.World.worldObjects.Sites)
                     {
-                        CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(site));
-                        break;
+                        if (wSite.Tile == tile)
+                        {
+                            CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(wSite));
+                            break;
+                        }
                     }
                 }
             }

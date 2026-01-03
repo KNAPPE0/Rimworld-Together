@@ -6,130 +6,169 @@ namespace GameClient.Dialogs
 {
     public class RT_Dialog_Inputs : RT_Dialog_Base
     {
-        // Parameters
-
         private float InputWidth { get; set; } = 300f;
-
         private float InputHeight { get; set; } = 30f;
-
         private int MaxChars { get; set; } = 512;
 
-        // Inputs
+        private string[] Labels { get; set; } = Array.Empty<string>();
+        private bool[] Censors { get; set; } = Array.Empty<bool>();
 
-        private string[] Labels { get; set; } = new string[] { };
-
-        private bool[] Censors { get; set; } = new bool[] { };
-
-        private string[] Results { get; set; } = new string[] { };
-
-        private string[] CensorResult { get; set; } = new string[] { };
+        private string[] Results { get; set; } = new string[] { "", "", "" };
 
         public static string[] DialogInputResults { get; set; }
 
-        public RT_Dialog_Inputs(string title, string[] labels, bool[] censors, Action onConfirm = null, Action onCancel = null, string onConfirmText = "Confirm", string OnCancel = "Cancel")
-        {
-            this.Title = title;
-            this.OnAccept = onConfirm;
-            this.OnCancel = onCancel;
+        private string ConfirmText { get; set; } = "Confirm";
+        private string CancelText { get; set; } = "Cancel";
 
-            this.Labels = labels;
-            this.Censors = censors;
-            Results = new string[] { "", "", "" };
-            CensorResult = new string[] { "", "", "" };
+        public RT_Dialog_Inputs(
+            string title,
+            string[] labels,
+            bool[] censors,
+            Action onConfirm = null,
+            Action onCancel = null,
+            string onConfirmText = "Confirm",
+            string onCancelText = "Cancel")
+        {
+            Title = title;
+            OnAccept = onConfirm;
+            OnCancel = onCancel;
+
+            Labels = labels ?? Array.Empty<string>();
+            Censors = censors ?? Array.Empty<bool>();
+
+            ConfirmText = string.IsNullOrWhiteSpace(onConfirmText) ? "Confirm" : onConfirmText;
+            CancelText = string.IsNullOrWhiteSpace(onCancelText) ? "Cancel" : onCancelText;
 
             closeOnAccept = false;
             closeOnCancel = false;
         }
 
-        public override void PreOpen() { CalculateWindowSize(); }
+        public override void PreOpen()
+        {
+            base.PreOpen();
+            CalculateWindowSize();
+        }
 
         public override void DoWindowContents(Rect rect)
         {
-            float centeredX = rect.width / 2;
-            float titleSeparator = Text.CalcSize(Title).y + StandardMargin / 2;
-
             Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
-            Widgets.DrawLineHorizontal(rect.x, titleSeparator, rect.width);
+            Text.Anchor = TextAnchor.UpperCenter;
+
+            float titleH = Text.CalcHeight(Title, rect.width);
+            Rect titleRect = new Rect(rect.x, rect.y, rect.width, titleH);
+            Widgets.Label(titleRect, Title);
+
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            float sepY = titleRect.yMax + (StandardMargin / 2f);
+            Widgets.DrawLineHorizontal(rect.x, sepY, rect.width);
+
             Text.Font = GameFont.Small;
 
-            float inputOneLabelDif = Text.CalcSize(Labels[0]).y + StandardMargin;
-            float inputOneDif = inputOneLabelDif + 30f;
-            DrawInput(centeredX, inputOneLabelDif, inputOneDif, 0);
+            float y = sepY + StandardMargin;
 
-            if (Labels.Length > 1)
+            if (Labels.Length > 0)
             {
-                float inputTwoLabelDif = inputOneDif + Text.CalcSize(Labels[1]).y + StandardMargin * 2;
-                float inputTwoDif = inputTwoLabelDif + 30f;
-                DrawInput(centeredX, inputTwoLabelDif, inputTwoDif, 1);
+                y = DrawInputBlock(rect, y, 0);
 
-                if (Labels.Length == 3)
+                if (Labels.Length > 1)
                 {
-                    float inputThreeLabelDif = inputTwoDif + Text.CalcSize(Labels[2]).y + StandardMargin * 2;
-                    float inputThreeDif = inputThreeLabelDif + 30f;
-                    DrawInput(centeredX, inputThreeLabelDif, inputThreeDif, 2);
+                    y = DrawInputBlock(rect, y, 1);
+
+                    if (Labels.Length > 2)
+                    {
+                        y = DrawInputBlock(rect, y, 2);
+                    }
                 }
             }
 
-            if (Widgets.ButtonText(GetRectForLocation(rect, SmallButtonSize, RectLocation.BottomLeft), "Confirm"))
+            if (Widgets.ButtonText(GetRectForLocation(rect, SmallButtonSize, RectLocation.BottomLeft), ConfirmText))
             {
-                RT_Dialog_Inputs.DialogInputResults = new string[] { Results[0], Results[1], Results[2] };
+                DialogInputResults = new string[] { Results[0] ?? "", Results[1] ?? "", Results[2] ?? "" };
                 OnAccept?.Invoke();
                 Close();
             }
 
-            if (Widgets.ButtonText(GetRectForLocation(rect, SmallButtonSize, RectLocation.BottomRight), "Cancel"))
+            if (Widgets.ButtonText(GetRectForLocation(rect, SmallButtonSize, RectLocation.BottomRight), CancelText))
             {
                 OnCancel?.Invoke();
                 Close();
             }
         }
 
+        private float DrawInputBlock(Rect rect, float startY, int index)
+        {
+            if (index < 0 || index >= 3) return startY;
+            if (index >= Labels.Length) return startY;
+
+            string label = Labels[index] ?? string.Empty;
+
+            Text.Anchor = TextAnchor.UpperCenter;
+            float labelH = Text.CalcHeight(label, rect.width);
+            Rect labelRect = new Rect(rect.x, startY, rect.width, labelH);
+            Widgets.Label(labelRect, label);
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            float inputY = labelRect.yMax + (StandardMargin / 2f);
+
+            float inputX = rect.x + ((rect.width - InputWidth) / 2f);
+            Rect inputRect = new Rect(inputX, inputY, InputWidth, InputHeight);
+
+            DrawInputField(inputRect, index);
+
+            return inputRect.yMax + StandardMargin;
+        }
+
+        private void DrawInputField(Rect inputRect, int index)
+        {
+            bool censor = (index < Censors.Length) && Censors[index];
+            string current = Results[index] ?? string.Empty;
+
+            if (!AcceptsInput)
+            {
+                if (censor)
+                    DrawPasswordField(inputRect, current);
+                else
+                    Widgets.TextField(inputRect, current);
+                return;
+            }
+
+            if (censor)
+            {
+                string next = DrawPasswordField(inputRect, current);
+                if (next.Length <= MaxChars) Results[index] = next;
+            }
+            else
+            {
+                string next = Widgets.TextField(inputRect, current);
+                if (next.Length <= MaxChars) Results[index] = next;
+            }
+        }
+
+        private string DrawPasswordField(Rect rect, string value)
+        {
+            GUIStyle style = new GUIStyle(GUI.skin.textField)
+            {
+                alignment = TextAnchor.MiddleLeft
+            };
+
+            return GUI.PasswordField(rect, value ?? string.Empty, '█', MaxChars, style);
+        }
+
         private void CalculateWindowSize()
         {
             Vector2 sizeVector;
 
-            switch (Labels.Length)
-            {
-                case 1:
-                    sizeVector = new Vector2(400f, 190f);
-                    windowRect = new Rect(new Vector2((UI.screenWidth - sizeVector.x) / 2f, (UI.screenHeight - sizeVector.y) / 2f), sizeVector);
-                    windowRect.Rounded();
-                    break;
+            if (Labels.Length <= 1) sizeVector = new Vector2(400f, 190f);
+            else if (Labels.Length == 2) sizeVector = new Vector2(400f, 280f);
+            else if (Labels.Length == 3) sizeVector = new Vector2(400f, 370f);
+            else throw new ArgumentOutOfRangeException();
 
-                case 2:
-                    sizeVector = new Vector2(400f, 280f);
-                    windowRect = new Rect(new Vector2((UI.screenWidth - sizeVector.x) / 2f, (UI.screenHeight - sizeVector.y) / 2f), sizeVector);
-                    windowRect.Rounded();
-                    break;
+            windowRect = new Rect(
+                new Vector2((UI.screenWidth - sizeVector.x) / 2f, (UI.screenHeight - sizeVector.y) / 2f),
+                sizeVector);
 
-                case 3:
-                    sizeVector = new Vector2(400f, 370f);
-                    windowRect = new Rect(new Vector2((UI.screenWidth - sizeVector.x) / 2f, (UI.screenHeight - sizeVector.y) / 2f), sizeVector);
-                    windowRect.Rounded();
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        private void DrawInput(float centeredX, float labelDif, float normalDif, int index)
-        {
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Labels[index]).x / 2, labelDif, Text.CalcSize(Labels[index]).x, Text.CalcSize(Labels[index]).y), Labels[index]);
-            string input = Widgets.TextField(new Rect(centeredX - InputWidth / 2, normalDif, InputWidth, InputHeight), Results[index]);
-            if (AcceptsInput && input.Length <= MaxChars) Results[index] = input;
-
-            if (Censors[index])
-            {
-                string censorOne = Widgets.TextField(new Rect(centeredX - InputWidth / 2, normalDif, InputWidth, InputHeight), CensorResult[index]);
-                if (AcceptsInput && censorOne.Length <= MaxChars)
-                {
-                    Text.Font = GameFont.Medium;
-                    CensorResult[index] = new string('█', input.Length);
-                    Text.Font = GameFont.Small;
-                }
-            }
+            windowRect.Rounded();
         }
     }
 }

@@ -13,10 +13,10 @@ namespace GameClient.Dialogs
 
         public RT_Dialog_Listing(string title, string description, string[] elements, Action actionOK = null)
         {
-            this.Title = title;
-            this.Description = description;
-            this.Elements = elements;
-            this.OnAccept = actionOK;
+            Title = title;
+            Description = description;
+            Elements = elements ?? Array.Empty<string>();
+            OnAccept = actionOK;
 
             closeOnAccept = false;
             closeOnCancel = false;
@@ -26,9 +26,10 @@ namespace GameClient.Dialogs
         {
             float centeredX = rect.width / 2;
 
-            float windowDescriptionDif = Text.CalcSize(Description).y + StandardMargin;
-            float descriptionLineDif1 = windowDescriptionDif - Text.CalcSize(Description).y * 0.25f;
-            float descriptionLineDif2 = windowDescriptionDif + Text.CalcSize(Description).y * 1.1f;
+            float descH = Text.CalcSize(Description).y;
+            float windowDescriptionDif = descH + StandardMargin;
+            float descriptionLineDif1 = windowDescriptionDif - descH * 0.25f;
+            float descriptionLineDif2 = windowDescriptionDif + descH * 1.1f;
 
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
@@ -36,52 +37,57 @@ namespace GameClient.Dialogs
             Widgets.DrawLineHorizontal(rect.x, descriptionLineDif1, rect.width);
 
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Description).x / 2, windowDescriptionDif, Text.CalcSize(Description).x, Text.CalcSize(Description).y), Description);
-            Text.Font = GameFont.Medium;
+            Widgets.Label(new Rect(centeredX - Text.CalcSize(Description).x / 2, windowDescriptionDif, Text.CalcSize(Description).x, descH), Description);
 
+            Text.Font = GameFont.Medium;
             Widgets.DrawLineHorizontal(rect.x, descriptionLineDif2, rect.width);
 
             FillMainRect(new Rect(0f, descriptionLineDif2 + 10f, rect.width, rect.height - SlimButtonSize.y - 85f));
 
             if (Widgets.ButtonText(new Rect(new Vector2(centeredX - SlimButtonSize.x / 2, rect.yMax - SlimButtonSize.y), SlimButtonSize), "OK"))
             {
-                if (OnAccept != null) OnAccept.Invoke();
+                OnAccept?.Invoke();
                 Close();
             }
         }
 
         private void FillMainRect(Rect mainRect)
         {
-            float height = 6f + Elements.Count() * 30f;
+            float rowH = 30f;
+            float height = 6f + Elements.Length * rowH;
+
             Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
+
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
-            float num = 0;
-            float num2 = ScrollPosition.y - 30f;
-            float num3 = ScrollPosition.y + mainRect.height;
-            int num4 = 0;
-
-            for (int i = 0; i < Elements.Count(); i++)
+            try
             {
-                if (num > num2 && num < num3)
+                float y = 0f;
+                float yMin = ScrollPosition.y - rowH;
+                float yMax = ScrollPosition.y + mainRect.height;
+
+                for (int i = 0; i < Elements.Length; i++)
                 {
-                    Rect rect = new Rect(0f, num, viewRect.width, 30f);
-                    DrawCustomRow(rect, Elements[i], num4);
+                    if (y > yMin && y < yMax)
+                    {
+                        Rect row = new Rect(0f, y, viewRect.width, rowH);
+                        DrawCustomRow(row, Elements[i], i);
+                    }
+                    y += rowH;
                 }
-
-                num += 30f;
-                num4++;
             }
-
-            Widgets.EndScrollView();
+            finally
+            {
+                Widgets.EndScrollView();
+            }
         }
 
         private void DrawCustomRow(Rect rect, string element, int index)
         {
             Text.Font = GameFont.Small;
-            Rect fixedRect = new Rect(new Vector2(rect.x, rect.y + 5f), new Vector2(rect.width - 16f, rect.height - 5f));
+            Rect fixedRect = new Rect(rect.x, rect.y + 5f, rect.width - 16f, rect.height - 5f);
             if (index % 2 == 0) Widgets.DrawHighlight(fixedRect);
 
-            Widgets.Label(fixedRect, $"{element}");
+            Widgets.Label(fixedRect, element);
         }
     }
 }

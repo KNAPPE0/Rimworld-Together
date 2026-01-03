@@ -14,10 +14,11 @@ namespace GameClient.Patches.Tabs
         private Vector2 scrollPositionPlayers = Vector2.zero;
         private Vector2 scrollPositionChat = Vector2.zero;
 
-        private enum ViewMode : byte { Chat }
-        private ViewMode _viewMode = ViewMode.Chat;
-
         private const string ChatInputControlName = "RWT_ChatInput";
+
+        private const float LeftPanelWidth = 160f;
+        private const float TopBarHeight = 25f;
+        private const float InputHeight = 25f;
 
         public ChatTab()
         {
@@ -49,9 +50,6 @@ namespace GameClient.Patches.Tabs
 
             ChatManager.IsChatTabOpen = true;
             ChatManager.ToggleChatIcon(false);
-
-            // Optional: auto-focus input on open
-            // GUI.FocusControl(ChatInputControlName);
         }
 
         public override void PostClose()
@@ -63,31 +61,28 @@ namespace GameClient.Patches.Tabs
 
         public override void DoWindowContents(Rect rect)
         {
-            // IMPORTANT: capture Enter BEFORE TextField consumes it
             bool enterPressed =
                 Event.current != null &&
                 (Event.current.type == EventType.KeyDown || Event.current.rawType == EventType.KeyDown) &&
                 (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter);
 
-            bool inputFocused =
-                GUI.GetNameOfFocusedControl() == ChatInputControlName;
+            bool inputFocused = GUI.GetNameOfFocusedControl() == ChatInputControlName;
 
             ChatManager.ChatBoxPosition.x = windowRect.x;
             ChatManager.ChatBoxPosition.y = windowRect.y;
 
             DrawTopBar(rect);
 
-            Widgets.DrawLineHorizontal(rect.x, rect.y + 25f, rect.width);
-            Widgets.DrawLineVertical(rect.x + 160f, rect.y + 25f, rect.height);
+            Widgets.DrawLineHorizontal(rect.x, rect.y + TopBarHeight, rect.width);
+            Widgets.DrawLineVertical(rect.x + LeftPanelWidth, rect.y + TopBarHeight, rect.height);
 
             DrawPlayerCount(rect);
-            DrawPlayerList(new Rect(rect.x, rect.y + 25f, 160f, rect.height - 50f));
-            DrawMessageList(new Rect(rect.x + 160f, rect.y + 32f, rect.width - 160f, rect.height - 60f));
+            DrawPlayerList(new Rect(rect.x, rect.y + TopBarHeight, LeftPanelWidth, rect.height - (TopBarHeight + InputHeight)));
+            DrawMessageList(new Rect(rect.x + LeftPanelWidth, rect.y + TopBarHeight + 7f, rect.width - LeftPanelWidth, rect.height - (TopBarHeight + InputHeight + 10f)));
 
             DrawPinCheckbox(rect);
             DrawInput(rect);
 
-            // Send on Enter ONLY when the input is focused
             if (enterPressed && inputFocused)
             {
                 TrySendChatInput();
@@ -100,14 +95,14 @@ namespace GameClient.Patches.Tabs
 
         private void DrawTopBar(Rect rect)
         {
-            Rect right = new Rect(rect.x + 160f, rect.y, rect.width - 160f, 25f);
+            Rect right = new Rect(rect.x + LeftPanelWidth, rect.y, rect.width - LeftPanelWidth, TopBarHeight);
 
             float btnW = 110f;
             Rect chatBtn = new Rect(right.x + 6f, right.y + 2f, btnW, 21f);
             Rect lbBtn = new Rect(chatBtn.xMax + 6f, right.y + 2f, btnW, 21f);
 
             if (Widgets.ButtonText(chatBtn, "Chat"))
-                _viewMode = ViewMode.Chat;
+                GUI.FocusControl(ChatInputControlName);
 
             if (Widgets.ButtonText(lbBtn, "Leaderboard"))
                 LeaderboardManager.OpenLeaderboardDialog(requestFresh: true);
@@ -115,13 +110,14 @@ namespace GameClient.Patches.Tabs
 
         private void DrawPlayerCount(Rect rect)
         {
-            string toShow = RecountManager.CurrentPlayers > 1
-                ? $"{RecountManager.CurrentPlayers} Players Online"
-                : $"{RecountManager.CurrentPlayers} Player Online";
+            string toShow = RecountManager.CurrentPlayers == 1
+                ? "1 Player Online"
+                : $"{RecountManager.CurrentPlayers} Players Online";
 
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(rect.x, rect.y, Text.CalcSize(toShow).x, Text.CalcSize(toShow).y),
-                $"<color=grey>{toShow}</color>");
+
+            Vector2 size = Text.CalcSize(toShow);
+            Widgets.Label(new Rect(rect.x, rect.y, size.x, size.y), $"<color=grey>{toShow}</color>");
         }
 
         private void DrawPlayerList(Rect mainRect)
@@ -135,19 +131,20 @@ namespace GameClient.Patches.Tabs
             Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
 
             Widgets.BeginScrollView(mainRect, ref scrollPositionPlayers, viewRect);
-
-            float y = 0f;
-            for (int i = 0; i < orderedList.Count; i++)
+            try
             {
-                string str = orderedList[i];
-
-                Rect row = new Rect(0f, y, viewRect.width, rowH);
-                DrawCustomRowPlayerList(row, str);
-
-                y += rowH;
+                float y = 0f;
+                for (int i = 0; i < orderedList.Count; i++)
+                {
+                    Rect row = new Rect(0f, y, viewRect.width, rowH);
+                    DrawCustomRowPlayerList(row, orderedList[i]);
+                    y += rowH;
+                }
             }
-
-            Widgets.EndScrollView();
+            finally
+            {
+                Widgets.EndScrollView();
+            }
         }
 
         private void DrawMessageList(Rect mainRect)
@@ -155,31 +152,38 @@ namespace GameClient.Patches.Tabs
             float chatScrollbarSafezone = 30f;
             float contentW = mainRect.width - chatScrollbarSafezone;
 
+            string[] messages = ChatManager.ChatMessageCache.ToArray();
+
             float height = 6f;
-            foreach (string str in ChatManager.ChatMessageCache.ToArray())
-                height += Text.CalcHeight(str, contentW);
+            for (int i = 0; i < messages.Length; i++)
+                height += Text.CalcHeight(messages[i], contentW);
 
             Rect viewRect = new Rect(0f, 0f, contentW, height);
 
             Widgets.BeginScrollView(mainRect, ref scrollPositionChat, viewRect);
-
-            float y = 0f;
-            foreach (string str in ChatManager.ChatMessageCache.ToArray())
+            try
             {
-                float h = Text.CalcHeight(str, contentW);
-                Rect row = new Rect(0f, y, viewRect.width, h);
-                DrawCustomRow(row, str);
-                y += h;
+                float y = 0f;
+                for (int i = 0; i < messages.Length; i++)
+                {
+                    string str = messages[i];
+                    float h = Text.CalcHeight(str, contentW);
+                    Rect row = new Rect(0f, y, viewRect.width, h);
+                    DrawCustomRow(row, str);
+                    y += h;
+                }
             }
-
-            Widgets.EndScrollView();
+            finally
+            {
+                Widgets.EndScrollView();
+            }
         }
 
         private void DrawInput(Rect rect)
         {
             Text.Font = GameFont.Small;
 
-            Rect inputRect = new Rect(rect.xMin + 165f, rect.yMax - 25f, rect.width - 165f, 25f);
+            Rect inputRect = new Rect(rect.xMin + (LeftPanelWidth + 5f), rect.yMax - InputHeight, rect.width - (LeftPanelWidth + 5f), InputHeight);
 
             GUI.SetNextControlName(ChatInputControlName);
             string inputOne = Widgets.TextField(inputRect, ChatManager.CurrentChatInput);
@@ -190,12 +194,13 @@ namespace GameClient.Patches.Tabs
 
         private void DrawPinCheckbox(Rect rect)
         {
-            string pinText = "Auto Scroll";
+            const string pinText = "Auto Scroll";
 
             Text.Font = GameFont.Small;
+            Vector2 size = Text.CalcSize(pinText);
+
             Widgets.CheckboxLabeled(
-                new Rect(rect.xMax - Text.CalcSize(pinText).x * 1.5f, rect.y,
-                    Text.CalcSize(pinText).x * 2, Text.CalcSize(pinText).y),
+                new Rect(rect.xMax - size.x * 1.5f, rect.y, size.x * 2f, size.y),
                 pinText,
                 ref ChatManager.ChatAutoscroll,
                 placeCheckboxNearText: true);

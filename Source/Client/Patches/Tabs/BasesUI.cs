@@ -11,14 +11,11 @@ namespace GameClient.Patches.Tabs
 {
     public class BasesUI : WITab
     {
-        private Vector2 scrollPosition;
+        private Vector2 _scroll = Vector2.zero;
 
         private static readonly Vector2 WinSize = new Vector2(432f, 540f);
 
-        private string tabTitle;
-
         public override bool IsVisible => true;
-
         protected override bool StillValid => true;
 
         public BasesUI()
@@ -29,123 +26,124 @@ namespace GameClient.Patches.Tabs
 
         protected override void FillTab()
         {
-            tabTitle = $"Player Bases [{SettlementManager.PlayerSettlements.Count()}]";
+            Rect outer = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
 
-            float horizontalLineDif = Text.CalcSize(tabTitle).y + 3f + 10f;
-
-            Rect outRect = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
-            Rect rect = new Rect(10f, 10f, outRect.width - 16f, Mathf.Max(0f, outRect.height));
+            int count = SettlementManager.PlayerSettlements?.Count() ?? 0;
+            string title = $"Player Bases [{count}]";
 
             Text.Font = GameFont.Medium;
-            Widgets.Label(rect, tabTitle);
-            Widgets.DrawLineHorizontal(rect.x, horizontalLineDif, rect.width);
-            GenerateList(new Rect(new Vector2(rect.x, rect.y + 30f), new Vector2(rect.width, rect.height - 30f)));
+            float titleH = Text.CalcHeight(title, outer.width);
+            Rect titleRect = new Rect(outer.x, outer.y, outer.width, titleH);
+            Widgets.Label(titleRect, title);
+
+            float lineY = titleRect.yMax + 4f;
+            Widgets.DrawLineHorizontal(outer.x, lineY, outer.width);
+
+            Rect outRect = new Rect(outer.x, lineY + 6f, outer.width, outer.yMax - (lineY + 6f));
+            DrawList(outRect);
         }
 
-        private void GenerateList(Rect mainRect)
+        private void DrawList(Rect mainRect)
         {
-            var orderedDictionary = SettlementManager.PlayerSettlements.OrderBy(x => x.Name);
+            RTSettlement[] bases = (SettlementManager.PlayerSettlements ?? Enumerable.Empty<RTSettlement>())
+                .OrderBy(s => s?.Name ?? string.Empty)
+                .ToArray();
 
-            float height = 6f + orderedDictionary.Count() * 30f;
-            Rect viewRect = new Rect(mainRect.x, mainRect.y, mainRect.width - 16f, height);
+            const float rowH = 30f;
+            float height = 6f + bases.Length * rowH;
 
-            Widgets.BeginScrollView(mainRect, ref scrollPosition, viewRect);
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
 
-            float num = 0;
-            float num2 = scrollPosition.y - 30f;
-            float num3 = scrollPosition.y + mainRect.height;
-            int num4 = 0;
-
-            foreach (RTSettlement playerSettlement in orderedDictionary)
+            Widgets.BeginScrollView(mainRect, ref _scroll, viewRect);
+            try
             {
-                if (num > num2 && num < num3)
+                float y = 0f;
+                float yMin = _scroll.y - rowH;
+                float yMax = _scroll.y + mainRect.height;
+
+                for (int i = 0; i < bases.Length; i++)
                 {
-                    Rect rect = new Rect(0f, mainRect.y + num, viewRect.width, 30f);
-                    DrawCustomRow(rect, playerSettlement, num4);
+                    if (y > yMin && y < yMax)
+                    {
+                        Rect row = new Rect(0f, y, viewRect.width, rowH);
+                        DrawRow(row, bases[i], i);
+                    }
+                    y += rowH;
                 }
-
-                num += 30f;
-                num4++;
             }
-
-            Widgets.EndScrollView();
+            finally
+            {
+                Widgets.EndScrollView();
+            }
         }
 
-        private void DrawCustomRow(Rect rect, RTSettlement playerSettlement, int index)
+        private static RTSettlement FindWorldSettlementAtTile(int tile)
+        {
+            foreach (WorldObject obj in Find.World.worldObjects.AllWorldObjects)
+            {
+                if (obj is RTSettlement s && s.Tile == tile)
+                    return s;
+            }
+            return null;
+        }
+
+        private static void DrawRow(Rect row, RTSettlement listed, int index)
         {
             Text.Font = GameFont.Small;
 
-            if (index % 2 == 0) Widgets.DrawLightHighlight(rect);
-            Rect fixedRect = new Rect(new Vector2(rect.x + 10f, rect.y + 5f), new Vector2(rect.width - 52f, rect.height));
+            if (index % 2 == 0) Widgets.DrawLightHighlight(row);
+            Widgets.DrawHighlightIfMouseover(row);
 
-            float buttonX = 47f;
-            float buttonY = 30f;
-            Widgets.Label(fixedRect, $"{playerSettlement.Name} - {playerSettlement.Tile}");
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonX, rect.y), new Vector2(buttonX, buttonY)), "Focus"))
+            string name = listed?.Name ?? "Unknown";
+            int tile = listed?.Tile ?? -1;
+
+            Rect labelRect = new Rect(row.x + 10f, row.y + 5f, row.width - 190f, row.height - 5f);
+            Widgets.Label(labelRect, $"{name} - {tile}");
+
+            float btnH = row.height;
+            float focusW = 52f;
+            float gwW = 30f;
+
+            Rect focusRect = new Rect(row.xMax - focusW, row.y, focusW, btnH);
+            Rect minusRect = new Rect(row.xMax - focusW - (gwW * 1f), row.y, gwW, btnH);
+            Rect equalRect = new Rect(row.xMax - focusW - (gwW * 2f), row.y, gwW, btnH);
+            Rect plusRect = new Rect(row.xMax - focusW - (gwW * 3f), row.y, gwW, btnH);
+
+            if (Widgets.ButtonText(focusRect, "Focus"))
             {
-                foreach (RTSettlement settlement in Find.World.worldObjects.AllWorldObjects)
+                RTSettlement world = FindWorldSettlementAtTile(tile);
+                if (world != null) CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(world));
+            }
+
+            if (Widgets.ButtonText(minusRect, "-"))
+            {
+                RTSettlement world = FindWorldSettlementAtTile(tile);
+                if (world != null)
                 {
-                    if (settlement.Tile == playerSettlement.Tile)
-                    {
-                        CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(settlement));
-                        break;
-                    }
+                    SessionHandler.ChosenSettlement = world;
+                    GoodwillManager.TryRequestGoodwill(Goodwill.Enemy, GoodwillTarget.Settlement);
                 }
             }
 
-            buttonX = 30f;
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonX * 3, rect.y), new Vector2(buttonX, buttonY)), "-"))
+            if (Widgets.ButtonText(equalRect, "="))
             {
-                foreach (RTSettlement settlement in Find.World.worldObjects.AllWorldObjects)
+                RTSettlement world = FindWorldSettlementAtTile(tile);
+                if (world != null)
                 {
-                    if (settlement.Tile == playerSettlement.Tile)
-                    {
-                        SessionHandler.ChosenSettlement = settlement;
-
-                        GoodwillManager.TryRequestGoodwill(Goodwill.Enemy,
-                            GoodwillTarget.Settlement);
-
-                        break;
-                    }
+                    SessionHandler.ChosenSettlement = world;
+                    GoodwillManager.TryRequestGoodwill(Goodwill.Neutral, GoodwillTarget.Settlement);
                 }
             }
 
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonX * 4, rect.y), new Vector2(buttonX, buttonY)), "="))
+            if (Widgets.ButtonText(plusRect, "+"))
             {
-                foreach (RTSettlement settlement in Find.World.worldObjects.AllWorldObjects)
+                RTSettlement world = FindWorldSettlementAtTile(tile);
+                if (world != null)
                 {
-                    if (settlement.Tile == playerSettlement.Tile)
-                    {
-                        SessionHandler.ChosenSettlement = settlement;
-
-                        GoodwillManager.TryRequestGoodwill(Goodwill.Neutral,
-                            GoodwillTarget.Settlement);
-
-                        break;
-                    }
+                    SessionHandler.ChosenSettlement = world;
+                    GoodwillManager.TryRequestGoodwill(Goodwill.Ally, GoodwillTarget.Settlement);
                 }
             }
-
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonX * 5, rect.y), new Vector2(buttonX, buttonY)), "+"))
-            {
-                foreach (RTSettlement settlement in Find.World.worldObjects.AllWorldObjects)
-                {
-                    if (settlement.Tile == playerSettlement.Tile)
-                    {
-                        SessionHandler.ChosenSettlement = settlement;
-
-                        GoodwillManager.TryRequestGoodwill(Goodwill.Ally,
-                            GoodwillTarget.Settlement);
-
-                        break;
-                    }
-                }
-            }
-        }
-
-        protected override void CloseTab()
-        {
-            throw new System.NotImplementedException();
         }
     }
 }

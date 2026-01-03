@@ -12,19 +12,20 @@ namespace GameClient.Dialogs
         public RT_Dialog_Wait(string description = "[MISSING MESSAGE]")
         {
             Instance = this;
-            this.Title = "WAIT";
-            this.Description = description;
+            Title = "WAIT";
+            Description = description;
 
             closeOnAccept = false;
             closeOnCancel = false;
         }
 
-
         public override void DoWindowContents(Rect rect)
         {
             float centeredX = rect.width / 2;
-            float horizontalLineDif = Text.CalcSize(Description).y + StandardMargin / 2;
-            float windowDescriptionDif = Text.CalcSize(Description).y + StandardMargin;
+
+            float descH = Text.CalcSize(Description).y;
+            float horizontalLineDif = descH + StandardMargin / 2;
+            float windowDescriptionDif = descH + StandardMargin;
 
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
@@ -32,7 +33,7 @@ namespace GameClient.Dialogs
             Widgets.DrawLineHorizontal(rect.x, horizontalLineDif, rect.width);
 
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Description).x / 2, windowDescriptionDif, Text.CalcSize(Description).x, Text.CalcSize(Description).y), Description);
+            Widgets.Label(new Rect(centeredX - Text.CalcSize(Description).x / 2, windowDescriptionDif, Text.CalcSize(Description).x, descH), Description);
         }
     }
 }

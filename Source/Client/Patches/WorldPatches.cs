@@ -68,8 +68,8 @@ namespace GameClient.Patches
         {
             if (SessionHandler.CurrentNetworkState == ClientNetworkState.Connected && RimworldManager.CheckIfPlayerHasMap())
             {
-                bool hasSomethingOnTop = Find.World.worldObjects.AllWorldObjects.FirstOrDefault(fetch => fetch.Tile == __instance.Tile 
-                    && fetch is not Caravan) != null;
+                bool hasSomethingOnTop = Find.World.worldObjects.AllWorldObjects.FirstOrDefault(fetch => fetch.Tile == __instance.Tile
+                     && fetch is not Caravan) != null;
 
                 List<Gizmo> gizmoList = __result.ToList();
 
@@ -124,9 +124,7 @@ namespace GameClient.Patches
             if (SessionHandler.PlayerFactions.Contains(settlement.Faction))
             {
                 List<FloatMenuOption> floatMenuList = __result.ToList();
-
                 floatMenuList.Clear();
-
                 __result = floatMenuList;
             }
         }
@@ -142,6 +140,7 @@ namespace GameClient.Patches
 
             List<Gizmo> gizmoList = __result.ToList();
             List<Gizmo> removeList = new List<Gizmo>();
+
             foreach (Command_Action action in gizmoList.ToList())
             {
                 if (action.defaultLabel == "CommandSettle".Translate()) removeList.Add(action);
@@ -156,31 +155,43 @@ namespace GameClient.Patches
     [HarmonyPatch(typeof(WorldInspectPane), "CurTabs", MethodType.Getter)]
     public static class Patch_WorldInspectPane_CurTabs
     {
+        private static PlayersUI _playersTab;
+        private static BasesUI _basesTab;
+        private static SitesUI _sitesTab;
+
+        private static void EnsureTabs()
+        {
+            _playersTab ??= new PlayersUI();
+            _basesTab ??= new BasesUI();
+            _sitesTab ??= new SitesUI();
+        }
+
         [HarmonyPrefix]
         public static bool DoPre(WorldInspectPane __instance, ref IEnumerable<InspectTabBase> __result)
         {
-            if (SessionHandler.CurrentNetworkState != ClientNetworkState.Connected) return false;
-            else
-            {
-                if (Find.WorldSelector.NumSelectedObjects == 1)
-                {
-                    __result = Find.WorldSelector.SingleSelectedObject.GetInspectTabs();
-                }
+            if (SessionHandler.CurrentNetworkState != ClientNetworkState.Connected)
+                return true;
 
-                if (Find.WorldSelector.NumSelectedObjects == 0 && Find.WorldSelector.SelectedTile.Valid)
-                {
-                    __result = PlanetLayer.Selected.Def.Tabs;
-                    __result = __result.AddItem(new PlayersUI());
-                    __result = __result.AddItem(new BasesUI());
-                    __result = __result.AddItem(new SitesUI());
-                }
+            if (Find.WorldSelector.NumSelectedObjects == 1)
+            {
+                __result = Find.WorldSelector.SingleSelectedObject.GetInspectTabs();
+                return false;
+            }
+
+            if (Find.WorldSelector.NumSelectedObjects == 0 && Find.WorldSelector.SelectedTile.Valid)
+            {
+                EnsureTabs();
+
+                IEnumerable<InspectTabBase> baseTabs = PlanetLayer.Selected?.Def?.Tabs ?? Enumerable.Empty<InspectTabBase>();
+
+                __result = baseTabs
+                    .Concat(new InspectTabBase[] { _playersTab, _basesTab, _sitesTab });
 
                 return false;
             }
+            return true;
         }
     }
-
-    // Makes sure pawns from other players don't get passed into the world
 
     [HarmonyPatch(typeof(WorldPawns), nameof(WorldPawns.PassToWorld))]
     public static class Patch_WorldPawns_PassToWorld

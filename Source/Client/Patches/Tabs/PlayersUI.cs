@@ -1,7 +1,7 @@
-﻿using GameClient.Managers;
-using RimWorld.Planet;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using GameClient.Managers;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -9,14 +9,11 @@ namespace GameClient.Patches.Tabs
 {
     public class PlayersUI : WITab
     {
-        private Vector2 scrollPosition;
+        private Vector2 _scroll = Vector2.zero;
 
         private static readonly Vector2 WinSize = new Vector2(432f, 540f);
 
-        private string tabTitle;
-
         public override bool IsVisible => true;
-
         protected override bool StillValid => true;
 
         public PlayersUI()
@@ -27,60 +24,64 @@ namespace GameClient.Patches.Tabs
 
         protected override void FillTab()
         {
-            tabTitle = $"Players Online [{RecountManager.CurrentPlayers}]";
+            Rect outer = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
 
-            float horizontalLineDif = Text.CalcSize(tabTitle).y + 3f + 10f;
-
-            Rect outRect = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
-            Rect rect = new Rect(10f, 10f, outRect.width - 16f, Mathf.Max(0f, outRect.height));
+            string title = $"Players Online [{RecountManager.CurrentPlayers}]";
 
             Text.Font = GameFont.Medium;
-            Widgets.Label(rect, tabTitle);
-            Widgets.DrawLineHorizontal(rect.x, horizontalLineDif, rect.width);
-            GenerateList(new Rect(new Vector2(rect.x, rect.y + 30f), new Vector2(rect.width, rect.height - 30f)));
+            float titleH = Text.CalcHeight(title, outer.width);
+            Rect titleRect = new Rect(outer.x, outer.y, outer.width, titleH);
+            Widgets.Label(titleRect, title);
+
+            float lineY = titleRect.yMax + 4f;
+            Widgets.DrawLineHorizontal(outer.x, lineY, outer.width);
+
+            Rect outRect = new Rect(outer.x, lineY + 6f, outer.width, outer.yMax - (lineY + 6f));
+            DrawList(outRect);
         }
 
-        private void GenerateList(Rect mainRect)
+        private void DrawList(Rect mainRect)
         {
-            List<string> orderedList = RecountManager.CurrentPlayerNames;
-            orderedList.Sort();
+            List<string> players = RecountManager.CurrentPlayerNames?.ToList() ?? new List<string>();
+            players.Sort();
 
-            float height = 6f + orderedList.Count() * 30f;
-            Rect viewRect = new Rect(mainRect.x, mainRect.y, mainRect.width - 16f, height);
+            const float rowH = 30f;
+            float height = 6f + players.Count * rowH;
 
-            Widgets.BeginScrollView(mainRect, ref scrollPosition, viewRect);
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
 
-            float num = 0;
-            float num2 = scrollPosition.y - 30f;
-            float num3 = scrollPosition.y + mainRect.height;
-            int num4 = 0;
-
-            foreach (string str in orderedList)
+            Widgets.BeginScrollView(mainRect, ref _scroll, viewRect);
+            try
             {
-                if (num > num2 && num < num3)
+                float y = 0f;
+                float yMin = _scroll.y - rowH;
+                float yMax = _scroll.y + mainRect.height;
+
+                for (int i = 0; i < players.Count; i++)
                 {
-                    Rect rect = new Rect(0f, mainRect.y + num, viewRect.width, 30f);
-                    DrawCustomRow(rect, str, num4);
+                    if (y > yMin && y < yMax)
+                    {
+                        Rect row = new Rect(0f, y, viewRect.width, rowH);
+                        DrawRow(row, players[i], i);
+                    }
+                    y += rowH;
                 }
-
-                num += 30f;
-                num4++;
             }
-
-            Widgets.EndScrollView();
+            finally
+            {
+                Widgets.EndScrollView();
+            }
         }
 
-        private void DrawCustomRow(Rect rect, string str, int index)
+        private static void DrawRow(Rect row, string name, int index)
         {
             Text.Font = GameFont.Small;
-            if (index % 2 == 0) Widgets.DrawLightHighlight(rect);
-            Rect fixedRect = new Rect(new Vector2(rect.x + 10f, rect.y + 5f), new Vector2(rect.width - 52f, rect.height));
-            Widgets.Label(fixedRect, str);
-        }
 
-        protected override void CloseTab()
-        {
-            throw new System.NotImplementedException();
+            if (index % 2 == 0) Widgets.DrawLightHighlight(row);
+            Widgets.DrawHighlightIfMouseover(row);
+
+            Rect labelRect = new Rect(row.x + 10f, row.y + 5f, row.width - 10f, row.height - 5f);
+            Widgets.Label(labelRect, name ?? "Unknown");
         }
     }
 }

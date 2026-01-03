@@ -1,11 +1,8 @@
 ﻿using GameClient.Defs;
-using GameClient.Managers;
-using GameClient.Misc;
 using RimWorld;
 using System.Linq;
 using UnityEngine;
 using Verse;
-using Verse.Steam;
 
 namespace GameClient.Dialogs
 {
@@ -20,8 +17,8 @@ namespace GameClient.Dialogs
         public RT_Dialog_SiteMenu(bool configMode)
         {
             Instance = this;
-            this.Title = "Choose a site";
-            this.IsInConfigMode = configMode;
+            Title = "Choose a site";
+            IsInConfigMode = configMode;
         }
 
         public override void DoWindowContents(Rect rect)
@@ -30,44 +27,55 @@ namespace GameClient.Dialogs
             Widgets.DrawLineHorizontal(rect.x, rect.yMax + 1, rect.width);
 
             float centeredX = rect.width / 2;
+
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
-            if (Widgets.CloseButtonFor(rect)) Close();
 
-            Rect mainRect = new Rect(0, 50f, rect.width, rect.height - 50f);
-            float height = 6f + RTSitePartDefs.Defs.Count() * 50f;
-            Rect viewRect = new Rect(0f, 50f, mainRect.width - 16f, height);
+            if (Widgets.CloseButtonFor(rect)) { Close(); return; }
+
+            Rect mainRect = new Rect(0f, 50f, rect.width, rect.height - 50f);
+
+            float rowH = 50f;
+            int count = RTSitePartDefs.Defs?.Length ?? 0;
+
+            float height = 6f + count * rowH;
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
+
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
-            float num = 50;
-            float num2 = ScrollPosition.y - 30f;
-            float num3 = ScrollPosition.y + mainRect.height;
-            int num4 = 0;
-
-            for (int i = 0; i < RTSitePartDefs.Defs.Length; i++)
+            try
             {
-                if (num > num2 && num < num3)
+                float y = 0f;
+                float yMin = ScrollPosition.y - rowH;
+                float yMax = ScrollPosition.y + mainRect.height;
+
+                for (int i = 0; i < count; i++)
                 {
-                    Rect inRect = new Rect(0f, num, viewRect.width, 50f);
-                    DrawCustomRow(inRect, RTSitePartDefs.Defs[i], num4);
+                    if (y > yMin && y < yMax)
+                    {
+                        Rect row = new Rect(0f, y, viewRect.width, rowH);
+                        DrawCustomRow(row, RTSitePartDefs.Defs[i], i);
+                    }
+                    y += rowH;
                 }
-
-                num += 50f;
-                num4++;
             }
-
-            Widgets.EndScrollView();
+            finally
+            {
+                Widgets.EndScrollView();
+            }
         }
 
         private void DrawCustomRow(Rect rect, SitePartDef thing, int index)
         {
             Text.Font = GameFont.Small;
-            Rect highLightRect = new Rect(new Vector2(rect.x, rect.y), new Vector2(rect.width - 16f, 50f));
-            Rect fixedRect = new Rect(new Vector2(highLightRect.x + 75, highLightRect.y), new Vector2(highLightRect.width - 75f, 55f));
-            Rect textRect = new Rect(new Vector2(rect.x, rect.y), new Vector2(50f, 50f));
+
+            Rect highLightRect = new Rect(rect.x, rect.y, rect.width - 16f, rect.height);
+            Rect iconRect = new Rect(rect.x, rect.y, 50f, 50f);
+            Rect textRect = new Rect(rect.x + 75f, rect.y, highLightRect.width - 75f, rect.height);
 
             if (index % 2 == 0) Widgets.DrawHighlight(highLightRect);
-            Widgets.DrawTextureFitted(textRect, thing.ExpandingIconTexture, 1f);
-            Widgets.Label(fixedRect, thing.description);
+
+            Widgets.DrawTextureFitted(iconRect, thing.ExpandingIconTexture, 1f);
+            Widgets.Label(textRect, thing.description);
 
             if (Mouse.IsOver(highLightRect))
             {
@@ -85,4 +93,3 @@ namespace GameClient.Dialogs
         }
     }
 }
-

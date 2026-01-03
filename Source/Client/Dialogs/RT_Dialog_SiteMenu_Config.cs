@@ -16,11 +16,9 @@ namespace GameClient.Dialogs
         public override Vector2 InitialSize => new Vector2(600f, 250f);
 
         public SitePartDef SitePartDef { get; private set; }
-
         public SiteType ConfigFile { get; private set; }
 
         public Dictionary<ThingDef, int> CostThing { get; private set; } = new Dictionary<ThingDef, int>();
-
         public Dictionary<ThingDef, int> RewardThing { get; private set; } = new Dictionary<ThingDef, int>();
 
         private bool IsInvalid { get; set; }
@@ -31,8 +29,14 @@ namespace GameClient.Dialogs
         {
             Instance = this;
             SitePartDef = thingChosen;
-            this.Title = thingChosen.label;
-            ConfigFile = SiteManager.SiteValues.Where(f => f.DefName == thingChosen.defName).First();
+            Title = thingChosen.label;
+            ConfigFile = SiteManager.SiteValues.Where(f => f.DefName == thingChosen.defName).FirstOrDefault();
+
+            if (ConfigFile == null)
+            {
+                IsInvalid = true;
+                return;
+            }
 
             ThingDef cost = DefDatabase<ThingDef>.GetNamed(ThingDefOf.Silver.defName);
             if (cost != null) CostThing.Add(cost, ConfigFile.Cost);
@@ -51,11 +55,14 @@ namespace GameClient.Dialogs
             {
                 RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "Site could not be loaded because of invalid configuration" }));
                 Close();
+                return;
             }
+
             Widgets.DrawLineHorizontal(mainRect.x, mainRect.y - 1, mainRect.width);
             Widgets.DrawLineHorizontal(mainRect.x, mainRect.yMax + 1, mainRect.width);
 
-            if (Widgets.CloseButtonFor(mainRect)) Close();
+            if (Widgets.CloseButtonFor(mainRect)) { Close(); return; }
+
             float centeredX = mainRect.width / 2;
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, mainRect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
@@ -64,34 +71,44 @@ namespace GameClient.Dialogs
             Widgets.DrawTextureFitted(leftColumn, SitePartDef.ExpandingIconTexture, 1f);
 
             Rect rightColumn = new Rect(mainRect.width / 2, mainRect.y + 30f, mainRect.width / 2, mainRect.height - 20f);
-            float heightDesc = Text.CalcHeight(SitePartDef.description, rightColumn.width - 16f) / 2 + 9f;
-            float height = 40f + RewardThing.Count() * 25f + heightDesc;
-            Rect viewRightColumn = new Rect(rightColumn.x, rightColumn.y, rightColumn.width - 16f, height);
 
-            Widgets.BeginScrollView(rightColumn, ref ScrollPosition, viewRightColumn);
-            Text.Font = GameFont.Small;
-            float num = viewRightColumn.y;
+            float descH = Text.CalcHeight(SitePartDef.description, rightColumn.width - 16f);
+            float contentH = descH + 20f + RewardThing.Count * 25f + 10f;
 
-            Widgets.Label(new Rect(viewRightColumn.x, num, viewRightColumn.width, heightDesc), SitePartDef.description);
-            num += heightDesc;
+            Rect viewRect = new Rect(0f, 0f, rightColumn.width - 16f, contentH);
 
-            Widgets.Label(new Rect(viewRightColumn.x, num, viewRightColumn.width, 20f), $"Produces:");
-            num += 20f;
-            Text.Font = GameFont.Small;
-            foreach (ThingDef thing in RewardThing.Keys)
+            Widgets.BeginScrollView(rightColumn, ref ScrollPosition, viewRect);
+            try
             {
-                Widgets.Label(new Rect(viewRightColumn.x, num, viewRightColumn.width, 25f), $"- {thing.label} {RewardThing[thing].ToString()} ");
-                if (Widgets.ButtonText(new Rect(viewRightColumn.width + 210f, num, viewRightColumn.width - 210f, 25f), "Choose"))
-                {
-                    SiteManager.RequestSiteChangeConfig(ConfigFile, thing.defName);
-                    RT_Dialog_SiteMenu.Instance.Close();
-                    RT_Dialog_SiteMenu_Config.Instance.Close();
-                }
-                num += 25;
-            }
+                Text.Font = GameFont.Small;
+                float y = 0f;
 
-            Widgets.EndScrollView();
+                Widgets.Label(new Rect(0f, y, viewRect.width, descH), SitePartDef.description);
+                y += descH + 6f;
+
+                Widgets.Label(new Rect(0f, y, viewRect.width, 20f), "Produces:");
+                y += 20f;
+
+                foreach (ThingDef thing in RewardThing.Keys)
+                {
+                    Rect row = new Rect(0f, y, viewRect.width, 25f);
+                    Widgets.Label(new Rect(row.x, row.y, row.width - 110f, row.height), $"- {thing.label} {RewardThing[thing]}");
+
+                    Rect btn = new Rect(row.xMax - 100f, row.y, 100f, row.height);
+                    if (Widgets.ButtonText(btn, "Choose"))
+                    {
+                        SiteManager.RequestSiteChangeConfig(ConfigFile, thing.defName);
+                        RT_Dialog_SiteMenu.Instance.Close();
+                        RT_Dialog_SiteMenu_Config.Instance.Close();
+                    }
+
+                    y += 25f;
+                }
+            }
+            finally
+            {
+                Widgets.EndScrollView();
+            }
         }
     }
 }
-

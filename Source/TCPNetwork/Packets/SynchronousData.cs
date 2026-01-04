@@ -1,4 +1,5 @@
 ﻿using Shared.Files.Maps;
+using Shared.Files.Synchronous;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,5 +19,7 @@ namespace TCPNetwork.Packets
         public int _toTile { get; set; } = -1;
 
         public byte[] _contents { get; set; } = null;
+
+        public PartyFile _party { get; set; } = null;
     }
 }

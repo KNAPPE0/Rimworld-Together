@@ -19,6 +19,10 @@ namespace Shared
 
         public static MethodInfo[] PerFrameMethods { get; private set; }
 
+        public static MethodInfo[] OnSynchronousStartMethods { get; private set; }
+
+        public static MethodInfo[] OnSynchronousEndMethods { get; private set; }
+
         public enum AssemblyType { Client, Server }
 
         public static void CacheAllMethods(AssemblyType type)
@@ -36,6 +40,8 @@ namespace Shared
                 OnStartMethods = GetSessionStartMethods(GetAllGameTypes());
                 OnEndMethods = GetSessionEndMethods(GetAllGameTypes());
                 PerFrameMethods = GetPerFrameMethods(GetAllGameTypes());
+                OnSynchronousStartMethods = GetSynchronousStartMethods(GetAllGameTypes());
+                OnSynchronousEndMethods = GetSynchronousEndMethods(GetAllGameTypes());
             }
 
             else
@@ -106,6 +112,30 @@ namespace Shared
             {
                 toAdd.AddRange(types[x].GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
                     .Where(fetch => fetch.GetCustomAttribute<OnUpdate>() != null).ToList());
+            }
+
+            return toAdd.ToArray();
+        }
+
+        private static MethodInfo[] GetSynchronousStartMethods(Type[] types)
+        {
+            List<MethodInfo> toAdd = new List<MethodInfo>();
+            for (int x = 0; x < types.Length; x++)
+            {
+                toAdd.AddRange(types[x].GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+                    .Where(fetch => fetch.GetCustomAttribute<OnSynchronousStart>() != null).ToList());
+            }
+
+            return toAdd.ToArray();
+        }
+
+        private static MethodInfo[] GetSynchronousEndMethods(Type[] types)
+        {
+            List<MethodInfo> toAdd = new List<MethodInfo>();
+            for (int x = 0; x < types.Length; x++)
+            {
+                toAdd.AddRange(types[x].GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+                    .Where(fetch => fetch.GetCustomAttribute<OnSynchronousEnd>() != null).ToList());
             }
 
             return toAdd.ToArray();

@@ -20,6 +20,12 @@ namespace Shared
     public class OnSessionEnd() : Attribute { }
 
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class OnSynchronousStart() : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class OnSynchronousEnd() : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public class OnUpdate() : Attribute { }
 
     public enum PacketHeader : byte

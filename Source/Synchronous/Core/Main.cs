@@ -18,25 +18,26 @@ namespace Synchronous.Core
     {
         public static Harmony Instance { get; private set; } = null;
 
-        private static void Start() { ToggleHarmonyPatches(true); }
+        //[OnSynchronousStart]
+        private static void EnablePatches()
+        {
+            if (Instance == null) Instance = new Harmony(Master.ModID);
+            Instance.PatchCategory("Synchronous");
+            Printer.Warning("Patched Synchronous methods", LogImportanceMode.Verbose);
+        }
 
         [OnSessionEnd]
-        private static void Stop() { ToggleHarmonyPatches(false); }
-
-        private static void ToggleHarmonyPatches(bool mode)
+        [OnSynchronousEnd]
+        private static void DisablePatches()
         {
-            if (mode)
-            {
-                if (Instance == null) Instance = new Harmony(Master.ModID);
-                Instance.PatchCategory("Synchronous");
-                Printer.Warning("Patched Synchronous methods", LogImportanceMode.Verbose);
-            }
+            Instance.UnpatchCategory("Synchronous");
+            Printer.Warning("Unpatched Synchronous methods", LogImportanceMode.Verbose);
+        }
 
-            else
-            {
-                Instance.UnpatchCategory("Synchronous");
-                Printer.Warning("Unpatched Synchronous methods", LogImportanceMode.Verbose);
-            }
+        public static bool CheckIfShouldPatch(Map map)
+        {
+            if (SessionHandler.SynchronousMap != map) return false;
+            else return true;
         }
     }
 }

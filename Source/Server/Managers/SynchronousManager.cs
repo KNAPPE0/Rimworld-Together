@@ -54,6 +54,7 @@ namespace GameServer.Managers
                 _._stepMode = SynchronousData.StepMode.Ask;
                 _._fromTile = SettlementManager.GetSettlementFileFromUsername(client.UserFile.Username).Tile;
                 _._toTile = data._toTile;
+                _._party = data._party;
 
                 toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
             }
@@ -69,6 +70,7 @@ namespace GameServer.Managers
             _._fromTile = data._fromTile;
             _._toTile = data._toTile;
             _._contents = MapManager.GetMapFromTile(data._fromTile);
+            _._party = data._party;
 
             client.SynchronousClient = toFind;
             toFind.SynchronousClient = client;
@@ -101,24 +103,28 @@ namespace GameServer.Managers
         private static void SPlayerDraft(ServerClient client, byte[] bytes, PacketHeader header)
         {
             client.Listener.EnqueuePacket(header, bytes);
+            client.SynchronousClient.Listener.EnqueuePacket(header, bytes);
         }
 
         [HandlesPacket(PacketHeader.SPlayerWeather)]
         private static void SPlayerWeather(ServerClient client, byte[] bytes, PacketHeader header)
         {
             client.Listener.EnqueuePacket(header, bytes);
+            client.SynchronousClient.Listener.EnqueuePacket(header, bytes);
         }
 
         [HandlesPacket(PacketHeader.SPlayerMentalState)]
         private static void SPlayerMentalState(ServerClient client, byte[] bytes, PacketHeader header)
         {
             client.Listener.EnqueuePacket(header, bytes);
+            client.SynchronousClient.Listener.EnqueuePacket(header, bytes);
         }
 
         [HandlesPacket(PacketHeader.SPlayerGameSpeed)]
         private static void SPlayerGameSpeed(ServerClient client, byte[] bytes, PacketHeader header)
         {
             client.Listener.EnqueuePacket(header, bytes);
+            client.SynchronousClient.Listener.EnqueuePacket(header, bytes);
         }
     }
 }

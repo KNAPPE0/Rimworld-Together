@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using RimWorld;
+using Synchronous.Core;
 using Synchronous.Managers;
 using Synchronous.Misc;
 using System;
@@ -18,6 +19,7 @@ namespace Synchronous.Patches
         public static bool Drafted(Pawn_DraftController __instance, bool value)
         {
             if (PatchHandler.BypassFlag) return true;
+            else if (!Main_.CheckIfShouldPatch(__instance.pawn.MapHeld)) return true;
             else
             {
                 SDraftManager.Ask(__instance.pawn, value);

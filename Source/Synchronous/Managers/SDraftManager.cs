@@ -46,8 +46,6 @@ namespace Synchronous.Managers
         [HandlesPacket(PacketHeader.SPlayerDraft)]
         private static void Receive(byte[] bytes)
         {
-            Printer.Warning(1);
-
             PlayerDraft[] drafts = Serializer.ConvertBytesToObject<PlayerDraft[]>(bytes);
 
             PatchHandler.ExecuteInBypass(delegate

@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Synchronous.Core;
 using Synchronous.Managers;
 using Synchronous.Misc;
 using Synchronous.Objects;
@@ -21,6 +22,7 @@ namespace Synchronous.Patches
         public static bool TryStartMentalState(MentalStateDef stateDef, Pawn ___pawn)
         {
             if (PatchHandler.BypassFlag) return true;
+            else if (!Main_.CheckIfShouldPatch(___pawn.MapHeld)) return true;
             else
             {
                 byte value = (byte)DefDatabase<MentalStateDef>.AllDefs.FirstIndexOf(fetch => fetch == stateDef);
@@ -38,6 +40,7 @@ namespace Synchronous.Patches
         public static bool RecoverFromState(MentalState __instance)
         {
             if (PatchHandler.BypassFlag) return true;
+            else if (!Main_.CheckIfShouldPatch(__instance.pawn.MapHeld)) return true;
             else if (SMentalStateManager.LatestMentalState == __instance) return false;
             else
             {

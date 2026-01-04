@@ -3,6 +3,7 @@ using GameClient.Misc;
 using RimWorld.Planet;
 using Shared;
 using Shared.Files.Maps;
+using Shared.Files.Synchronous;
 using Shared.Misc;
 using System;
 using System.Collections.Generic;
@@ -48,9 +49,16 @@ namespace GameClient.Managers
         {
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait());
 
+            PartyFile party = new PartyFile();
+            foreach (Pawn pawn in SessionHandler.ChosenCaravan.PawnsListForReading)
+            {
+                party.Pawns.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Pawn));
+            }
+
             SynchronousData data = new SynchronousData();
             data._stepMode = SynchronousData.StepMode.Ask;
             data._toTile = tile;
+            data._party = party;
 
             ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, data);
         }
@@ -67,10 +75,24 @@ namespace GameClient.Managers
                 MapManager.SendMapToServer(map);
                 SessionHandler.SynchronousMap = map;
 
+                PartyFile party = new PartyFile();
+                foreach (Pawn pawn in map.mapPawns.AllPawns)
+                {
+                    party.Pawns.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Pawn, -1, pawn.ThingID));
+                }
+
+                foreach (string str in data._party.Pawns)
+                {
+                    Pawn pawn = ScribeManager.SerializeFromString<Pawn>(str, ScribeManager.SerializableType.Pawn);
+                    pawn.SetFactionDirect(SessionHandler.NeutralFaction);
+                    RimworldManager.PlaceThingIntoMap(pawn, map);
+                }
+
                 SynchronousData _ = new SynchronousData();
                 _._stepMode = SynchronousData.StepMode.Accept;
                 _._fromTile = data._toTile;
                 _._toTile = data._fromTile;
+                _._party = party;
 
                 ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, _);
             };
@@ -93,7 +115,7 @@ namespace GameClient.Managers
         {
             RT_Dialog_Wait.Instance.Close();
 
-            Map map = MapSaveLoader.StringToMap(Serializer.ConvertBytesToObject<MapFile>(data._contents), true, true, true, true, true, true);
+            Map map = MapSaveLoader.StringToMap(Serializer.ConvertBytesToObject<MapFile>(data._contents), true, true, false, false, false, false);
             CaravanEnterMapUtility.Enter(SessionHandler.ChosenCaravan, map, CaravanEnterMode.Edge, CaravanDropInventoryMode.DoNotDrop, draftColonists: true);
             CameraJumper.TryJump(map.Center, map, CameraJumper.MovementMode.Pan);
 
@@ -112,6 +134,8 @@ namespace GameClient.Managers
 
         private static void StartSession()
         {
+            MainThreadHandler.Instance.DoOnSynchronousStartMethods();
+            SessionHandler.IsSynchronousHost = true;
             RT_Dialog_Wait.Instance.Close();
         }
 
@@ -119,13 +143,14 @@ namespace GameClient.Managers
         {
             SynchronousData data = new SynchronousData();
             data._stepMode = SynchronousData.StepMode.Start;
-
             ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, data);
+
+            MainThreadHandler.Instance.DoOnSynchronousStartMethods();
         }
 
         private static void OnEnd()
         {
-
+            MainThreadHandler.Instance.DoOnSynchronousEndMethods();
         }
     }
 }

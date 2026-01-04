@@ -67,5 +67,6 @@ namespace Shared
         ServerBrowserReachability,
         SynchronousManager,
         SPlayerJob,
+        SPlayerHediff,
     }
 }

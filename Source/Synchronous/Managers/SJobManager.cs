@@ -56,16 +56,13 @@ namespace Synchronous.Managers
             PlayerJob newJob = new PlayerJob();
             newJob.MapTile = pawn.MapHeld.Tile;
             newJob.PawnID = pawn.ThingID;
+            newJob.PawnPosition = Converter.IntVector3ToString(pawn.Position);
+            newJob.TargetA = Converter.LocalTargetInfoToString(job.GetTarget(TargetIndex.A));
+            newJob.TargetB = Converter.LocalTargetInfoToString(job.GetTarget(TargetIndex.B));
+            newJob.TargetC = Converter.LocalTargetInfoToString(job.GetTarget(TargetIndex.C));
+            newJob.QueueA = Converter.LocalTargetQueueToString(job.GetTargetQueue(TargetIndex.A));
+            newJob.QueueB = Converter.LocalTargetQueueToString(job.GetTargetQueue(TargetIndex.B));
             newJob.Job = ScribeManager.SerializeToString(job, ScribeManager.SerializableType.Other);
-
-            //playerJob.PawnPosition = pawn.Position;
-            //playerJob.GlobalTarget = job.globalTarget;
-            //playerJob.TargetA = job.GetTarget(TargetIndex.A);
-            //playerJob.TargetB = job.GetTarget(TargetIndex.B);
-            //playerJob.TargetC = job.GetTarget(TargetIndex.C);
-            //playerJob.QueueA = job.GetTargetQueue(TargetIndex.A);
-            //playerJob.QueueB = job.GetTargetQueue(TargetIndex.B);
-            //playerJob.JobScribe = ScribeHandler.ConvertToScribe(job);
 
             PlayerJobs.Add(newJob);
 
@@ -83,10 +80,20 @@ namespace Synchronous.Managers
 
             PatchHandler.ExecuteInBypass(delegate
             {
-                foreach (PlayerJob job in jobs)
+                foreach (PlayerJob playerJob in jobs)
                 {
-                    Map map = Finder.GetMapFromTile(job.MapTile);
-                    Pawn pawn = Finder.GetPawnFromID(map, job.PawnID);
+                    Map map = Finder.GetMapFromTile(playerJob.MapTile);
+                    Pawn pawn = Finder.GetPawnFromID(map, playerJob.PawnID);
+
+                    try
+                    {
+                        Job newJob = ScribeManager.SerializeFromString<Job>(playerJob.Job);
+                        newJob = Converter.PlayerJobToJob(newJob, playerJob);
+
+                        pawn.Position = Converter.StringToIntVec3(playerJob.PawnPosition);
+                        pawn.jobs.StartJob(newJob, JobCondition.InterruptForced);
+                    }
+                    catch { };
                 }
             });
         }

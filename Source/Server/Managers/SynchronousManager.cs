@@ -133,5 +133,12 @@ namespace GameServer.Managers
             client.Listener.EnqueuePacket(header, bytes);
             client.SynchronousClient.Listener.EnqueuePacket(header, bytes);
         }
+
+        [HandlesPacket(PacketHeader.SPlayerHediff)]
+        private static void SPlayerHediff(ServerClient client, byte[] bytes, PacketHeader header)
+        {
+            client.Listener.EnqueuePacket(header, bytes);
+            client.SynchronousClient.Listener.EnqueuePacket(header, bytes);
+        }
     }
 }

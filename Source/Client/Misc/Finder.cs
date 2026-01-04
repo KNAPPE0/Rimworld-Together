@@ -50,5 +50,31 @@ namespace GameClient.Misc
         {
             return (WorldObject[])Find.World.worldObjects.AllWorldObjects.FindAll(fetch => fetch is RTSite).ToArray();
         }
+
+        public static Hediff GetHediffFromPart(Pawn pawn, BodyPartRecord part, string hediffDefname, bool forceUntended)
+        {
+            foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+            {
+                if (hediff.def.defName == hediffDefname)
+                {
+                    if (part == null || hediff.Part.def.defName == part.def.defName)
+                    {
+                        if (!forceUntended) return hediff;
+                        else
+                        {
+                            if (hediff.IsTended()) continue;
+                            else return hediff;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public static BodyPartRecord GetBodyPartFromDefname(Pawn pawn, string defName)
+        {
+            return pawn.health.hediffSet.GetNotMissingParts().FirstOrDefault(fetch => fetch.def.defName == defName);
+        }
     }
 }

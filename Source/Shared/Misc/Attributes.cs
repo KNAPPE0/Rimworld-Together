@@ -68,5 +68,6 @@ namespace Shared
         SynchronousManager,
         SPlayerJob,
         SPlayerHediff,
+        SPlayerPosition,
     }
 }

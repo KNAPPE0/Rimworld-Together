@@ -110,7 +110,7 @@ namespace GameClient.Managers
             RT_Dialog_Wait.Instance.Close();
 
             Map map = MapSaveLoader.StringToMap(Serializer.ConvertBytesToObject<MapFile>(data._contents), true, true, false, false, false, false);
-            CaravanEnterMapUtility.Enter(SessionHandler.ChosenCaravan, map, CaravanEnterMode.Edge, CaravanDropInventoryMode.DoNotDrop, draftColonists: true);
+            CaravanEnterMapUtility.Enter(SessionHandler.ChosenCaravan, map, CaravanEnterMode.Edge, CaravanDropInventoryMode.DoNotDrop, draftColonists: false);
             CameraJumper.TryJump(map.Center, map, CameraJumper.MovementMode.Pan);
 
             foreach (string str in data._party.Pawns)

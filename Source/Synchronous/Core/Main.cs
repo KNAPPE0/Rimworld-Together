@@ -18,7 +18,7 @@ namespace Synchronous.Core
     {
         public static Harmony Instance { get; private set; } = null;
 
-        //[OnSynchronousStart]
+        [OnSynchronousStart]
         private static void EnablePatches()
         {
             if (Instance == null) Instance = new Harmony(Master.ModID);
@@ -36,7 +36,7 @@ namespace Synchronous.Core
 
         public static bool CheckIfShouldPatch(Map map)
         {
-            if (SessionHandler.SynchronousMap != map) return false;
+            if (SessionHandler.SynchronousMap.Tile != map.Tile) return false;
             else return true;
         }
     }

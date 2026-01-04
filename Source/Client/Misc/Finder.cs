@@ -11,7 +11,7 @@ namespace GameClient.Misc
 {
     public static class Finder
     {
-        public static Map GetMapFromID(int id) { return Find.Maps.FirstOrDefault(fetch => fetch.uniqueID == id); }
+        public static Map GetMapFromTile(int tile) { return Find.Maps.FirstOrDefault(fetch => fetch.Tile == tile); }
 
         public static Pawn GetPawnFromID(Map map, string id) { return GetAllPawnsInMap(map).FirstOrDefault(fetch => fetch.ThingID == id); }
 

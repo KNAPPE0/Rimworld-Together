@@ -126,5 +126,12 @@ namespace GameServer.Managers
             client.Listener.EnqueuePacket(header, bytes);
             client.SynchronousClient.Listener.EnqueuePacket(header, bytes);
         }
+
+        [HandlesPacket(PacketHeader.SPlayerJob)]
+        private static void SPlayerJob(ServerClient client, byte[] bytes, PacketHeader header)
+        {
+            client.Listener.EnqueuePacket(header, bytes);
+            client.SynchronousClient.Listener.EnqueuePacket(header, bytes);
+        }
     }
 }

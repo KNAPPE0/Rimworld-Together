@@ -259,5 +259,29 @@ namespace GameClient.Managers
             LordJob_DefendBase job = new LordJob_DefendBase(targetFaction, deployPlace, int.MaxValue);
             LordMaker.MakeNewLord(targetFaction, job, map, lordPawns);
         }
+
+        public static List<string> GetCaravanPawnsIntoString(Caravan caravan, bool useCustomID = false)
+        {
+            List<string> pawns = new List<string>();
+
+            foreach (Pawn pawn in caravan.PawnsListForReading)
+            {
+                pawns.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Pawn, -1, useCustomID ? pawn.ThingID : null));
+            }
+
+            return pawns;
+        }
+
+        public static List<string> GetMapPawnsIntoString(Map map, bool useCustomID = false)
+        {
+            List<string> pawns = new List<string>();
+
+            foreach (Pawn pawn in map.mapPawns.AllPawns)
+            {
+                pawns.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Pawn, -1, useCustomID ? pawn.ThingID : null));
+            }
+
+            return pawns;
+        }
     }
 }

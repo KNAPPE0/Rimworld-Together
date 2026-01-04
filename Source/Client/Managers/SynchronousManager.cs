@@ -50,10 +50,7 @@ namespace GameClient.Managers
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait());
 
             PartyFile party = new PartyFile();
-            foreach (Pawn pawn in SessionHandler.ChosenCaravan.PawnsListForReading)
-            {
-                party.Pawns.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Pawn));
-            }
+            party.Pawns = RimworldManager.GetCaravanPawnsIntoString(SessionHandler.ChosenCaravan, true);
 
             SynchronousData data = new SynchronousData();
             data._stepMode = SynchronousData.StepMode.Ask;
@@ -76,10 +73,7 @@ namespace GameClient.Managers
                 SessionHandler.SynchronousMap = map;
 
                 PartyFile party = new PartyFile();
-                foreach (Pawn pawn in map.mapPawns.AllPawns)
-                {
-                    party.Pawns.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Pawn, -1, pawn.ThingID));
-                }
+                party.Pawns = RimworldManager.GetMapPawnsIntoString(map, true);
 
                 foreach (string str in data._party.Pawns)
                 {
@@ -118,6 +112,13 @@ namespace GameClient.Managers
             Map map = MapSaveLoader.StringToMap(Serializer.ConvertBytesToObject<MapFile>(data._contents), true, true, false, false, false, false);
             CaravanEnterMapUtility.Enter(SessionHandler.ChosenCaravan, map, CaravanEnterMode.Edge, CaravanDropInventoryMode.DoNotDrop, draftColonists: true);
             CameraJumper.TryJump(map.Center, map, CameraJumper.MovementMode.Pan);
+
+            foreach (string str in data._party.Pawns)
+            {
+                Pawn pawn = ScribeManager.SerializeFromString<Pawn>(str, ScribeManager.SerializableType.Pawn);
+                pawn.SetFactionDirect(SessionHandler.NeutralFaction);
+                RimworldManager.PlaceThingIntoMap(pawn, map);
+            }
 
             SessionHandler.SynchronousMap = map;
 

@@ -36,7 +36,7 @@ namespace Synchronous.Managers
         public static void Ask(Pawn pawn, bool mode) 
         {
             PlayerDraft draft = new PlayerDraft();
-            draft.MapID = pawn.Map.uniqueID;
+            draft.MapTile = pawn.Map.Tile;
             draft.PawnID = pawn.ThingID;
             draft.DraftValue = mode;
 
@@ -52,7 +52,7 @@ namespace Synchronous.Managers
             {
                 foreach (PlayerDraft playerDraft in drafts)
                 {
-                    Map map = Finder.GetMapFromID(playerDraft.MapID);
+                    Map map = Finder.GetMapFromTile(playerDraft.MapTile);
                     Pawn pawn = Finder.GetPawnFromID(map, playerDraft.PawnID);
 
                     pawn.drafter ??= new Pawn_DraftController(pawn);

@@ -12,7 +12,7 @@ namespace Synchronous.Objects
 
         public MentalMode Mode { get; set; } = MentalMode.Add;
 
-        public int MapID { get; set; } = -1;
+        public int MapTile { get; set; } = -1;
 
         public string PawnID { get; set; } = string.Empty;
 

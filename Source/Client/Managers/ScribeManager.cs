@@ -45,7 +45,6 @@ namespace GameClient.Managers
                 else if (type == SerializableType.Pawn)
                 {
                     objAsPawn = toSave as Pawn;
-                    objAsPawn.guest = null;
 
                     originalID = objAsPawn.ThingID;
                     if (customID != null) objAsPawn.ThingID = customID;

@@ -28,6 +28,9 @@ namespace Shared
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public class OnUpdate() : Attribute { }
 
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class OnSynchronousUpdate() : Attribute { }
+
     public enum PacketHeader : byte
     {
         None,
@@ -63,5 +66,6 @@ namespace Shared
         SPlayerGameSpeed,
         ServerBrowserReachability,
         SynchronousManager,
+        SPlayerJob,
     }
 }

@@ -8,7 +8,7 @@ namespace Synchronous.Objects
 {
     public class PlayerDraft
     {
-        public int MapID { get; set; } = -1;
+        public int MapTile { get; set; } = -1;
 
         public string PawnID { get; set; } = string.Empty;
 

@@ -22,7 +22,7 @@ namespace Synchronous.Managers
         public static void Ask(Pawn pawn, byte value, PlayerMentalState.MentalMode mode)
         {
             PlayerMentalState playerMentalState = new PlayerMentalState();
-            playerMentalState.MapID = pawn.Map.uniqueID;
+            playerMentalState.MapTile = pawn.Map.Tile;
             playerMentalState.PawnID = pawn.ThingID;
             playerMentalState.MentalStateByte = value;
             playerMentalState.Mode = mode;
@@ -44,7 +44,7 @@ namespace Synchronous.Managers
 
         private static void AddMentalState(PlayerMentalState data)
         {
-            Map map = Finder.GetMapFromID(data.MapID);
+            Map map = Finder.GetMapFromTile(data.MapTile);
             Pawn pawn = Finder.GetPawnFromID(map, data.PawnID);
             MentalStateDef def = Finder.GetMentalStateDefFromByte(data.MentalStateByte);
 
@@ -53,7 +53,7 @@ namespace Synchronous.Managers
 
         private static void RemoveMentalState(PlayerMentalState data)
         {
-            Map map = Finder.GetMapFromID(data.MapID);
+            Map map = Finder.GetMapFromTile(data.MapTile);
             Pawn pawn = Finder.GetPawnFromID(map, data.PawnID);
             MentalStateDef def = Finder.GetMentalStateDefFromByte(data.MentalStateByte);
 

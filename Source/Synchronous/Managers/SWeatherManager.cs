@@ -18,7 +18,7 @@ namespace Synchronous.Managers
         public static void Ask(byte value)
         {
             PlayerWeather weather = new PlayerWeather();
-            weather.MapID = Find.CurrentMap.uniqueID;
+            weather.MapTile = Find.CurrentMap.Tile;
             weather.WeatherByte = value;
 
             ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerWeather, weather);
@@ -32,7 +32,7 @@ namespace Synchronous.Managers
             PatchHandler.ExecuteInBypass(delegate
             {
                 WeatherDef def = Finder.GetWeatherDefFromByte(data.WeatherByte);
-                Finder.GetMapFromID(data.MapID).weatherManager.TransitionTo(def);
+                Finder.GetMapFromTile(data.MapTile).weatherManager.TransitionTo(def);
             });
         }
     }

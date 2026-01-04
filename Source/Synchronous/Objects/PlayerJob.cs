@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 
 namespace Synchronous.Objects
 {
-    public class PlayerWeather
+    public class PlayerJob
     {
         public int MapTile { get; set; } = -1;
 
-        public byte WeatherByte { get; set; } = byte.MaxValue;
+        public string PawnID { get; set; } = string.Empty;
+
+        public string Job { get; set; } = string.Empty;
     }
 }

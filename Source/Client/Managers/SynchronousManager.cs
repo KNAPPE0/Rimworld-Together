@@ -135,8 +135,9 @@ namespace GameClient.Managers
 
         private static void StartSession()
         {
-            MainThreadHandler.Instance.DoOnSynchronousStartMethods();
             SessionHandler.IsSynchronousHost = true;
+            MainThreadHandler.Instance.DoOnSynchronousStartMethods();
+
             RT_Dialog_Wait.Instance.Close();
         }
 
@@ -152,6 +153,7 @@ namespace GameClient.Managers
         private static void OnEnd()
         {
             MainThreadHandler.Instance.DoOnSynchronousEndMethods();
+            SessionHandler.IsSynchronousHost = false;
         }
     }
 }

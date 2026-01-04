@@ -53,24 +53,28 @@ namespace Synchronous.Managers
         {
             if (PlayerJobs.FirstOrDefault(fetch => fetch.PawnID == pawn.ThingID) != null) return;
 
-            PlayerJob newJob = new PlayerJob();
-            newJob.MapTile = pawn.MapHeld.Tile;
-            newJob.PawnID = pawn.ThingID;
-            newJob.PawnPosition = Converter.IntVector3ToString(pawn.Position);
-            newJob.TargetA = Converter.LocalTargetInfoToString(job.GetTarget(TargetIndex.A));
-            newJob.TargetB = Converter.LocalTargetInfoToString(job.GetTarget(TargetIndex.B));
-            newJob.TargetC = Converter.LocalTargetInfoToString(job.GetTarget(TargetIndex.C));
-            newJob.QueueA = Converter.LocalTargetQueueToString(job.GetTargetQueue(TargetIndex.A));
-            newJob.QueueB = Converter.LocalTargetQueueToString(job.GetTargetQueue(TargetIndex.B));
-            newJob.Job = ScribeManager.SerializeToString(job, ScribeManager.SerializableType.Other);
-
-            PlayerJobs.Add(newJob);
-
-            PatchHandler.ExecuteInBypass(delegate
+            try
             {
-                pawn.jobs.StartJob(JobMaker.MakeJob(JobDefOf.Wait, 1000),
-                JobCondition.InterruptForced);
-            });
+                PlayerJob newJob = new PlayerJob();
+                newJob.MapTile = pawn.MapHeld.Tile;
+                newJob.PawnID = pawn.ThingID;
+                newJob.PawnPosition = Converter.IntVector3ToString(pawn.Position);
+                newJob.TargetA = Converter.LocalTargetInfoToString(job.GetTarget(TargetIndex.A));
+                newJob.TargetB = Converter.LocalTargetInfoToString(job.GetTarget(TargetIndex.B));
+                newJob.TargetC = Converter.LocalTargetInfoToString(job.GetTarget(TargetIndex.C));
+                newJob.QueueA = Converter.LocalTargetQueueToString(job.GetTargetQueue(TargetIndex.A));
+                newJob.QueueB = Converter.LocalTargetQueueToString(job.GetTargetQueue(TargetIndex.B));
+                newJob.Job = ScribeManager.SerializeToString(job, ScribeManager.SerializableType.Other);
+
+                PlayerJobs.Add(newJob);
+
+                PatchHandler.ExecuteInBypass(delegate
+                {
+                    pawn.jobs.StartJob(JobMaker.MakeJob(JobDefOf.Wait, 1000),
+                    JobCondition.InterruptForced);
+                });
+            }
+            catch { }
         }
 
         [HandlesPacket(PacketHeader.SPlayerJob)]
@@ -82,11 +86,11 @@ namespace Synchronous.Managers
             {
                 foreach (PlayerJob playerJob in jobs)
                 {
-                    Map map = Finder.GetMapFromTile(playerJob.MapTile);
-                    Pawn pawn = Finder.GetPawnFromID(map, playerJob.PawnID);
-
                     try
                     {
+                        Map map = Finder.GetMapFromTile(playerJob.MapTile);
+                        Pawn pawn = Finder.GetPawnFromID(map, playerJob.PawnID);
+
                         Job newJob = ScribeManager.SerializeFromString<Job>(playerJob.Job);
                         newJob = Converter.PlayerJobToJob(newJob, playerJob);
 

@@ -1,4 +1,5 @@
 ﻿using GameClient;
+using GameClient.Misc;
 using RimWorld;
 using Shared;
 using Shared.Misc;
@@ -15,7 +16,19 @@ namespace Synchronous.Managers
 {
     public static class SGameSpeedManager
     {
-        public static TimeSpeed LatestGameSpeed { get; private set; }
+        public static TimeSpeed LatestGameSpeed { get; private set; } = TimeSpeed.Paused;
+
+        [OnSynchronousStart]
+        private static void SendFirstSpeed()
+        {
+            if (SessionHandler.IsSynchronousHost)
+            {
+                PlayerGameSpeed data = new PlayerGameSpeed();
+                data.CurrentGameSpeed = (int)TimeSpeed.Paused;
+                data.TimeTicks = Find.TickManager.TicksSinceSettle;
+                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerGameSpeed, data);
+            }
+        }
 
         public static void Ask(TimeSpeed speed)
         {

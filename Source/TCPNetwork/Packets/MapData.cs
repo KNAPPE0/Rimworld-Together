@@ -8,6 +8,6 @@ namespace TCPNetwork.Packets
 
         public byte[] _rawData { get; set; } = null;
 
-        public MapFile _mapFile { get; set; } = null;
+        public MapFile _mapFile { get; set; } = new MapFile();
     }
 }

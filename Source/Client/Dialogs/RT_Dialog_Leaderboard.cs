@@ -272,7 +272,6 @@ namespace GameClient.Dialogs
                 detailText = $"{rangeText}  |  {player}  |  Tile {tile}  |  Wealth {wealth}  |  Cols {cols}  |  Days {days}  |  Playtime {play}  |  Saved {saved}";
             }
 
-            // ✅ FIX: Taller + slightly higher label rect so it never clips.
             Rect leftLabel = new Rect(rect.x + 10f, rect.y + 10f, rect.width - 420f, rect.height - 14f);
             Text.Anchor = TextAnchor.MiddleLeft;
             Text.Font = GameFont.Small;
@@ -434,11 +433,13 @@ namespace GameClient.Dialogs
         {
             if (e == null) return "?";
 
-            if (e.RealPlayTimeInteractingSeconds >= 0)
+            double seconds = e.RealPlayTimeSeconds >= 0 ? e.RealPlayTimeSeconds : e.RealPlayTimeInteractingSeconds;
+
+            if (seconds >= 0)
             {
                 try
                 {
-                    TimeSpan ts = TimeSpan.FromSeconds(e.RealPlayTimeInteractingSeconds);
+                    TimeSpan ts = TimeSpan.FromSeconds(seconds);
                     int hours = (int)Math.Floor(ts.TotalHours);
                     int minutes = ts.Minutes;
                     return $"{hours}h {minutes}m";

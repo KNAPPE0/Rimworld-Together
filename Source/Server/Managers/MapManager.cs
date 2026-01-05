@@ -239,6 +239,8 @@ namespace GameServer.Managers
             stats.WealthExact = mapFile.WealthExact >= 0 ? mapFile.WealthExact : -1;
 
             stats.GameTicks = mapFile.GameTicks;
+
+            stats.RealPlayTimeSeconds = mapFile.RealPlayTimeSeconds >= 0 ? mapFile.RealPlayTimeSeconds : -1;
             stats.RealPlayTimeInteractingSeconds = mapFile.RealPlayTimeInteractingSeconds >= 0 ? mapFile.RealPlayTimeInteractingSeconds : -1;
 
             stats.LastSavedUtcTicks = savedTicksFallback > 0 ? savedTicksFallback : DateTime.UtcNow.Ticks;
@@ -291,6 +293,9 @@ namespace GameServer.Managers
             if (file.Wealth >= 0) return true;
             if (file.WealthExact >= 0) return true;
             if (file.GameTicks >= 0) return true;
+
+            if (file.RealPlayTimeSeconds >= 0) return true;
+            if (file.RealPlayTimeInteractingSeconds >= 0) return true;
 
             return false;
         }

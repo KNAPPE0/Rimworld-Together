@@ -80,17 +80,38 @@ namespace GameClient.Managers
                 doc.Load(filePath);
                 XPathNavigator nav = doc.CreateNavigator();
 
-                return double.Parse(nav.SelectSingleNode("/savegame/game/info/realPlayTimeInteracting").Value);
+                XPathNavigator node = nav.SelectSingleNode("/savegame/game/info/realPlayTimeInteracting");
+                if (node == null) return 0;
+
+                return double.Parse(node.Value);
             }
             catch { return 0; }
         }
 
-        public static Dictionary<string, string> GetAllSaveFiles() 
+        public static double GetRealPlayTimeFromSave(string filePath)
+        {
+            if (!File.Exists(filePath)) return 0;
+
+            try
+            {
+                XmlDocument doc = new XmlDocument();
+                doc.Load(filePath);
+                XPathNavigator nav = doc.CreateNavigator();
+
+                XPathNavigator node = nav.SelectSingleNode("/savegame/game/info/realPlayTime");
+                if (node == null) return 0;
+
+                return double.Parse(node.Value);
+            }
+            catch { return 0; }
+        }
+
+        public static Dictionary<string, string> GetAllSaveFiles()
         {
             Dictionary<string, string> result = new Dictionary<string, string>();
             foreach (string file in Directory.GetFiles(Master.SavesFolderPath))
             {
-                if(Path.GetExtension(file) == ".rws")
+                if (Path.GetExtension(file) == ".rws")
                     result.Add(Path.GetFileNameWithoutExtension(file), file);
             }
             return result;
@@ -152,7 +173,16 @@ namespace GameClient.Managers
 
             else
             {
-                if (GetRealPlayTimeInteractingFromSave(TempSaveFilePath) >= GetRealPlayTimeInteractingFromSave(SaveFilePath))
+                double remoteTotal = GetRealPlayTimeFromSave(TempSaveFilePath);
+                double localTotal = GetRealPlayTimeFromSave(SaveFilePath);
+
+                if (remoteTotal <= 0 || localTotal <= 0)
+                {
+                    remoteTotal = GetRealPlayTimeInteractingFromSave(TempSaveFilePath);
+                    localTotal = GetRealPlayTimeInteractingFromSave(SaveFilePath);
+                }
+
+                if (remoteTotal >= localTotal)
                 {
                     Printer.Message("Loading remote save", LogImportanceMode.Verbose);
 

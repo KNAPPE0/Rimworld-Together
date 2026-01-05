@@ -1,4 +1,4 @@
-using Shared.Files.Configs.Mods;
+﻿using Shared.Files.Configs.Mods;
 using System.Collections.Generic;
 
 namespace Shared.Files.Maps
@@ -18,6 +18,8 @@ namespace Shared.Files.Maps
         public double WealthExact { get; set; } = -1;
 
         public int GameTicks { get; set; } = -1;
+
+        public double RealPlayTimeSeconds { get; set; } = -1;
 
         public double RealPlayTimeInteractingSeconds { get; set; } = -1;
 

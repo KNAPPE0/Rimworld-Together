@@ -1,4 +1,4 @@
-using GameServer.Core;
+﻿using GameServer.Core;
 using Shared;
 using Shared.Files;
 using Shared.Files.Maps;
@@ -72,7 +72,10 @@ namespace GameServer.Managers
                     WealthExact = stats.WealthExact,
                     ColonistCount = stats.ColonistCount,
                     GameTicks = stats.GameTicks,
+
+                    RealPlayTimeSeconds = stats.RealPlayTimeSeconds,
                     RealPlayTimeInteractingSeconds = stats.RealPlayTimeInteractingSeconds,
+
                     LastSavedUtcTicks = stats.LastSavedUtcTicks
                 };
             }
@@ -324,6 +327,8 @@ namespace GameServer.Managers
             stats.WealthExact = mapFile.WealthExact >= 0 ? mapFile.WealthExact : -1;
 
             stats.GameTicks = mapFile.GameTicks;
+
+            stats.RealPlayTimeSeconds = mapFile.RealPlayTimeSeconds >= 0 ? mapFile.RealPlayTimeSeconds : -1;
             stats.RealPlayTimeInteractingSeconds = mapFile.RealPlayTimeInteractingSeconds >= 0 ? mapFile.RealPlayTimeInteractingSeconds : -1;
 
             long savedTicks = mapFile.LastSavedUtcTicks;
@@ -429,7 +434,10 @@ namespace GameServer.Managers
                 WealthExact = stats.WealthExact,
                 ColonistCount = stats.ColonistCount,
                 GameTicks = stats.GameTicks,
+
+                RealPlayTimeSeconds = stats.RealPlayTimeSeconds,
                 RealPlayTimeInteractingSeconds = stats.RealPlayTimeInteractingSeconds,
+
                 LastSavedUtcTicks = stats.LastSavedUtcTicks
             };
 
@@ -753,7 +761,8 @@ namespace GameServer.Managers
                     break;
 
                 case InformationData.LeaderboardSortMode.PlaytimeTicks:
-                    result = CompareDouble(a.RealPlayTimeInteractingSeconds, b.RealPlayTimeInteractingSeconds);
+                    result = CompareDouble(GetPlaytimeSeconds(a), GetPlaytimeSeconds(b));
+                    if (result == 0) result = CompareDouble(a.RealPlayTimeInteractingSeconds, b.RealPlayTimeInteractingSeconds);
                     if (result == 0) result = CompareInt(a.GameTicks, b.GameTicks);
                     break;
 
@@ -785,6 +794,13 @@ namespace GameServer.Managers
                 result = -result;
 
             return result;
+        }
+
+        private static double GetPlaytimeSeconds(LeaderboardEntryFile e)
+        {
+            if (e == null) return -1;
+            if (e.RealPlayTimeSeconds >= 0) return e.RealPlayTimeSeconds;
+            return -1;
         }
 
         private static double GetWealthExactOrRounded(LeaderboardEntryFile e)

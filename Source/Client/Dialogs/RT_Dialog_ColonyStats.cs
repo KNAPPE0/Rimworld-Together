@@ -1,4 +1,4 @@
-using Shared.Files;
+﻿using Shared.Files;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -174,7 +174,8 @@ namespace GameClient.Dialogs
                 status = _isOnline.Value ? "Online" : "Offline";
 
             string wealth = FormatWealth(_stats);
-            string playtimeStr = FormatRealPlaytime(_stats.RealPlayTimeInteractingSeconds);
+
+            string playtimeStr = FormatPlaytime(_stats.RealPlayTimeSeconds, _stats.RealPlayTimeInteractingSeconds);
 
             string daysStr = "Unknown";
             if (_stats.GameTicks >= 0)
@@ -221,8 +222,9 @@ namespace GameClient.Dialogs
             return "$" + stats.Wealth.ToString("N0");
         }
 
-        private static string FormatRealPlaytime(double seconds)
+        private static string FormatPlaytime(double totalSeconds, double interactingSeconds)
         {
+            double seconds = totalSeconds >= 0 ? totalSeconds : interactingSeconds;
             if (seconds < 0) return "Unknown";
 
             try

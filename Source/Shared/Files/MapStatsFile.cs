@@ -1,4 +1,4 @@
-namespace Shared.Files
+﻿namespace Shared.Files
 {
     public class MapStatsFile
     {
@@ -14,6 +14,8 @@ namespace Shared.Files
         public double WealthExact { get; set; } = -1;
 
         public int GameTicks { get; set; } = -1;
+
+        public double RealPlayTimeSeconds { get; set; } = -1;
 
         public double RealPlayTimeInteractingSeconds { get; set; } = -1;
 

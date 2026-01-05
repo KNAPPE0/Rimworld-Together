@@ -35,6 +35,7 @@ namespace GameClient.Misc
 
             mapFile.SettlementName = GetCommunityNameSafe(map);
             mapFile.FactionName = GetFactionNameSafe();
+
             mapFile.RealPlayTimeInteractingSeconds = GetRealPlaytimeSecondsSafe(map);
 
             GetMapTerrain(mapFile, map);
@@ -342,7 +343,6 @@ namespace GameClient.Misc
             catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
         }
 
-
         private static string GetFactionNameSafe()
         {
             try
@@ -414,6 +414,16 @@ namespace GameClient.Misc
         {
             try
             {
+                double days = TryGetRimWorldRealPlayTimeInteractingDays();
+                if (days >= 0)
+                    return days * 24d * 60d * 60d;
+            }
+            catch
+            {
+            }
+
+            try
+            {
                 if (map == null) return -1;
 
                 RT_MapPlaytimeComponent comp = map.GetComponent<RT_MapPlaytimeComponent>();
@@ -424,6 +434,58 @@ namespace GameClient.Misc
             catch
             {
                 return -1;
+            }
+        }
+
+        private static double TryGetRimWorldRealPlayTimeInteractingDays()
+        {
+            try
+            {
+                if (Current.Game == null) return -1;
+
+                object infoObj = GetFieldOrProperty(Current.Game, "info") ?? GetFieldOrProperty(Current.Game, "Info");
+                if (infoObj == null) return -1;
+
+                object v =
+                    GetFieldOrProperty(infoObj, "realPlayTimeInteracting") ??
+                    GetFieldOrProperty(infoObj, "RealPlayTimeInteracting");
+
+                if (v == null) return -1;
+
+                if (v is double dd) return dd;
+                if (v is float ff) return ff;
+                if (v is int ii) return ii;
+                if (v is long ll) return ll;
+
+                return -1;
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        private static object GetFieldOrProperty(object obj, string name)
+        {
+            if (obj == null || string.IsNullOrWhiteSpace(name)) return null;
+
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            try
+            {
+                Type t = obj.GetType();
+
+                FieldInfo f = t.GetField(name, flags);
+                if (f != null) return f.GetValue(obj);
+
+                PropertyInfo p = t.GetProperty(name, flags);
+                if (p != null) return p.GetValue(obj, null);
+
+                return null;
+            }
+            catch
+            {
+                return null;
             }
         }
     }

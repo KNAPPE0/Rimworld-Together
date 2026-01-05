@@ -30,6 +30,31 @@ namespace GameClient.Core.Configs
             listingStandard.Begin(inRect);
 
             listingStandard.GapLine();
+            listingStandard.Label("Server Options Profile");
+            listingStandard.Label(OptionsProfileSessionManager.GetStatusLine());
+
+            if (listingStandard.ButtonTextLabeled("Request profile from server", "Request"))
+            {
+                // Manual request -> allow popup if server has no profile
+                OptionsProfileSessionManager.RequestServerOptionsProfile(isManual: true);
+            }
+
+            if (listingStandard.ButtonTextLabeled("Restore personal configs (backup)", "Restore"))
+            {
+                OptionsProfileSessionManager.RestorePersonalConfigsManual();
+            }
+
+            if (SessionHandler.IsAdmin)
+            {
+                GUI.color = new Color(1f, 0.65f, 0.1f);
+                if (listingStandard.ButtonTextLabeled("ADMIN: Publish my current profile to server", "Publish"))
+                {
+                    OptionsProfileSessionManager.PublishCurrentConfigProfileToServer();
+                }
+                GUI.color = Color.white;
+            }
+
+            listingStandard.GapLine();
             listingStandard.Label("Multiplayer Parameters");
             listingStandard.CheckboxLabeled("[When Playing] Deny all incoming transfers", ref ModConfigGetter.RejectTransfersBool, "Automatically denies transfers");
             listingStandard.CheckboxLabeled("[When Playing] Deny all incoming site rewards", ref ModConfigGetter.RejectSiteRewardsBool, "Automatically site rewards");

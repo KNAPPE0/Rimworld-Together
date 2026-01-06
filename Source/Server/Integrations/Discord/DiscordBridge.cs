@@ -2,10 +2,14 @@
 using Discord.WebSocket;
 using GameServer.Managers;
 using Shared.Misc;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using static Shared.CommonEnumerators;
 
 namespace GameServer.Integrations.Discord
@@ -32,8 +36,11 @@ namespace GameServer.Integrations.Discord
 
         private static readonly AllowedMentions NoMentions = AllowedMentions.None;
 
-        private static readonly ConcurrentDictionary<string, MentionCacheEntry> MentionCache = new ConcurrentDictionary<string, MentionCacheEntry>(StringComparer.OrdinalIgnoreCase);
-        private static readonly Regex MentionTokenRegex = new Regex(@"(?<!\w)@(?:""([^""]{1,32})""|'([^']{1,32})'|([^\s@]{1,32}))", RegexOptions.Compiled);
+        private static readonly ConcurrentDictionary<string, MentionCacheEntry> MentionCache =
+            new ConcurrentDictionary<string, MentionCacheEntry>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly Regex MentionTokenRegex =
+            new Regex(@"(?<!\w)@(?:""([^""]{1,32})""|'([^']{1,32})'|([^\s@]{1,32}))", RegexOptions.Compiled);
 
         private static int BatchWindowMs { get; set; } = 250;
         private static int BurstCount { get; set; } = 4;
@@ -113,12 +120,45 @@ namespace GameServer.Integrations.Discord
 
             if (!shouldSend) return;
 
+            TryRelayPresenceNoticeToChat(cleaned);
+
             string prefix = "";
             if (mode == LogMode.Warning) prefix = "⚠️ ";
             else if (mode == LogMode.Error) prefix = "❌ ";
             else if (mode == LogMode.Title) prefix = "✅ ";
 
             Enqueue(AdminChannelId, $"[{DateTime.Now:HH:mm:ss}] | {prefix}{cleaned}");
+        }
+
+        private static void TryRelayPresenceNoticeToChat(string cleanedConsoleLine)
+        {
+            if (!Started) return;
+            if (Client == null) return;
+            if (ChatChannelId == 0) return;
+            if (string.IsNullOrWhiteSpace(cleanedConsoleLine)) return;
+
+            const string loginPrefix = "[Log in] > ";
+            const string disconnectPrefix = "[Disconnect] > ";
+
+            if (cleanedConsoleLine.StartsWith(loginPrefix, StringComparison.Ordinal))
+            {
+                string name = cleanedConsoleLine.Substring(loginPrefix.Length).Trim();
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    Enqueue(ChatChannelId, $"SERVER: {name} has joined the server!");
+                }
+                return;
+            }
+
+            if (cleanedConsoleLine.StartsWith(disconnectPrefix, StringComparison.Ordinal))
+            {
+                string name = cleanedConsoleLine.Substring(disconnectPrefix.Length).Trim();
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    Enqueue(ChatChannelId, $"SERVER: {name} has left the server!");
+                }
+                return;
+            }
         }
 
         public static void TryStart()

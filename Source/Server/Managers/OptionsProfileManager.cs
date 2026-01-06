@@ -14,8 +14,19 @@ namespace GameServer.Managers
     {
         private const int ChunkSizeBytes = 256 * 1024;
 
+        // Upload buffers are keyed by "username|hash" so concurrent admin uploads won't collide.
         private static readonly Dictionary<string, IncomingUploadBuffer> UploadBuffers =
             new Dictionary<string, IncomingUploadBuffer>(StringComparer.OrdinalIgnoreCase);
+
+        // Prevent duplicate sends per connection/profile hash.
+        // Keyed by stable client identity (username if available, otherwise IP) + hash.
+        private static readonly object SendGateLock = new object();
+        private static readonly Dictionary<string, long> RecentlySent =
+            new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+
+        // Small TTL to prevent spam (login pipeline can trigger multiple ModManager calls).
+        private const int SendDedupeWindowMs = 5000;
+        private static long LastPruneTicks = 0;
 
         private class IncomingUploadBuffer
         {
@@ -48,6 +59,10 @@ namespace GameServer.Managers
             }
         }
 
+        /// <summary>
+        /// Safe helper to push the current profile to a client if one exists.
+        /// This will NOT send pre-login (no username yet), and will dedupe repeated triggers.
+        /// </summary>
         public static void TryPushProfile(ServerClient client)
         {
             try
@@ -62,13 +77,27 @@ namespace GameServer.Managers
             catch { }
         }
 
+        /// <summary>
+        /// Called when a client requests the profile (or when the server wants to push it).
+        /// </summary>
         public static void HandleClientRequest(ServerClient client)
         {
             if (client == null) return;
 
+            // Don't send during pre-login. This is what causes:
+            // "Sending profile to ." because Username isn't set yet.
+            // The login pipeline will call again once LoginManager sets UserFile.Username.
+            string username = client.UserFile?.Username;
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                // If you ever want pre-login sends, change this to use IP as identity and SEND,
+                // but keep the log label non-empty. For now: skip for correctness + dedupe.
+                return;
+            }
+
             if (CurrentProfile == null || !CurrentProfile.HasProfile || string.IsNullOrEmpty(CurrentProfile.ProfileHash))
             {
-                Printer.Warning($"[OptionsProfile] {client.UserFile?.Username} requested profile, but none is available.", LogImportanceMode.Verbose);
+                Printer.Warning($"[OptionsProfile] {SafeClientLabel(client)} requested profile, but none is available.", LogImportanceMode.Verbose);
 
                 ModConfigData none = new ModConfigData
                 {
@@ -80,9 +109,14 @@ namespace GameServer.Managers
                 return;
             }
 
+            if (WasRecentlySent(client, CurrentProfile.ProfileHash))
+                return;
+
             List<byte[]> chunks = ConfigProfileUtility.SplitIntoChunks(CurrentProfile.ZipBytes, ChunkSizeBytes);
 
-            Printer.Warning($"[OptionsProfile] Sending profile to {client.UserFile?.Username}. Chunks={chunks.Count} Hash={CurrentProfile.ProfileHash}", LogImportanceMode.Verbose);
+            Printer.Warning(
+                $"[OptionsProfile] Sending profile to {username}. Chunks={chunks.Count} Hash={CurrentProfile.ProfileHash}",
+                LogImportanceMode.Verbose);
 
             for (int i = 0; i < chunks.Count; i++)
             {
@@ -161,6 +195,105 @@ namespace GameServer.Managers
                 {
                     Printer.Warning($"[OptionsProfile] Failed to save: {e}");
                 }
+
+                try
+                {
+                    lock (SendGateLock)
+                    {
+                        RecentlySent.Clear();
+                        LastPruneTicks = DateTime.UtcNow.Ticks;
+                    }
+                }
+                catch { }
+            }
+        }
+
+        private static bool WasRecentlySent(ServerClient client, string hash)
+        {
+            try
+            {
+                string id = client?.UserFile?.Username;
+                if (string.IsNullOrWhiteSpace(id))
+                    id = client?.CurrentIP;
+
+                if (string.IsNullOrWhiteSpace(id))
+                    return false;
+
+                string key = id + "|" + hash;
+                long nowTicks = DateTime.UtcNow.Ticks;
+
+                lock (SendGateLock)
+                {
+                    PruneIfNeeded_NoThrow(nowTicks);
+
+                    if (RecentlySent.TryGetValue(key, out long lastTicks))
+                    {
+                        double ms = (nowTicks - lastTicks) / (double)TimeSpan.TicksPerMillisecond;
+                        if (ms <= SendDedupeWindowMs)
+                            return true;
+                    }
+
+                    RecentlySent[key] = nowTicks;
+                }
+            }
+            catch { }
+
+            return false;
+        }
+
+        private static void PruneIfNeeded_NoThrow(long nowTicks)
+        {
+            try
+            {
+                if (LastPruneTicks != 0)
+                {
+                    double since = (nowTicks - LastPruneTicks) / (double)TimeSpan.TicksPerMillisecond;
+                    if (since < 10000)
+                        return;
+                }
+
+                LastPruneTicks = nowTicks;
+
+                long cutoff = nowTicks - (TimeSpan.TicksPerSecond * 60);
+
+                if (RecentlySent.Count == 0)
+                    return;
+
+                List<string> toRemove = null;
+
+                foreach (var kv in RecentlySent)
+                {
+                    if (kv.Value < cutoff)
+                    {
+                        toRemove ??= new List<string>(8);
+                        toRemove.Add(kv.Key);
+                    }
+                }
+
+                if (toRemove != null)
+                {
+                    for (int i = 0; i < toRemove.Count; i++)
+                        RecentlySent.Remove(toRemove[i]);
+                }
+            }
+            catch { }
+        }
+
+        private static string SafeClientLabel(ServerClient client)
+        {
+            try
+            {
+                string u = client?.UserFile?.Username;
+                if (!string.IsNullOrWhiteSpace(u)) return u;
+
+                string ip = client?.CurrentIP;
+                if (!string.IsNullOrWhiteSpace(ip)) return ip;
+
+                return "(unknown)";
+            }
+            catch
+            {
+                return "(unknown)";
             }
         }
 

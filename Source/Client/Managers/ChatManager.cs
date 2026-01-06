@@ -65,9 +65,11 @@ namespace GameClient.Managers
         {
             if (ChatMessageCache.Count() > 100) ChatMessageCache.RemoveAt(0);
 
-            if (ChatManagerH.CheckIfHasBeenTagged(message)) message = message.Replace($"@{SessionHandler.Username}", $"<color=red>@{SessionHandler.Username}</color>");
+            if (ChatManagerH.CheckIfHasBeenTagged(message))
+                message = message.Replace($"@{SessionHandler.Username}", $"<color=red>@{SessionHandler.Username}</color>");
 
-            ChatMessageCache.Add($"<color=grey>{DateTime.Now.ToString("HH:mm")}</color> " + $"{ChatManagerH.messageColorDictionary[userColor]}{username}</color>: " +
+            ChatMessageCache.Add($"<color=grey>{DateTime.Now.ToString("HH:mm")}</color> " +
+                $"{ChatManagerH.messageColorDictionary[userColor]}{username}</color>: " +
                 $"{ChatManagerH.messageColorDictionary[messageColor]}{ChatManagerH.ParseMessage(message)}</color>");
 
             if (ChatAutoscroll) ShouldScrollChat = true;
@@ -104,7 +106,7 @@ namespace GameClient.Managers
             { ChatColor.Console, "<color=yellow>" },
             { ChatColor.Private, "<color=#3ae0dd>" },
             { ChatColor.Discord, "<color=white>" },
-            { ChatColor.Server, " <color=white>" }
+            { ChatColor.Server, "<color=white>" }
         };
 
         public static string[] GetMessageWords(string message) { return message.Split(' '); }

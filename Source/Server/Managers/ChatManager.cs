@@ -15,7 +15,6 @@ using Shared.Misc;
 
 namespace GameServer.Managers
 {
-
     public static class ChatManager
     {
         private static Semaphore LogSemaphore = new Semaphore(1, 1);
@@ -46,8 +45,11 @@ namespace GameServer.Managers
         {
             ChatData data = Serializer.ConvertBytesToObject<ChatData>(bytes);
 
-            if (data._message.StartsWith("/")) ExecuteChatCommand(client, data._message.Split(' '));
-            else BroadcastChatMessage(client, data._message);
+            string msg = data?._message ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(msg)) return;
+
+            if (msg.StartsWith("/")) ExecuteChatCommand(client, msg.Split(' '));
+            else BroadcastChatMessage(client, msg);
         }
 
         private static void ExecuteChatCommand(ServerClient client, string[] command)
@@ -63,7 +65,6 @@ namespace GameServer.Managers
                 toFind.CommandAction.Invoke();
             }
 
-            // idiotic string was concatenated with no spaces (like bruh what, ocd hit hard on this one)
             string chatCommand = "";
             for (int i = 0; i < command.Length; i++) chatCommand += command[i] + " ";
             chatCommand = chatCommand.TrimEnd();

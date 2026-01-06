@@ -1,4 +1,5 @@
 ﻿using GameServer.Core;
+using GameServer.Integrations.Discord;
 using GameServer.Managers;
 using GameServer.Misc;
 using TCPNetwork;
@@ -51,21 +52,31 @@ namespace GameServer
             try { UserManager.SendPlayerRecount(); } catch { }
             try { InformationDisplayer.DisplayDisconnect(client); } catch { }
 
+            string username = null;
+            try { username = client?.UserFile?.Username; } catch { username = null; }
+
             try
             {
-                string username = client != null && client.UserFile != null ? client.UserFile.Username : null;
                 if (Master.ChatConfig.DisconnectNotifications && !string.IsNullOrWhiteSpace(username))
                 {
                     ChatManager.BroadcastServerNotification($"{username} has left the server!");
+                }
+            }
+            catch { }
+
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(username))
+                {
+                    DiscordPlayerAnnouncer.AnnounceLeft(username);
                 }
             }
             catch
             {
                 try
                 {
-                    string safeName = null;
-                    if (client != null && client.UserFile != null) safeName = client.UserFile.Username;
-                    if (string.IsNullOrWhiteSpace(safeName) && client != null) safeName = client.CurrentIP;
+                    string safeName = username;
+                    if (string.IsNullOrWhiteSpace(safeName)) safeName = client?.CurrentIP;
                     if (string.IsNullOrWhiteSpace(safeName)) safeName = "(unknown)";
                     Printer.Warning($"Error disconnecting user {safeName}, this will cause memory overhead");
                 }
@@ -134,21 +145,29 @@ namespace GameServer
 
             try
             {
-                if (!string.IsNullOrWhiteSpace(client.CurrentIP) && _bannedIps.Contains(client.CurrentIP))
+                string ip = client?.CurrentIP;
+                if (!string.IsNullOrWhiteSpace(ip) && _bannedIps.Contains(ip))
                 {
-                    try { Printer.Warning($"[Blocked] > {client.CurrentIP} (IP banned)"); } catch { }
-                    try { client.Listener.DisconnectNow(); } catch { }
+                    try { Printer.Warning($"[Blocked] > {ip} (IP banned)"); } catch { }
+                    try { client.Listener?.DisconnectNow(); } catch { }
                     return;
                 }
             }
             catch { }
 
-            int connectedCount = GetConnectedClientsSafe().Length;
+            int connectedCount = 0;
+            try { connectedCount = GetConnectedClientsSafe().Length; } catch { connectedCount = 0; }
 
-            if (connectedCount >= int.Parse(Master.ServerConfig.MaxPlayers))
+            try
             {
-                LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Full);
-                return;
+                if (connectedCount >= int.Parse(Master.ServerConfig.MaxPlayers))
+                {
+                    LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Full);
+                    return;
+                }
+            }
+            catch
+            {
             }
 
             if (Master.WorldValues == null && connectedCount > 0)
@@ -156,13 +175,6 @@ namespace GameServer
                 LoginManagerH.DenyConnectionWithReason(client, LoginResponse.NoWorld);
                 return;
             }
-
-            try
-            {
-                string ip = client != null ? client.CurrentIP : "(unknown)";
-                Printer.Warning($"[Connect] > {ip}");
-            }
-            catch { }
 
             lock (_clientsLock)
             {
@@ -173,31 +185,6 @@ namespace GameServer
             Main_.ChangeTitle();
 
             try { InformationDisplayer.DisplayConnect(client); } catch { }
-
-            Task.Run(async () =>
-            {
-                try
-                {
-                    await Task.Delay(20000);
-
-                    if (client == null) return;
-                    if (client.UserFile != null) return;
-
-                    // still in list?
-                    bool stillConnected = false;
-                    lock (_clientsLock)
-                    {
-                        ServerClients.RemoveAll(c => c == null);
-                        stillConnected = ServerClients.Contains(client);
-                    }
-
-                    if (!stillConnected) return;
-
-                    try { Printer.Warning($"[PreLogin Timeout] > {client.CurrentIP}"); } catch { }
-                    try { client.Listener?.DisconnectNow(); } catch { }
-                }
-                catch { }
-            });
 
             VersionManager.AskForClientVersion(client);
         }
@@ -223,7 +210,6 @@ namespace GameServer
                 return null;
 
             var snapshot = GetConnectedClientsSafe();
-
             for (int i = 0; i < snapshot.Length; i++)
             {
                 var c = snapshot[i];
@@ -280,14 +266,29 @@ namespace GameServer
             return true;
         }
 
+        public bool UnbanByIP(string ip)
+        {
+            if (string.IsNullOrWhiteSpace(ip)) return false;
+            ip = ip.Trim();
+
+            try { return _bannedIps.Remove(ip); }
+            catch { return false; }
+        }
+
+        public bool IsIpBanned(string ip)
+        {
+            if (string.IsNullOrWhiteSpace(ip)) return false;
+            ip = ip.Trim();
+
+            try { return _bannedIps.Contains(ip); }
+            catch { return false; }
+        }
+
         public void SendPacketToAllClients(PacketHeader header, object obj, ServerClient toExclude = null)
         {
             foreach (ServerClient client in GetConnectedClientsSafe(toExclude))
             {
-                try
-                {
-                    client?.Listener?.EnqueuePacket(header, obj);
-                }
+                try { client?.Listener?.EnqueuePacket(header, obj); }
                 catch { }
             }
         }

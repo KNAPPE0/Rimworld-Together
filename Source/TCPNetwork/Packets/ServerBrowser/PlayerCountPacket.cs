@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace TCPNetwork.Packets.ServerBrowser;
 
-namespace Rimworld_Together_Master_Server.Data
+public class PlayerCountPacket
 {
-    public class PlayerCountPacket
-    {
-        public short _playerCount;
-    }
+    public short _playerCount;
 }

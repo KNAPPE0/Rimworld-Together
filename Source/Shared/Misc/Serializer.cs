@@ -52,6 +52,12 @@ namespace Shared
                 throw null;
             }
         }
+        
+        public static T ConvertBytesToObject<T>(ReadOnlyMemory<byte> bytes)
+        {
+            try { return MessagePackSerializer.Deserialize<T>(bytes, ContractlessStandardResolver.Options.WithCompression(MessagePackCompression.Lz4Block)); }
+            catch (Exception ex) { throw ex; }
+        }
 
         // Serialize from and to strings
 

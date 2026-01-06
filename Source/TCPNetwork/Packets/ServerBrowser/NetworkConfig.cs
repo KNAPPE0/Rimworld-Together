@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace TCPNetwork.Packets.ServerBrowser;
 
-namespace Rimworld_Together_Master_Server.Data
+public class NetworkConfig
 {
-    public class NetworkConfig
-    {
-        public string ip = "0.0.0.0";
-        public int port = 32001;
-    }
+    public string ip = "0.0.0.0";
+    public int port = 32001;
 }

@@ -8,7 +8,6 @@ namespace GameServer.Integrations.Discord
     public static class DiscordPlayerAnnouncer
     {
         private static readonly object LockObj = new object();
-
         private static readonly HashSet<string> JoinedUsers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public static void AnnounceFullyJoined(string username)
@@ -30,7 +29,11 @@ namespace GameServer.Integrations.Discord
             if (!shouldSend)
                 return;
 
-            DiscordBridge.TryRelayServerConsoleLine($"[Log in] > {username}", LogMode.Title);
+            string msg = $"SERVER: {username} has joined the server!";
+
+            DiscordBridge.TryRelayServerConsoleLine(msg, LogMode.Title);
+
+            DiscordBridge.TryRelayServerNoticeToDiscordChat(msg);
         }
 
         public static void AnnounceLeft(string username)
@@ -43,7 +46,11 @@ namespace GameServer.Integrations.Discord
                 JoinedUsers.Remove(username);
             }
 
-            DiscordBridge.TryRelayServerConsoleLine($"[Disconnect] > {username}", LogMode.Warning);
+            string msg = $"SERVER: {username} has left the server!";
+
+            DiscordBridge.TryRelayServerConsoleLine(msg, LogMode.Warning);
+
+            DiscordBridge.TryRelayServerNoticeToDiscordChat(msg);
         }
 
         public static void Clear()

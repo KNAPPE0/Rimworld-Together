@@ -120,8 +120,6 @@ namespace GameServer.Integrations.Discord
 
             if (!shouldSend) return;
 
-            TryRelayPresenceNoticeToChat(cleaned);
-
             string prefix = "";
             if (mode == LogMode.Warning) prefix = "⚠️ ";
             else if (mode == LogMode.Error) prefix = "❌ ";
@@ -130,35 +128,16 @@ namespace GameServer.Integrations.Discord
             Enqueue(AdminChannelId, $"[{DateTime.Now:HH:mm:ss}] | {prefix}{cleaned}");
         }
 
-        private static void TryRelayPresenceNoticeToChat(string cleanedConsoleLine)
+        // This is intentionally NOT timestamped and NOT gated by the mirror window.
+        public static void TryRelayServerNoticeToDiscordChat(string text)
         {
             if (!Started) return;
             if (Client == null) return;
             if (ChatChannelId == 0) return;
-            if (string.IsNullOrWhiteSpace(cleanedConsoleLine)) return;
+            if (string.IsNullOrWhiteSpace(text)) return;
 
-            const string loginPrefix = "[Log in] > ";
-            const string disconnectPrefix = "[Disconnect] > ";
-
-            if (cleanedConsoleLine.StartsWith(loginPrefix, StringComparison.Ordinal))
-            {
-                string name = cleanedConsoleLine.Substring(loginPrefix.Length).Trim();
-                if (!string.IsNullOrWhiteSpace(name))
-                {
-                    Enqueue(ChatChannelId, $"SERVER: {name} has joined the server!");
-                }
-                return;
-            }
-
-            if (cleanedConsoleLine.StartsWith(disconnectPrefix, StringComparison.Ordinal))
-            {
-                string name = cleanedConsoleLine.Substring(disconnectPrefix.Length).Trim();
-                if (!string.IsNullOrWhiteSpace(name))
-                {
-                    Enqueue(ChatChannelId, $"SERVER: {name} has left the server!");
-                }
-                return;
-            }
+            string cleaned = SanitizeDiscordText(text.Trim());
+            Enqueue(ChatChannelId, cleaned);
         }
 
         public static void TryStart()

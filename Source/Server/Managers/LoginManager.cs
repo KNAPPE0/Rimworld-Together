@@ -1,10 +1,11 @@
-using GameServer.Core;
+﻿using GameServer.Core;
 using GameServer.Misc;
 using TCPNetwork.Packets;
 using Shared;
 using static Shared.CommonEnumerators;
 using TCPNetwork.Files.Client;
 using Shared.Misc;
+using GameServer.Integrations.Discord;
 
 namespace GameServer.Managers
 {
@@ -37,7 +38,7 @@ namespace GameServer.Managers
         public static string TryLoginUser(ServerClient client, LoginData data)
         {
             if (!UserManagerH.CheckIfUserAuthCorrect(client, data)) return $"Login details to not match, either the password or username is wrong for {data._username}";
-            
+
             client.LoadUserFromFile(client);
 
             if (UserManagerH.CheckIfUserBanned(client)) return $"{data._username} is banned";
@@ -80,6 +81,8 @@ namespace GameServer.Managers
             if (Master.ChatConfig.EnableMoTD) ChatManager.SendServerMessage(client, $"MoTD > {Master.ChatConfig.MessageOfTheDay}");
 
             if (Master.ChatConfig.LoginNotifications) ChatManager.BroadcastServerNotification($"{client.UserFile.Username} has joined the server!");
+
+            DiscordPlayerAnnouncer.AnnounceFullyJoined(client.UserFile.Username);
 
             if (WorldManager.CheckIfWorldExists())
             {

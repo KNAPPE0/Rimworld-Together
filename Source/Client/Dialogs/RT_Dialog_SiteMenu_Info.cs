@@ -13,7 +13,7 @@ namespace GameClient.Dialogs
 {
     public class RT_Dialog_SiteMenu_Info : RT_Dialog_Base
     {
-        public override Vector2 InitialSize => new Vector2(450f, 250f);
+        public override Vector2 InitialSize => new Vector2(520f, 320f);
 
         public SitePartDef SitePartDef { get; private set; }
         public SiteType ConfigFile { get; private set; }
@@ -22,13 +22,12 @@ namespace GameClient.Dialogs
         public Dictionary<ThingDef, int> RewardThing { get; private set; } = new Dictionary<ThingDef, int>();
 
         private bool IsInvalid { get; set; }
-
         public static RT_Dialog_SiteMenu_Info Instance { get; private set; }
 
         public RT_Dialog_SiteMenu_Info(SitePartDef thingChosen)
         {
             SitePartDef = thingChosen;
-            Title = thingChosen.label;
+            Title = thingChosen?.label ?? "Site";
             ConfigFile = SiteManager.SiteValues.Where(f => f.DefName == thingChosen.defName).FirstOrDefault();
             Instance = this;
 
@@ -39,75 +38,82 @@ namespace GameClient.Dialogs
             }
 
             ThingDef cost = DefDatabase<ThingDef>.GetNamed(ThingDefOf.Silver.defName);
-            if (cost != null) CostThing.Add(cost, ConfigFile.Cost);
+            if (cost != null) CostThing[cost] = ConfigFile.Cost;
 
             for (int i = 0; i < ConfigFile.Rewards.Length; i++)
             {
                 ThingDef reward = DefDatabase<ThingDef>.GetNamedSilentFail(ConfigFile.Rewards[i].DefName);
-                if (reward != null) RewardThing.Add(reward, ConfigFile.Rewards[i].Amount);
+                if (reward != null) RewardThing[reward] = ConfigFile.Rewards[i].Amount;
                 else Printer.Warning($"{ConfigFile.Rewards[i].DefName} could not be found and won't be added to the list. Double check the def exists.");
             }
+
+            closeOnAccept = false;
+            closeOnCancel = false;
         }
 
-        public override void DoWindowContents(Rect mainRect)
+        public override void DoWindowContents(Rect inRect)
         {
             if (IsInvalid)
             {
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "Site could not be loaded because of invalid configuration" }));
+                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Error", new string[] { "Site could not be loaded because of invalid configuration" }));
                 Close();
                 return;
             }
 
-            Widgets.DrawLineHorizontal(mainRect.x, mainRect.y - 1, mainRect.width);
-            Widgets.DrawLineHorizontal(mainRect.x, mainRect.yMax + 1, mainRect.width);
+            float y = DrawStandardHeader(inRect, drawTopBorder: true, drawBottomBorder: true, closeX: true);
+            if (y < 0f) return;
 
-            if (Widgets.CloseButtonFor(mainRect)) { Close(); return; }
+            Rect outer = new Rect(0f, y, inRect.width, inRect.height - y).ContractedBy(ContentPad);
+            Widgets.DrawMenuSection(outer);
 
-            float centeredX = mainRect.width / 2;
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, mainRect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
+            Rect inner = outer.ContractedBy(10f);
 
-            Rect leftColumn = new Rect(mainRect.x, mainRect.y + 30f, mainRect.width / 2, mainRect.height - 20f);
-            Widgets.DrawTextureFitted(leftColumn, SitePartDef.ExpandingIconTexture, 1f);
+            float footerH = SmallButtonSize.y + 8f;
 
-            Rect rightColumn = new Rect(mainRect.width / 2, mainRect.y + 30f, mainRect.width / 2, mainRect.height - 70f);
+            Rect columns = new Rect(inner.x, inner.y, inner.width, inner.height - footerH);
+            float colW = columns.width / 2f;
 
-            float descH = Text.CalcHeight(SitePartDef.description, rightColumn.width - 16f);
-            float contentH =
-                descH +
-                20f +
-                CostThing.Count * 25f +
-                20f +
-                RewardThing.Count * 25f +
-                10f;
+            Rect leftColumn = new Rect(columns.x, columns.y, colW, columns.height);
+            Rect rightColumn = new Rect(columns.x + colW, columns.y, colW, columns.height);
 
-            Rect viewRect = new Rect(0f, 0f, rightColumn.width - 16f, contentH);
+            if (SitePartDef != null)
+                Widgets.DrawTextureFitted(leftColumn.ContractedBy(6f), SitePartDef.ExpandingIconTexture, 1f);
 
-            Widgets.BeginScrollView(rightColumn, ref ScrollPosition, viewRect);
+            Rect rightInner = rightColumn.ContractedBy(6f);
+
+            string desc = SitePartDef?.description ?? string.Empty;
+
+            Text.Font = GameFont.Small;
+            float descH = Text.CalcHeight(desc, rightInner.width - GenUI.ScrollBarWidth);
+            float contentH = descH + 10f + 22f + (CostThing.Count * 20f) + 10f + 22f + (RewardThing.Count * 20f) + 6f;
+
+            Rect viewRect = new Rect(0f, 0f, rightInner.width - GenUI.ScrollBarWidth, Mathf.Max(contentH, rightInner.height));
+
+            Widgets.BeginScrollView(rightInner, ref ScrollPosition, viewRect);
             try
             {
-                Text.Font = GameFont.Small;
-                float y = 0f;
+                float cy = 0f;
 
-                Widgets.Label(new Rect(0f, y, viewRect.width, descH), SitePartDef.description);
-                y += descH + 6f;
+                Widgets.Label(new Rect(0f, cy, viewRect.width, descH), desc);
+                cy += descH + 8f;
 
-                Widgets.Label(new Rect(0f, y, viewRect.width, 20f), "Cost:");
-                y += 20f;
+                Widgets.Label(new Rect(0f, cy, viewRect.width, 22f), "Cost:");
+                cy += 22f;
 
-                foreach (ThingDef thing in CostThing.Keys)
+                foreach (var kv in CostThing)
                 {
-                    Widgets.Label(new Rect(0f, y, viewRect.width, 25f), $"- {thing.label} {CostThing[thing]}");
-                    y += 25f;
+                    Widgets.Label(new Rect(0f, cy, viewRect.width, 20f), $"- {kv.Key.label} {kv.Value}");
+                    cy += 20f;
                 }
 
-                Widgets.Label(new Rect(0f, y, viewRect.width, 20f), "Produces:");
-                y += 20f;
+                cy += 8f;
+                Widgets.Label(new Rect(0f, cy, viewRect.width, 22f), "Produces:");
+                cy += 22f;
 
-                foreach (ThingDef thing in RewardThing.Keys)
+                foreach (var kv in RewardThing)
                 {
-                    Widgets.Label(new Rect(0f, y, viewRect.width, 25f), $"- {thing.label} {RewardThing[thing]}");
-                    y += 25f;
+                    Widgets.Label(new Rect(0f, cy, viewRect.width, 20f), $"- {kv.Key.label} {kv.Value}");
+                    cy += 20f;
                 }
             }
             finally
@@ -115,11 +121,12 @@ namespace GameClient.Dialogs
                 Widgets.EndScrollView();
             }
 
-            if (Widgets.ButtonText(new Rect(rightColumn.x + 5f, rightColumn.yMax, rightColumn.width - 10f, 40f), "Build"))
+            Rect buildBtn = new Rect(rightColumn.x + 6f, inner.yMax - SmallButtonSize.y, rightColumn.width - 12f, SmallButtonSize.y);
+            if (Widgets.ButtonText(buildBtn, "Build"))
             {
                 SiteManager.RequestSiteBuild(ConfigFile);
-                RT_Dialog_SiteMenu.Instance.Close();
-                RT_Dialog_SiteMenu_Info.Instance.Close();
+                RT_Dialog_SiteMenu.Instance?.Close();
+                RT_Dialog_SiteMenu_Info.Instance?.Close();
             }
         }
     }

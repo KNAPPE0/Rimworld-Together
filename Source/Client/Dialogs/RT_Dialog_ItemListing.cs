@@ -14,7 +14,7 @@ namespace GameClient.Dialogs
 {
     public class RT_Dialog_ItemListing : RT_Dialog_Base
     {
-        public override Vector2 InitialSize => new Vector2(400f, 512f);
+        public override Vector2 InitialSize => new Vector2(460f, 560f);
 
         private Thing[] ListedThings { get; set; }
         private TransferMode TransferMode { get; set; }
@@ -34,30 +34,40 @@ namespace GameClient.Dialogs
             closeOnCancel = false;
         }
 
-        public override void DoWindowContents(Rect rect)
+        public override void DoWindowContents(Rect inRect)
         {
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(rect.width / 2 - Text.CalcSize(Title).x / 2, rect.y, rect.width, Text.CalcSize(Title).y), Title);
+            float y = DrawStandardHeader(inRect);
+            if (y < 0f) return;
 
-            FillMainRect(new Rect(0f, 35f, rect.width, rect.height - SlimButtonSize.y - 45));
+            float footerH = SlimButtonSize.y + FooterPad * 2f;
 
-            Text.Font = GameFont.Small;
+            Rect listOuter = new Rect(0f, y, inRect.width, inRect.height - y - footerH).ContractedBy(ContentPad);
+            Widgets.DrawMenuSection(listOuter);
 
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.x, rect.yMax - SlimButtonSize.y), SlimButtonSize), "Accept"))
+            Rect listInner = listOuter.ContractedBy(10f);
+            FillMainRect(listInner);
+
+            Rect footer = new Rect(0f, inRect.height - footerH, inRect.width, footerH);
+
+            float btnAvailHalf = (footer.width - (FooterPad * 3f)) / 2f;
+            Vector2 btnSize = ClampButtonSize(SlimButtonSize, btnAvailHalf);
+
+            Rect acceptBtn = new Rect(FooterPad, footer.y + FooterPad, btnSize.x, btnSize.y);
+            Rect cancelBtn = new Rect(footer.xMax - FooterPad - btnSize.x, footer.y + FooterPad, btnSize.x, btnSize.y);
+
+            if (Widgets.ButtonText(acceptBtn, "Accept"))
                 Accept();
 
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - SlimButtonSize.x, rect.yMax - SlimButtonSize.y), SlimButtonSize), "Cancel"))
+            if (Widgets.ButtonText(cancelBtn, "Cancel"))
                 Reject();
         }
 
         private void FillMainRect(Rect mainRect)
         {
-            Widgets.DrawLineHorizontal(mainRect.x, mainRect.y - 1, mainRect.width);
-
             float rowH = 30f;
             float height = 6f + ListedThings.Length * rowH;
 
-            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - GenUI.ScrollBarWidth, height);
 
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
             try
@@ -82,21 +92,23 @@ namespace GameClient.Dialogs
             }
         }
 
-        private void DrawCustomRow(Rect rect, Thing thing, int index)
+        private void DrawCustomRow(Rect row, Thing thing, int index)
         {
             if (thing == null) return;
 
-            Text.Font = GameFont.Small;
-            Rect fixedRect = new Rect(rect.x, rect.y + 5f, rect.width - 16f, rect.height - 5f);
-            if (index % 2 == 0) Widgets.DrawHighlight(fixedRect);
+            if (index % 2 == 0) Widgets.DrawAltRect(row);
+            Widgets.DrawHighlightIfMouseover(row);
 
-            string itemName = thing.LabelShort;
+            Text.Font = GameFont.Small;
+            Rect textRect = row.ContractedBy(6f, 4f);
+
+            string itemName = thing.LabelShort ?? "Unknown";
             if (itemName.Length > 1) itemName = char.ToUpper(itemName[0]) + itemName.Substring(1);
             else itemName = itemName.ToUpper();
 
-            if (ScriberH.CheckIfThingIsHuman(thing)) Widgets.Label(fixedRect, $"[Human] {itemName}");
-            else if (ScriberH.CheckIfThingIsAnimal(thing)) Widgets.Label(fixedRect, $"[Animal] {itemName}");
-            else Widgets.Label(fixedRect, $"[Item] {itemName} (x{thing.stackCount}) ({thing.HitPoints} HP)");
+            if (ScriberH.CheckIfThingIsHuman(thing)) Widgets.Label(textRect, $"[Human] {itemName}");
+            else if (ScriberH.CheckIfThingIsAnimal(thing)) Widgets.Label(textRect, $"[Animal] {itemName}");
+            else Widgets.Label(textRect, $"[Item] {itemName} (x{thing.stackCount}) ({thing.HitPoints} HP)");
         }
 
         private void Accept()
@@ -118,7 +130,7 @@ namespace GameClient.Dialogs
                 }
                 else
                 {
-                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "You do not have any pawn capable of trading!" }));
+                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Error", new string[] { "You do not have any pawn capable of trading!" }));
                     TransferManager.RejectRequest(TransferMode);
                     Close();
                 }

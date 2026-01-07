@@ -19,12 +19,14 @@ namespace GameClient.Dialogs
         private float _viewHeight;
         private Vector2 _localScroll = Vector2.zero;
 
-        private const float HeaderHeight = 34f;
-        private const float FooterHeight = 48f;
+        private const float HeaderHeight = 42f;
+        private const float FooterHeight = 60f;
 
         private const float SectionHeaderHeight = 26f;
         private const float RowHeight = 26f;
         private const float RowPaddingX = 10f;
+
+        private const float OuterPadding = 10f;
 
         public RT_Dialog_ColonyStats(MapStatsFile stats, bool? isOnline, string settlementLabel = null)
         {
@@ -42,25 +44,26 @@ namespace GameClient.Dialogs
 
         public override void DoWindowContents(Rect rect)
         {
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(0f, 0f, rect.width, HeaderHeight), Title);
-
-            Text.Font = GameFont.Small;
-            Widgets.DrawLineHorizontal(0f, HeaderHeight - 6f, rect.width);
+            DrawHeader(rect);
 
             Rect outer = new Rect(0f, HeaderHeight, rect.width, rect.height - HeaderHeight - FooterHeight);
             Widgets.DrawMenuSection(outer);
 
-            Rect inner = outer.ContractedBy(10f);
+            Rect inner = outer.ContractedBy(OuterPadding);
+            if (inner.width <= 30f || inner.height <= 30f)
+            {
+                DrawFooter(new Rect(0f, rect.height - FooterHeight, rect.width, FooterHeight));
+                return;
+            }
 
             Rect scrollRect = new Rect(inner.x, inner.y, inner.width, inner.height);
-            Rect viewRect = new Rect(0f, 0f, scrollRect.width - 16f, _viewHeight);
+            Rect viewRect = new Rect(0f, 0f, Mathf.Max(1f, scrollRect.width - 16f), _viewHeight);
 
             Widgets.BeginScrollView(scrollRect, ref _localScroll, viewRect);
             try
             {
                 float y = 0f;
-                float split = Mathf.Clamp(viewRect.width * 0.58f, 240f, viewRect.width - 160f);
+                float split = Mathf.Clamp(viewRect.width * 0.58f, 220f, Mathf.Max(240f, viewRect.width - 160f));
 
                 int globalRowIndex = 0;
 
@@ -86,21 +89,60 @@ namespace GameClient.Dialogs
 
                     y += 8f;
                 }
+
+                if (_sections.Count == 0)
+                {
+                    Text.Font = GameFont.Small;
+                    Text.Anchor = TextAnchor.UpperCenter;
+                    Widgets.Label(new Rect(0f, 12f, viewRect.width, 30f), "<color=grey>No stats available.</color>");
+                    Text.Anchor = TextAnchor.UpperLeft;
+                }
             }
             finally
             {
                 Widgets.EndScrollView();
             }
 
-            Rect footer = new Rect(0f, rect.height - FooterHeight, rect.width, FooterHeight);
+            DrawFooter(new Rect(0f, rect.height - FooterHeight, rect.width, FooterHeight));
+        }
 
-            if (Widgets.ButtonText(new Rect(footer.x, footer.y + 8f, SmallButtonSize.x, SmallButtonSize.y), "Refresh"))
+        private void DrawHeader(Rect rect)
+        {
+            Text.Font = GameFont.Medium;
+            Text.Anchor = TextAnchor.MiddleCenter;
+
+            Rect titleRect = new Rect(0f, 0f, rect.width, HeaderHeight);
+            Widgets.Label(titleRect, Title);
+
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+
+            Widgets.DrawLineHorizontal(0f, HeaderHeight - 1f, rect.width);
+        }
+
+        private void DrawFooter(Rect rect)
+        {
+            float pad = 10f;
+            float spacing = 8f;
+
+            float btnH = SmallButtonSize.y;
+            float btnW = SmallButtonSize.x;
+
+            float maxBtnW = (rect.width - (pad * 2f) - spacing) / 2f;
+            if (btnW > maxBtnW) btnW = Mathf.Max(100f, maxBtnW);
+
+            float y = rect.y + (rect.height - btnH) * 0.5f;
+
+            Rect refreshBtn = new Rect(rect.x + pad, y, btnW, btnH);
+            Rect okBtn = new Rect(rect.xMax - pad - btnW, y, btnW, btnH);
+
+            if (Widgets.ButtonText(refreshBtn, "Refresh"))
             {
                 Close();
                 GameClient.Managers.StatisticalManager.AskForStats();
             }
 
-            if (Widgets.ButtonText(new Rect(footer.xMax - SmallButtonSize.x, footer.y + 8f, SmallButtonSize.x, SmallButtonSize.y), "OK"))
+            if (Widgets.ButtonText(okBtn, "OK"))
                 Close();
         }
 
@@ -114,7 +156,7 @@ namespace GameClient.Dialogs
             Text.Anchor = TextAnchor.MiddleLeft;
 
             Rect textRect = headerRect.ContractedBy(RowPaddingX, 0f);
-            Widgets.Label(textRect, title);
+            Widgets.Label(textRect, title ?? string.Empty);
 
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;
@@ -126,14 +168,19 @@ namespace GameClient.Dialogs
 
         private void DrawRow(Rect rowRect, string key, string value, float split)
         {
-            Rect left = new Rect(rowRect.x + RowPaddingX, rowRect.y + 3f, split - RowPaddingX * 2f, rowRect.height - 6f);
-            Rect right = new Rect(rowRect.x + split, rowRect.y + 3f, rowRect.width - split - RowPaddingX, rowRect.height - 6f);
+            string k = key ?? string.Empty;
+            string v = value ?? string.Empty;
+
+            Rect left = new Rect(rowRect.x + RowPaddingX, rowRect.y + 3f, Mathf.Max(1f, split - (RowPaddingX * 2f)), rowRect.height - 6f);
+            Rect right = new Rect(rowRect.x + split, rowRect.y + 3f, Mathf.Max(1f, rowRect.width - split - RowPaddingX), rowRect.height - 6f);
+
+            Text.Font = GameFont.Small;
 
             Text.Anchor = TextAnchor.MiddleLeft;
-            Widgets.Label(left, key);
+            Widgets.LabelEllipses(left, k);
 
             Text.Anchor = TextAnchor.MiddleRight;
-            Widgets.Label(right, value);
+            Widgets.LabelEllipses(right, v);
 
             Text.Anchor = TextAnchor.UpperLeft;
         }
@@ -174,7 +221,6 @@ namespace GameClient.Dialogs
                 status = _isOnline.Value ? "Online" : "Offline";
 
             string wealth = FormatWealth(_stats);
-
             string playtimeStr = FormatPlaytime(_stats.RealPlayTimeSeconds, _stats.RealPlayTimeInteractingSeconds);
 
             string daysStr = "Unknown";
@@ -214,6 +260,8 @@ namespace GameClient.Dialogs
 
         private static string FormatWealth(MapStatsFile stats)
         {
+            if (stats == null) return "Unknown";
+
             if (stats.WealthExact >= 0)
                 return "$" + stats.WealthExact.ToString("N2");
 

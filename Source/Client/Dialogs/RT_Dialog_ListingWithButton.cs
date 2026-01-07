@@ -6,7 +6,7 @@ namespace GameClient.Dialogs
 {
     public class RT_Dialog_ListingWithButton : RT_Dialog_Base
     {
-        public override Vector2 InitialSize => new Vector2(400f, 400f);
+        public override Vector2 InitialSize => new Vector2(520f, 440f);
 
         public string[] Elements { get; private set; }
 
@@ -17,6 +17,7 @@ namespace GameClient.Dialogs
         {
             Title = title;
             Description = description;
+
             Elements = elements ?? Array.Empty<string>();
             OnAccept = actionClick;
             OnCancel = actionCancel;
@@ -25,30 +26,32 @@ namespace GameClient.Dialogs
             closeOnCancel = false;
         }
 
-        public override void DoWindowContents(Rect rect)
+        public override void DoWindowContents(Rect inRect)
         {
-            float centeredX = rect.width / 2;
+            float y = DrawStandardHeader(inRect);
+            if (y < 0f) return;
 
-            float descH = Text.CalcSize(Description).y;
-            float windowDescriptionDif = descH + StandardMargin;
-            float descriptionLineDif1 = windowDescriptionDif - descH * 0.25f;
-            float descriptionLineDif2 = windowDescriptionDif + descH * 1.1f;
+            float footerH = SlimButtonSize.y + FooterPad * 2f;
 
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
-
-            Widgets.DrawLineHorizontal(rect.x, descriptionLineDif1, rect.width);
+            Rect contentOuter = new Rect(0f, y, inRect.width, inRect.height - y - footerH).ContractedBy(ContentPad);
 
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Description).x / 2, windowDescriptionDif, Text.CalcSize(Description).x, descH), Description);
+            float descH = Text.CalcHeight(Description ?? string.Empty, contentOuter.width);
+            Rect descRect = new Rect(contentOuter.x, contentOuter.y, contentOuter.width, Mathf.Min(descH, 70f));
+            Widgets.Label(descRect, Description ?? string.Empty);
 
-            Text.Font = GameFont.Medium;
-            Widgets.DrawLineHorizontal(rect.x, descriptionLineDif2, rect.width);
+            float listTop = descRect.yMax + 8f;
+            Rect listOuter = new Rect(contentOuter.x, listTop, contentOuter.width, contentOuter.yMax - listTop);
+            Widgets.DrawMenuSection(listOuter);
 
-            FillMainRect(new Rect(0f, descriptionLineDif2 + 10f, rect.width, rect.height - SlimButtonSize.y - 85f));
+            Rect listInner = listOuter.ContractedBy(10f);
+            FillMainRect(listInner);
 
-            Text.Font = GameFont.Small;
-            if (Widgets.ButtonText(new Rect(new Vector2(centeredX - SlimButtonSize.x / 2, rect.yMax - SlimButtonSize.y), SlimButtonSize), "Close"))
+            Rect footer = new Rect(0f, inRect.height - footerH, inRect.width, footerH);
+            float closeW = Mathf.Min(SlimButtonSize.x, inRect.width - (FooterPad * 2f));
+            Rect closeBtn = new Rect((inRect.width - closeW) / 2f, footer.y + FooterPad, closeW, SlimButtonSize.y);
+
+            if (Widgets.ButtonText(closeBtn, "Close"))
             {
                 OnCancel?.Invoke();
                 Close();
@@ -57,10 +60,10 @@ namespace GameClient.Dialogs
 
         private void FillMainRect(Rect mainRect)
         {
-            float rowH = 30f;
+            float rowH = 34f;
             float height = 6f + Elements.Length * rowH;
 
-            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - GenUI.ScrollBarWidth, height);
 
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
             try
@@ -85,16 +88,21 @@ namespace GameClient.Dialogs
             }
         }
 
-        private void DrawCustomRow(Rect rect, string element, int index)
+        private void DrawCustomRow(Rect row, string element, int index)
         {
+            if (index % 2 == 0) Widgets.DrawAltRect(row);
+            Widgets.DrawHighlightIfMouseover(row);
+
+            Rect inner = row.ContractedBy(6f, 4f);
+
+            float btnW = 90f;
+            Rect btn = new Rect(inner.xMax - btnW, inner.y, btnW, inner.height);
+
+            Rect labelRect = new Rect(inner.x, inner.y, inner.width - btnW - 8f, inner.height);
+
             Text.Font = GameFont.Small;
+            Widgets.LabelEllipses(labelRect, element ?? string.Empty);
 
-            Rect fixedRect = new Rect(rect.x, rect.y + 5f, rect.width - 16f, rect.height - 5f);
-            if (index % 2 == 0) Widgets.DrawHighlight(fixedRect);
-
-            Widgets.Label(fixedRect, element);
-
-            Rect btn = new Rect(rect.xMax - TinyButtonSize.x, rect.y + (rect.height - TinyButtonSize.y) / 2f, TinyButtonSize.x, TinyButtonSize.y);
             if (Widgets.ButtonText(btn, "Select"))
             {
                 DialogButtonListingResultInt = index;

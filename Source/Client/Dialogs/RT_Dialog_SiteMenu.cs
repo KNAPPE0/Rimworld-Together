@@ -8,7 +8,7 @@ namespace GameClient.Dialogs
 {
     public class RT_Dialog_SiteMenu : RT_Dialog_Base
     {
-        public override Vector2 InitialSize => new Vector2(700f, 450);
+        public override Vector2 InitialSize => new Vector2(720f, 480f);
 
         private bool IsInConfigMode { get; set; }
 
@@ -21,41 +21,37 @@ namespace GameClient.Dialogs
             IsInConfigMode = configMode;
         }
 
-        public override void DoWindowContents(Rect rect)
+        public override void DoWindowContents(Rect inRect)
         {
-            Widgets.DrawLineHorizontal(rect.x, rect.y - 1, rect.width);
-            Widgets.DrawLineHorizontal(rect.x, rect.yMax + 1, rect.width);
+            float y = DrawStandardHeader(inRect, drawTopBorder: true, drawBottomBorder: true, closeX: true);
+            if (y < 0f) return;
 
-            float centeredX = rect.width / 2;
+            Rect listOuter = new Rect(0f, y, inRect.width, inRect.height - y).ContractedBy(ContentPad);
 
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
+            Widgets.DrawMenuSection(listOuter);
+            Rect mainRect = listOuter.ContractedBy(10f);
 
-            if (Widgets.CloseButtonFor(rect)) { Close(); return; }
-
-            Rect mainRect = new Rect(0f, 50f, rect.width, rect.height - 50f);
-
-            float rowH = 50f;
+            float rowH = 52f;
             int count = RTSitePartDefs.Defs?.Length ?? 0;
 
             float height = 6f + count * rowH;
-            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - GenUI.ScrollBarWidth, height);
 
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
             try
             {
-                float y = 0f;
+                float cy = 0f;
                 float yMin = ScrollPosition.y - rowH;
                 float yMax = ScrollPosition.y + mainRect.height;
 
                 for (int i = 0; i < count; i++)
                 {
-                    if (y > yMin && y < yMax)
+                    if (cy > yMin && cy < yMax)
                     {
-                        Rect row = new Rect(0f, y, viewRect.width, rowH);
+                        Rect row = new Rect(0f, cy, viewRect.width, rowH);
                         DrawCustomRow(row, RTSitePartDefs.Defs[i], i);
                     }
-                    y += rowH;
+                    cy += rowH;
                 }
             }
             finally
@@ -64,28 +60,26 @@ namespace GameClient.Dialogs
             }
         }
 
-        private void DrawCustomRow(Rect rect, SitePartDef thing, int index)
+        private void DrawCustomRow(Rect row, SitePartDef thing, int index)
         {
-            Text.Font = GameFont.Small;
+            if (thing == null) return;
 
-            Rect highLightRect = new Rect(rect.x, rect.y, rect.width - 16f, rect.height);
-            Rect iconRect = new Rect(rect.x, rect.y, 50f, 50f);
-            Rect textRect = new Rect(rect.x + 75f, rect.y, highLightRect.width - 75f, rect.height);
+            if (index % 2 == 0) Widgets.DrawAltRect(row);
+            Widgets.DrawHighlightIfMouseover(row);
 
-            if (index % 2 == 0) Widgets.DrawHighlight(highLightRect);
+            Rect inner = row.ContractedBy(6f, 4f);
+
+            Rect iconRect = new Rect(inner.x, inner.y, 44f, 44f);
+            Rect textRect = new Rect(iconRect.xMax + 10f, inner.y, inner.width - 44f - 10f, inner.height);
 
             Widgets.DrawTextureFitted(iconRect, thing.ExpandingIconTexture, 1f);
-            Widgets.Label(textRect, thing.description);
 
-            if (Mouse.IsOver(highLightRect))
-            {
-                Widgets.DrawLineHorizontal(highLightRect.x, highLightRect.y, highLightRect.width);
-                Widgets.DrawLineHorizontal(highLightRect.x, highLightRect.yMax, highLightRect.width);
-                Widgets.DrawLineVertical(highLightRect.x, highLightRect.y, highLightRect.height);
-                Widgets.DrawLineVertical(highLightRect.xMax - 1, highLightRect.y, highLightRect.height);
-            }
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(textRect, thing.description ?? string.Empty);
+            Text.Anchor = TextAnchor.UpperLeft;
 
-            if (Widgets.ButtonInvisible(highLightRect))
+            if (Widgets.ButtonInvisible(row))
             {
                 if (IsInConfigMode) Find.WindowStack.Add(new RT_Dialog_SiteMenu_Config(thing));
                 else Find.WindowStack.Add(new RT_Dialog_SiteMenu_Info(thing));

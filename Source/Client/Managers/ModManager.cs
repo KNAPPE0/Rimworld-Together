@@ -24,9 +24,21 @@ namespace GameClient.Managers
         {
             ModConfigData data = Serializer.ConvertBytesToObject<ModConfigData>(bytes);
 
+            if (data._isOptionsProfileChunk || data._noOptionsProfileAvailable)
+            {
+                OptionsProfileSessionManager.ReceiveOptionsProfilePacket(data);
+                return;
+            }
+
             switch (data._stepMode)
             {
                 case ModConfigStepMode.Ask:
+                    if (!SessionHandler.IsAdmin)
+                    {
+                        RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Mod Manager", new[] { "Admin only." }));
+                        return;
+                    }
+
                     OpenModManagerMenu();
                     break;
             }
@@ -34,7 +46,7 @@ namespace GameClient.Managers
 
         public static void OpenModManagerMenu(bool isFirstEdit = false)
         {
-            Action toDo = delegate 
+            Action toDo = delegate
             {
                 GameParameterManager.SendCurrentModConfigs(false);
                 if (isFirstEdit) GameParameterManager.SetFirstTimeSetup();
@@ -46,7 +58,7 @@ namespace GameClient.Managers
             string[] keys = modNames.ToArray();
             string[] values = new string[] { "Required", "Optional", "Forbidden" };
 
-            RT_Dialog_ListingWithTuple dialog = new RT_Dialog_ListingWithTuple("Mod Manager", "Manage mods for the server", 
+            RT_Dialog_ListingWithTuple dialog = new RT_Dialog_ListingWithTuple("Mod Manager", "Manage mods for the server",
                 keys, values, null, toDo);
 
             RT_Dialog_Base.PushNewDialog(dialog);
@@ -54,14 +66,13 @@ namespace GameClient.Managers
 
         public static void ReceiveModConfigs(ServerGlobalData data)
         {
-            SessionHandler.CurrentModConfig = data._modConfigs;
+            SessionHandler.CurrentModConfig = data._modConfigs ?? new ModsConfigFile();
+
+            OptionsProfileSessionManager.OnServerEnforcementReceived();
 
             if (!SessionHandler.CurrentModConfig.IsEnforced) return;
-            else
-            {
-                Printer.Warning("Receiving mod configs from server", LogImportanceMode.Verbose);
-                Printer.Warning("Currently doing nothing with the configs", LogImportanceMode.Verbose);
-            }
+
+            Printer.Warning("Receiving enforced mod configs from server", LogImportanceMode.Verbose);
         }
     }
 
@@ -76,7 +87,6 @@ namespace GameClient.Managers
             {
                 ModConfig newConfig = new ModConfig();
                 newConfig.FileName = mod.Name.Replace("steam_", "");
-
                 configFile.ModConfigs.Add(newConfig);
             }
 

@@ -18,6 +18,9 @@ namespace GameClient.Patches.Tabs
         public override bool IsVisible => true;
         protected override bool StillValid => true;
 
+        private const float Pad = 10f;
+        private const float RowH = 30f;
+
         public BasesUI()
         {
             size = WinSize;
@@ -26,49 +29,57 @@ namespace GameClient.Patches.Tabs
 
         protected override void FillTab()
         {
-            Rect outer = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
+            Rect outer = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(Pad);
 
             int count = SettlementManager.PlayerSettlements?.Count() ?? 0;
             string title = $"Player Bases [{count}]";
 
             Text.Font = GameFont.Medium;
-            float titleH = Text.CalcHeight(title, outer.width);
-            Rect titleRect = new Rect(outer.x, outer.y, outer.width, titleH);
+            Rect titleRect = new Rect(outer.x, outer.y, outer.width, 28f);
             Widgets.Label(titleRect, title);
 
-            float lineY = titleRect.yMax + 4f;
-            Widgets.DrawLineHorizontal(outer.x, lineY, outer.width);
+            Text.Font = GameFont.Small;
+            Widgets.DrawLineHorizontal(outer.x, titleRect.yMax + 4f, outer.width);
 
-            Rect outRect = new Rect(outer.x, lineY + 6f, outer.width, outer.yMax - (lineY + 6f));
-            DrawList(outRect);
+            Rect listOuter = new Rect(outer.x, titleRect.yMax + 10f, outer.width, outer.yMax - (titleRect.yMax + 10f));
+            Widgets.DrawMenuSection(listOuter);
+
+            Rect listInner = listOuter.ContractedBy(6f);
+            DrawList(listInner);
         }
 
         private void DrawList(Rect mainRect)
         {
             RTSettlement[] bases = (SettlementManager.PlayerSettlements ?? Enumerable.Empty<RTSettlement>())
-                .OrderBy(s => s?.Name ?? string.Empty)
+                .Where(s => s != null)
+                .OrderBy(s => s.Name ?? string.Empty)
                 .ToArray();
 
-            const float rowH = 30f;
-            float height = 6f + bases.Length * rowH;
-
-            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
+            float viewH = Mathf.Max(mainRect.height, 6f + bases.Length * RowH);
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, viewH);
 
             Widgets.BeginScrollView(mainRect, ref _scroll, viewRect);
             try
             {
                 float y = 0f;
-                float yMin = _scroll.y - rowH;
-                float yMax = _scroll.y + mainRect.height;
+                float yMin = _scroll.y - RowH;
+                float yMax = _scroll.y + mainRect.height + RowH;
 
                 for (int i = 0; i < bases.Length; i++)
                 {
                     if (y > yMin && y < yMax)
                     {
-                        Rect row = new Rect(0f, y, viewRect.width, rowH);
-                        DrawRow(row, bases[i], i);
+                        Rect row = new Rect(0f, y, viewRect.width, RowH);
+
+                        if (i % 2 == 0)
+                            Widgets.DrawAltRect(row);
+
+                        Widgets.DrawHighlightIfMouseover(row);
+
+                        DrawRow(row, bases[i]);
                     }
-                    y += rowH;
+
+                    y += RowH;
                 }
             }
             finally
@@ -79,40 +90,53 @@ namespace GameClient.Patches.Tabs
 
         private static RTSettlement FindWorldSettlementAtTile(int tile)
         {
+            if (tile < 0 || Find.World == null) return null;
+
             foreach (WorldObject obj in Find.World.worldObjects.AllWorldObjects)
             {
                 if (obj is RTSettlement s && s.Tile == tile)
                     return s;
             }
+
             return null;
         }
 
-        private static void DrawRow(Rect row, RTSettlement listed, int index)
+        private static void DrawRow(Rect row, RTSettlement listed)
         {
             Text.Font = GameFont.Small;
-
-            if (index % 2 == 0) Widgets.DrawLightHighlight(row);
-            Widgets.DrawHighlightIfMouseover(row);
 
             string name = listed?.Name ?? "Unknown";
             int tile = listed?.Tile ?? -1;
 
-            Rect labelRect = new Rect(row.x + 10f, row.y + 5f, row.width - 190f, row.height - 5f);
-            Widgets.Label(labelRect, $"{name} - {tile}");
+            float y = row.y + 2f;
+            float h = row.height - 4f;
 
-            float btnH = row.height;
-            float focusW = 52f;
+            float focusW = 56f;
             float gwW = 30f;
+            float gap = 2f;
 
-            Rect focusRect = new Rect(row.xMax - focusW, row.y, focusW, btnH);
-            Rect minusRect = new Rect(row.xMax - focusW - (gwW * 1f), row.y, gwW, btnH);
-            Rect equalRect = new Rect(row.xMax - focusW - (gwW * 2f), row.y, gwW, btnH);
-            Rect plusRect = new Rect(row.xMax - focusW - (gwW * 3f), row.y, gwW, btnH);
+            float right = row.xMax - 2f;
+
+            Rect focusRect = new Rect(right - focusW, y, focusW, h);
+            right -= focusW + gap;
+
+            Rect minusRect = new Rect(right - gwW, y, gwW, h);
+            right -= gwW + gap;
+
+            Rect equalRect = new Rect(right - gwW, y, gwW, h);
+            right -= gwW + gap;
+
+            Rect plusRect = new Rect(right - gwW, y, gwW, h);
+            right -= gwW + 6f;
+
+            Rect labelRect = new Rect(row.x + 8f, row.y + 4f, (right - (row.x + 8f)), row.height - 8f);
+            Widgets.LabelEllipses(labelRect, $"{name}  |  Tile {tile}");
 
             if (Widgets.ButtonText(focusRect, "Focus"))
             {
                 RTSettlement world = FindWorldSettlementAtTile(tile);
-                if (world != null) CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(world));
+                if (world != null)
+                    CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(world));
             }
 
             if (Widgets.ButtonText(minusRect, "-"))
@@ -144,6 +168,15 @@ namespace GameClient.Patches.Tabs
                     GoodwillManager.TryRequestGoodwill(Goodwill.Ally, GoodwillTarget.Settlement);
                 }
             }
+
+            string tip =
+                $"Base: {name}\n" +
+                $"Tile: {tile}\n" +
+                $"Actions:\n" +
+                $"- Focus\n" +
+                $"- Set goodwill: - = Enemy, = = Neutral, + = Ally";
+
+            TooltipHandler.TipRegion(row, tip);
         }
     }
 }

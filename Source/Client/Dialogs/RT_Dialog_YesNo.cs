@@ -6,61 +6,82 @@ namespace GameClient.Dialogs
 {
     public class RT_Dialog_YesNo : RT_Dialog_Base
     {
-        public override Vector2 InitialSize => new Vector2(400f, 150f);
+        public override Vector2 InitialSize => new Vector2(440f, 180f);
 
         private string YesText { get; set; }
         private string NoText { get; set; }
         private Color YesColor { get; set; }
         private Color NoColor { get; set; }
 
+        private Vector2 _descScroll = Vector2.zero;
+
         public RT_Dialog_YesNo(string description, Action actionYes, Action actionNo = null,
             string yText = "Yes", string nText = "No", Color? yesColor = null, Color? noColor = null)
         {
-            Title = "OPTION";
+            Title = "Confirm";
             Description = description;
             OnAccept = actionYes;
             OnCancel = actionNo;
-            YesText = yText;
-            NoText = nText;
 
-            YesColor = (yesColor ?? Color.white);
-            NoColor = (noColor ?? Color.white);
+            YesText = string.IsNullOrWhiteSpace(yText) ? "Yes" : yText;
+            NoText = string.IsNullOrWhiteSpace(nText) ? "No" : nText;
+
+            YesColor = yesColor ?? Color.white;
+            NoColor = noColor ?? Color.white;
 
             closeOnAccept = false;
             closeOnCancel = false;
         }
 
-        public override void DoWindowContents(Rect rect)
+        public override void DoWindowContents(Rect inRect)
         {
-            float centeredX = rect.width / 2;
+            float y = DrawStandardHeader(inRect);
+            if (y < 0f) return;
 
-            float descH = Text.CalcSize(Description).y;
-            float horizontalLineDif = descH + StandardMargin / 2;
-            float windowDescriptionDif = descH + StandardMargin;
-
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
-
-            Widgets.DrawLineHorizontal(rect.x, horizontalLineDif, rect.width);
+            float footerH = SmallButtonSize.y + FooterPad * 2f;
+            Rect content = new Rect(0f, y, inRect.width, inRect.height - y - footerH).ContractedBy(ContentPad);
 
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Description).x / 2, windowDescriptionDif, Text.CalcSize(Description).x, descH), Description);
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            float descH = Text.CalcHeight(Description ?? string.Empty, content.width);
+            Rect scrollOuter = content;
+            Rect scrollView = new Rect(0f, 0f, scrollOuter.width - GenUI.ScrollBarWidth, Mathf.Max(descH, scrollOuter.height));
+
+            Widgets.BeginScrollView(scrollOuter, ref _descScroll, scrollView);
+            try
+            {
+                Widgets.Label(new Rect(0f, 0f, scrollView.width, descH), Description ?? string.Empty);
+            }
+            finally
+            {
+                Widgets.EndScrollView();
+            }
+
+            // Footer buttons
+            Rect footer = new Rect(0f, inRect.height - footerH, inRect.width, footerH);
+            float btnAvailHalf = (footer.width - (FooterPad * 3f)) / 2f;
+            Vector2 btnSize = ClampButtonSize(SmallButtonSize, btnAvailHalf);
+
+            Rect leftBtn = new Rect(FooterPad, footer.y + FooterPad, btnSize.x, btnSize.y);
+            Rect rightBtn = new Rect(footer.xMax - FooterPad - btnSize.x, footer.y + FooterPad, btnSize.x, btnSize.y);
 
             GUI.color = YesColor;
-            if (Widgets.ButtonText(GetRectForLocation(rect, SmallButtonSize, RectLocation.BottomLeft), YesText))
+            if (Widgets.ButtonText(leftBtn, YesText))
             {
                 OnAccept?.Invoke();
                 Close();
             }
 
             GUI.color = NoColor;
-            if (Widgets.ButtonText(GetRectForLocation(rect, SmallButtonSize, RectLocation.BottomRight), NoText))
+            if (Widgets.ButtonText(rightBtn, NoText))
             {
                 OnCancel?.Invoke();
                 Close();
             }
 
             GUI.color = Color.white;
+            Text.Anchor = TextAnchor.UpperLeft;
         }
     }
 }

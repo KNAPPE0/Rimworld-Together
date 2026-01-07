@@ -13,6 +13,7 @@ namespace GameClient.Dialogs
         {
             Title = title;
             Description = description;
+
             Labels = labels ?? Array.Empty<string>();
             Actions = actions ?? Array.Empty<Action>();
             OnCancel = onCancel;
@@ -27,62 +28,75 @@ namespace GameClient.Dialogs
             CalculateWindowSize();
         }
 
-        public override void DoWindowContents(Rect rect)
+        public override void DoWindowContents(Rect inRect)
         {
-            float centeredX = rect.width / 2;
+            float y = DrawStandardHeader(inRect);
+            if (y < 0f) return;
 
-            float descH = Text.CalcSize(Description).y;
-            float horizontalLineDif = descH + StandardMargin / 2;
-            float windowDescriptionDif = descH + StandardMargin;
-
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
-
-            Widgets.DrawLineHorizontal(rect.x, horizontalLineDif, rect.width);
+            float footerH = DefaultButtonSize.y + FooterPad * 2f;
+            Rect content = new Rect(0f, y, inRect.width, inRect.height - y - footerH).ContractedBy(ContentPad);
 
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Description).x / 2, windowDescriptionDif, Text.CalcSize(Description).x, descH), Description);
+            Text.Anchor = TextAnchor.UpperLeft;
 
-            DrawCancelButton(centeredX, rect.yMax - DefaultButtonSize.y);
+            float descH = Text.CalcHeight(Description ?? string.Empty, content.width);
+            Rect descRect = new Rect(content.x, content.y, content.width, Mathf.Min(descH, content.height));
+            Widgets.Label(descRect, Description ?? string.Empty);
 
-            if (Labels.Length > 0) DrawButton(centeredX, rect.yMax - DefaultButtonSize.y * 2 - 10f, 0);
-            if (Labels.Length > 1) DrawButton(centeredX, rect.yMax - DefaultButtonSize.y * 3 - 20f, 1);
-            if (Labels.Length > 2) DrawButton(centeredX, rect.yMax - DefaultButtonSize.y * 4 - 30f, 2);
-        }
+            int count = Mathf.Min(3, Labels.Length);
+            float btnW = Mathf.Min(DefaultButtonSize.x, inRect.width - (ContentPad * 2f));
+            float btnH = DefaultButtonSize.y;
 
-        private void CalculateWindowSize()
-        {
-            Vector2 sizeVector;
+            float stackBottom = inRect.height - footerH - 8f;
+            float stackTop = Mathf.Max(descRect.yMax + 10f, content.y);
+            float stackH = stackBottom - stackTop;
 
-            if (Labels.Length <= 2)
-                sizeVector = new Vector2(350f, 250f);
-            else
-                sizeVector = new Vector2(350f, 285f);
+            float spacing = 6f;
+            float needed = (count * btnH) + ((count - 1) * spacing);
+            float startY = stackTop + Mathf.Max(0f, (stackH - needed) / 2f);
 
-            windowRect = new Rect(new Vector2((UI.screenWidth - sizeVector.x) / 2f, (UI.screenHeight - sizeVector.y) / 2f), sizeVector);
-            windowRect.Rounded();
-        }
-
-        private void DrawButton(float centeredX, float height, int index)
-        {
-            if (index < 0 || index >= Labels.Length) return;
-
-            if (Widgets.ButtonText(new Rect(new Vector2(centeredX - DefaultButtonSize.x / 2, height), DefaultButtonSize), Labels[index]))
+            for (int i = 0; i < count; i++)
             {
-                if (index >= 0 && index < Actions.Length)
-                    Actions[index]?.Invoke();
+                Rect btn = new Rect((inRect.width - btnW) / 2f, startY + i * (btnH + spacing), btnW, btnH);
 
-                Close();
+                string label = Labels[i] ?? $"Button {i + 1}";
+                if (Widgets.ButtonText(btn, label))
+                {
+                    if (i >= 0 && i < Actions.Length)
+                        Actions[i]?.Invoke();
+                    Close();
+                }
             }
-        }
 
-        private void DrawCancelButton(float centeredX, float height)
-        {
-            if (Widgets.ButtonText(new Rect(new Vector2(centeredX - DefaultButtonSize.x / 2, height), DefaultButtonSize), "Cancel"))
+            Rect footer = new Rect(0f, inRect.height - footerH, inRect.width, footerH);
+            float cancelW = Mathf.Min(DefaultButtonSize.x, inRect.width - (FooterPad * 2f));
+            Rect cancelBtn = new Rect((inRect.width - cancelW) / 2f, footer.y + FooterPad, cancelW, DefaultButtonSize.y);
+
+            if (Widgets.ButtonText(cancelBtn, "Cancel"))
             {
                 OnCancel?.Invoke();
                 Close();
             }
+
+            Text.Anchor = TextAnchor.UpperLeft;
+        }
+
+        private void CalculateWindowSize()
+        {
+            int count = Mathf.Clamp(Labels?.Length ?? 0, 0, 3);
+
+            Vector2 sizeVector = count <= 2
+                ? new Vector2(420f, 300f)
+                : new Vector2(420f, 340f);
+
+            float w = Mathf.Min(sizeVector.x, UI.screenWidth * 0.92f);
+            float h = Mathf.Min(sizeVector.y, UI.screenHeight * 0.92f);
+
+            windowRect = new Rect(
+                new Vector2((UI.screenWidth - w) / 2f, (UI.screenHeight - h) / 2f),
+                new Vector2(w, h));
+
+            windowRect.Rounded();
         }
     }
 }

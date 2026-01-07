@@ -7,20 +7,19 @@ using Verse;
 
 namespace GameClient.Dialogs
 {
-    public class RT_Dialog_ServerListingInfo : Window
+    public class RT_Dialog_ServerListingInfo : RT_Dialog_Base
     {
-        public override Vector2 InitialSize => new Vector2(600f, 250f);
-
-        private static FieldInfo ModsConfigData;
-        private static FieldInfo ModsConfigDataActiveMods;
+        public override Vector2 InitialSize => new Vector2(640f, 320f);
 
         private ServerInfo ServerInfo { get; set; }
 
         public RT_Dialog_ServerListingInfo(ServerInfo info)
         {
             ServerInfo = info;
-            ModsConfigData = AccessTools.Field(typeof(ModsConfig), "data");
-            ModsConfigDataActiveMods = AccessTools.Field(AccessTools.TypeByName("Verse.ModsConfig+ModsConfigData"), "activeMods");
+            Title = info?._name ?? "Server Info";
+
+            closeOnAccept = false;
+            closeOnCancel = false;
         }
 
         public override void DoWindowContents(Rect inRect)
@@ -31,25 +30,49 @@ namespace GameClient.Dialogs
                 return;
             }
 
-            Text.Font = GameFont.Medium;
-            Vector2 titleSize = Text.CalcSize(ServerInfo._name ?? "Unknown");
-            float centeredx = inRect.width / 2;
+            float y = DrawStandardHeader(inRect, closeX: true);
+            if (y < 0f) return;
 
-            Rect titleRect = new Rect(centeredx - titleSize.x / 2, inRect.y, titleSize.x, titleSize.y);
-            Widgets.Label(titleRect, ServerInfo._name ?? "Unknown");
+            float footerH = DefaultButtonSize.y + FooterPad * 2f;
 
-            Widgets.DrawLineHorizontal(0, titleSize.y + 3f, inRect.width);
+            Rect contentOuter = new Rect(0f, y, inRect.width, inRect.height - y - footerH).ContractedBy(ContentPad);
+            Widgets.DrawMenuSection(contentOuter);
+
+            Rect inner = contentOuter.ContractedBy(10f);
+
+            Rect left = new Rect(inner.x, inner.y, inner.width * 0.66f, inner.height);
+            Rect right = new Rect(left.xMax + 10f, inner.y, inner.xMax - (left.xMax + 10f), inner.height);
 
             Text.Font = GameFont.Small;
-            Rect descriptionRect = new Rect(inRect.x, titleSize.y + 6f, inRect.width / 3 * 2, inRect.height - 55f);
-            Widgets.Label(descriptionRect, ServerInfo._description ?? "");
 
-            Rect connectRect = new Rect(inRect.width - 135f, inRect.height - 55f, 125f, 45f);
-            Rect playerCountRect = new Rect(connectRect.x, connectRect.y - 30f, 125f, 45f);
+            string desc = ServerInfo._description ?? string.Empty;
+            Widgets.Label(left, desc);
 
-            Widgets.Label(playerCountRect, $"Population: {ServerInfo._currentPlayerCount}/{ServerInfo._maximumPlayerCount}");
+            string pop = $"Population: {ServerInfo._currentPlayerCount}/{ServerInfo._maximumPlayerCount}";
+            string ip = $"IP: {ServerInfo._ip}";
+            string port = $"Port: {ServerInfo._port}";
+            string ver = $"Version: {ServerInfo._version}";
 
-            if (Widgets.ButtonText(connectRect, "Connect"))
+            float lineH = 22f;
+            float cy = right.y;
+
+            Widgets.Label(new Rect(right.x, cy, right.width, lineH), pop); cy += lineH;
+            Widgets.Label(new Rect(right.x, cy, right.width, lineH), ip); cy += lineH;
+            Widgets.Label(new Rect(right.x, cy, right.width, lineH), port); cy += lineH;
+            Widgets.Label(new Rect(right.x, cy, right.width, lineH), ver);
+
+            Rect footer = new Rect(0f, inRect.height - footerH, inRect.width, footerH);
+
+            float btnAvailHalf = (footer.width - (FooterPad * 3f)) / 2f;
+            Vector2 btnSize = ClampButtonSize(DefaultButtonSize, btnAvailHalf);
+
+            Rect closeBtn = new Rect(FooterPad, footer.y + FooterPad, btnSize.x, btnSize.y);
+            Rect connectBtn = new Rect(footer.xMax - FooterPad - btnSize.x, footer.y + FooterPad, btnSize.x, btnSize.y);
+
+            if (Widgets.ButtonText(closeBtn, "Close"))
+                Close();
+
+            if (Widgets.ButtonText(connectBtn, "Connect"))
                 ConnectToServer();
         }
 

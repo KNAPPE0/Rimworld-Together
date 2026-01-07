@@ -2,10 +2,14 @@
 using Discord.WebSocket;
 using GameServer.Managers;
 using Shared.Misc;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using static Shared.CommonEnumerators;
 
 namespace GameServer.Integrations.Discord
@@ -32,8 +36,11 @@ namespace GameServer.Integrations.Discord
 
         private static readonly AllowedMentions NoMentions = AllowedMentions.None;
 
-        private static readonly ConcurrentDictionary<string, MentionCacheEntry> MentionCache = new ConcurrentDictionary<string, MentionCacheEntry>(StringComparer.OrdinalIgnoreCase);
-        private static readonly Regex MentionTokenRegex = new Regex(@"(?<!\w)@(?:""([^""]{1,32})""|'([^']{1,32})'|([^\s@]{1,32}))", RegexOptions.Compiled);
+        private static readonly ConcurrentDictionary<string, MentionCacheEntry> MentionCache =
+            new ConcurrentDictionary<string, MentionCacheEntry>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly Regex MentionTokenRegex =
+            new Regex(@"(?<!\w)@(?:""([^""]{1,32})""|'([^']{1,32})'|([^\s@]{1,32}))", RegexOptions.Compiled);
 
         private static int BatchWindowMs { get; set; } = 250;
         private static int BurstCount { get; set; } = 4;
@@ -119,6 +126,18 @@ namespace GameServer.Integrations.Discord
             else if (mode == LogMode.Title) prefix = "✅ ";
 
             Enqueue(AdminChannelId, $"[{DateTime.Now:HH:mm:ss}] | {prefix}{cleaned}");
+        }
+
+        // This is intentionally NOT timestamped and NOT gated by the mirror window.
+        public static void TryRelayServerNoticeToDiscordChat(string text)
+        {
+            if (!Started) return;
+            if (Client == null) return;
+            if (ChatChannelId == 0) return;
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            string cleaned = SanitizeDiscordText(text.Trim());
+            Enqueue(ChatChannelId, cleaned);
         }
 
         public static void TryStart()

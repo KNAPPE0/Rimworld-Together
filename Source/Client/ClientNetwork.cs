@@ -26,27 +26,36 @@ namespace GameClient
         {
             Thread.Sleep(250 * (int)ModConfigGetter.CurrentSimulatedLag);
 
-            if (!SessionHandler.IsReadyToPlay && !Listener.BypassReadyPackets.Contains(header)) return;
-            else
+            bool bypassReady =
+                Listener.BypassReadyPackets.Contains(header) ||
+                header == PacketHeader.ModManager;
+
+            if (!SessionHandler.IsReadyToPlay && !bypassReady) return;
+
+            MainThreadHandler.Instance.Enqueue(delegate
             {
-                MainThreadHandler.Instance.Enqueue(delegate
-                {
-                    MethodGatherer.ClientMethodDictionary[header].Invoke(null, new object[] { buffer });
-                });
-            }
+                MethodGatherer.ClientMethodDictionary[header].Invoke(null, new object[] { buffer });
+            });
         };
 
         public override Action<bool> OnWritePacket { get; set; } = delegate (bool mode) { };
 
         public override Action<ServerClient> OnConnect { get; set; } = delegate
         {
-            MainThreadHandler.Instance.Enqueue(delegate { HarmonyHandler.EnableMainPatches(); });
+            MainThreadHandler.Instance.Enqueue(delegate
+            {
+                HarmonyHandler.EnableMainPatches();
+
+                OptionsProfileSessionManager.RequestServerOptionsProfile(isManual: false);
+            });
         };
 
-        public override Action<ServerClient> OnDisconnect { get; set; } = delegate 
+        public override Action<ServerClient> OnDisconnect { get; set; } = delegate
         {
             MainThreadHandler.Instance.Enqueue(delegate
             {
+                OptionsProfileSessionManager.TryRestoreOnDisconnect();
+
                 DisconnectionManager.HandleDisconnect();
                 MainThreadHandler.Instance.DoOnEndMethods();
                 SessionHandler.CurrentNetworkState = ClientNetworkState.Disconnected;
@@ -72,7 +81,6 @@ namespace GameClient
         public ClientNetwork()
         {
             Instance = this;
-
             StartConnection();
         }
 
@@ -88,7 +96,6 @@ namespace GameClient
 
                 Printer.Message($"Connected to server");
             }
-
             else
             {
                 RT_Dialog_Wait.Instance.Close();
@@ -106,7 +113,7 @@ namespace GameClient
             {
                 TcpClient tcpClient = new TcpClient(Ip, int.Parse(Port));
 
-                ClientListener = new Listener(null, tcpClient, OnReadPacket, OnWritePacket, OnConnect, OnDisconnect, 
+                ClientListener = new Listener(null, tcpClient, OnReadPacket, OnWritePacket, OnConnect, OnDisconnect,
                     OnMessage, OnWarning, OnError, Listener.ListenerMode.Client);
             }
             catch { return false; }

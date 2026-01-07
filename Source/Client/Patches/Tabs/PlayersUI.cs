@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using GameClient.Managers;
 using RimWorld.Planet;
@@ -16,6 +17,9 @@ namespace GameClient.Patches.Tabs
         public override bool IsVisible => true;
         protected override bool StillValid => true;
 
+        private const float Pad = 10f;
+        private const float RowH = 28f;
+
         public PlayersUI()
         {
             size = WinSize;
@@ -24,64 +28,65 @@ namespace GameClient.Patches.Tabs
 
         protected override void FillTab()
         {
-            Rect outer = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
+            Rect outer = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(Pad);
 
             string title = $"Players Online [{RecountManager.CurrentPlayers}]";
 
             Text.Font = GameFont.Medium;
-            float titleH = Text.CalcHeight(title, outer.width);
-            Rect titleRect = new Rect(outer.x, outer.y, outer.width, titleH);
+            Rect titleRect = new Rect(outer.x, outer.y, outer.width, 28f);
             Widgets.Label(titleRect, title);
 
-            float lineY = titleRect.yMax + 4f;
-            Widgets.DrawLineHorizontal(outer.x, lineY, outer.width);
+            Text.Font = GameFont.Small;
+            Widgets.DrawLineHorizontal(outer.x, titleRect.yMax + 4f, outer.width);
 
-            Rect outRect = new Rect(outer.x, lineY + 6f, outer.width, outer.yMax - (lineY + 6f));
-            DrawList(outRect);
+            Rect listOuter = new Rect(outer.x, titleRect.yMax + 10f, outer.width, outer.yMax - (titleRect.yMax + 10f));
+            Widgets.DrawMenuSection(listOuter);
+
+            Rect listInner = listOuter.ContractedBy(6f);
+            DrawList(listInner);
         }
 
         private void DrawList(Rect mainRect)
         {
             List<string> players = RecountManager.CurrentPlayerNames?.ToList() ?? new List<string>();
-            players.Sort();
+            players.Sort(StringComparer.OrdinalIgnoreCase);
 
-            const float rowH = 30f;
-            float height = 6f + players.Count * rowH;
-
-            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
+            float viewH = Mathf.Max(mainRect.height, 6f + players.Count * RowH);
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, viewH);
 
             Widgets.BeginScrollView(mainRect, ref _scroll, viewRect);
             try
             {
                 float y = 0f;
-                float yMin = _scroll.y - rowH;
-                float yMax = _scroll.y + mainRect.height;
+                float yMin = _scroll.y - RowH;
+                float yMax = _scroll.y + mainRect.height + RowH;
 
                 for (int i = 0; i < players.Count; i++)
                 {
                     if (y > yMin && y < yMax)
                     {
-                        Rect row = new Rect(0f, y, viewRect.width, rowH);
-                        DrawRow(row, players[i], i);
+                        Rect row = new Rect(0f, y, viewRect.width, RowH);
+
+                        if (i % 2 == 0)
+                            Widgets.DrawAltRect(row);
+
+                        Widgets.DrawHighlightIfMouseover(row);
+
+                        Rect labelRect = row.ContractedBy(8f, 4f);
+
+                        Text.Font = GameFont.Small;
+                        Text.Anchor = TextAnchor.MiddleLeft;
+                        Widgets.LabelEllipses(labelRect, players[i] ?? "Unknown");
+                        Text.Anchor = TextAnchor.UpperLeft;
                     }
-                    y += rowH;
+
+                    y += RowH;
                 }
             }
             finally
             {
                 Widgets.EndScrollView();
             }
-        }
-
-        private static void DrawRow(Rect row, string name, int index)
-        {
-            Text.Font = GameFont.Small;
-
-            if (index % 2 == 0) Widgets.DrawLightHighlight(row);
-            Widgets.DrawHighlightIfMouseover(row);
-
-            Rect labelRect = new Rect(row.x + 10f, row.y + 5f, row.width - 10f, row.height - 5f);
-            Widgets.Label(labelRect, name ?? "Unknown");
         }
     }
 }

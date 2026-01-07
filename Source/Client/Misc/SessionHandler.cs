@@ -95,7 +95,11 @@ namespace GameClient.Misc
         [OnUpdate]
         private static void ManageDevOptions()
         {
-            try { if (!IsAdmin) Prefs.DevMode = false; }
+            try
+            {
+                if (CurrentNetworkState != ClientNetworkState.Disconnected && !IsAdmin)
+                    Prefs.DevMode = false;
+            }
             catch { }
         }
 
@@ -123,6 +127,8 @@ namespace GameClient.Misc
             Patch_Page_SelectScenario_DoWindowContents.executedMessage = false;
             Patch_DialogOptions_DoModOptions.executedMessage = false;
             Patch_Page_SelectStoryteller_DoWindowContents.executedMessage = false;
+
+            Patch_Page_ModsConfig_PreOpen.executedMessage = false;
         }
     }
 }

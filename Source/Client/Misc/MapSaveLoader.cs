@@ -35,7 +35,12 @@ namespace GameClient.Misc
 
             mapFile.SettlementName = GetCommunityNameSafe(map);
             mapFile.FactionName = GetFactionNameSafe();
-            mapFile.RealPlayTimeInteractingSeconds = GetRealPlaytimeSecondsSafe(map);
+
+            (double totalSeconds, double interactingSeconds) = GetRimWorldPlaytimesSafe(map);
+
+            mapFile.RealPlayTimeInteractingSeconds = interactingSeconds;
+
+            mapFile.RealPlayTimeSeconds = totalSeconds;
 
             GetMapTerrain(mapFile, map);
 
@@ -342,7 +347,6 @@ namespace GameClient.Misc
             catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
         }
 
-
         private static string GetFactionNameSafe()
         {
             try
@@ -410,21 +414,88 @@ namespace GameClient.Misc
             return string.Empty;
         }
 
-        private static double GetRealPlaytimeSecondsSafe(Map map)
+        private static (double totalSeconds, double interactingSeconds) GetRimWorldPlaytimesSafe(Map map)
         {
+            double total = -1;
+            double interacting = -1;
+
             try
             {
-                if (map == null) return -1;
+                // Current.Game.info (GameInfo) is the authoritative tracker used by RimWorld saves + stats.
+                if (Current.Game == null) return (-1, -1);
 
-                RT_MapPlaytimeComponent comp = map.GetComponent<RT_MapPlaytimeComponent>();
-                if (comp == null) return -1;
+                object infoObj = null;
 
-                return comp.TotalSeconds;
+                try
+                {
+                    FieldInfo infoField = Current.Game.GetType().GetField("info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (infoField != null) infoObj = infoField.GetValue(Current.Game);
+                }
+                catch { }
+
+                if (infoObj == null)
+                {
+                    try
+                    {
+                        PropertyInfo infoProp = Current.Game.GetType().GetProperty("Info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                                             ?? Current.Game.GetType().GetProperty("info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        if (infoProp != null) infoObj = infoProp.GetValue(Current.Game, null);
+                    }
+                    catch { }
+                }
+
+                if (infoObj != null)
+                {
+                    total = ReadNumericMember(infoObj, "realPlayTime", "RealPlayTime");
+                    interacting = ReadNumericMember(infoObj, "realPlayTimeInteracting", "RealPlayTimeInteracting");
+                }
+
+                // Fallback to old component if interacting missing
+                if (interacting < 0 && map != null)
+                {
+                    try
+                    {
+                        RT_MapPlaytimeComponent comp = map.GetComponent<RT_MapPlaytimeComponent>();
+                        if (comp != null) interacting = comp.TotalSeconds;
+                    }
+                    catch { }
+                }
+
+                return (total, interacting);
             }
             catch
             {
-                return -1;
+                return (-1, -1);
             }
+        }
+
+        private static double ReadNumericMember(object obj, string fieldName, string propName)
+        {
+            try
+            {
+                FieldInfo f = obj.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (f != null)
+                {
+                    object v = f.GetValue(obj);
+                    if (v != null) return Convert.ToDouble(v);
+                }
+            }
+            catch { }
+
+            try
+            {
+                PropertyInfo p = obj.GetType().GetProperty(propName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                               ?? obj.GetType().GetProperty(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                if (p != null)
+                {
+                    object v = p.GetValue(obj, null);
+                    if (v != null) return Convert.ToDouble(v);
+                }
+            }
+            catch { }
+
+            return -1;
         }
     }
 }

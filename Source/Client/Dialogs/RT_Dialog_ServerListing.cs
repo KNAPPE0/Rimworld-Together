@@ -12,7 +12,7 @@ namespace GameClient.Dialogs
 {
     public class RT_Dialog_ServerListing : RT_Dialog_Base
     {
-        public override Vector2 InitialSize => new Vector2(650f, 400f);
+        public override Vector2 InitialSize => new Vector2(680f, 440f);
 
         public static RT_Dialog_Base Instance { get; private set; }
 
@@ -42,7 +42,7 @@ namespace GameClient.Dialogs
             return true;
         }
 
-        public override void DoWindowContents(Rect rect)
+        public override void DoWindowContents(Rect inRect)
         {
             if (FailedToFetchServers)
             {
@@ -50,28 +50,31 @@ namespace GameClient.Dialogs
                 return;
             }
 
-            float centeredX = rect.width / 2;
+            float y = DrawStandardHeader(inRect);
+            if (y < 0f) return;
 
-            float descH = Text.CalcSize(Description).y;
-            float windowDescriptionDif = descH + StandardMargin;
-            float descriptionLineDif1 = windowDescriptionDif - descH * 0.25f;
-            float descriptionLineDif2 = windowDescriptionDif + descH * 1.1f;
+            float footerH = DefaultButtonSize.y + FooterPad * 2f;
 
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
-
-            Widgets.DrawLineHorizontal(rect.x, descriptionLineDif1, rect.width);
+            Rect contentOuter = new Rect(0f, y, inRect.width, inRect.height - y - footerH).ContractedBy(ContentPad);
 
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Description).x / 2, windowDescriptionDif, Text.CalcSize(Description).x, descH), Description);
+            float descH = Text.CalcHeight(Description ?? string.Empty, contentOuter.width);
+            Rect descRect = new Rect(contentOuter.x, contentOuter.y, contentOuter.width, Mathf.Min(descH, 70f));
+            Widgets.Label(descRect, Description ?? string.Empty);
 
-            Text.Font = GameFont.Medium;
-            Widgets.DrawLineHorizontal(rect.x, descriptionLineDif2, rect.width);
+            float listTop = descRect.yMax + 8f;
+            Rect listOuter = new Rect(contentOuter.x, listTop, contentOuter.width, contentOuter.yMax - listTop);
+            Widgets.DrawMenuSection(listOuter);
 
-            FillMainRect(new Rect(0f, descriptionLineDif2 + 10f, rect.width, rect.height - DefaultButtonSize.y - 85f));
+            Rect listInner = listOuter.ContractedBy(10f);
+            FillMainRect(listInner);
+
+            Rect footer = new Rect(0f, inRect.height - footerH, inRect.width, footerH);
+            float closeW = Mathf.Min(DefaultButtonSize.x, inRect.width - (FooterPad * 2f));
+            Rect closeBtn = new Rect((inRect.width - closeW) / 2f, footer.y + FooterPad, closeW, DefaultButtonSize.y);
 
             Text.Font = GameFont.Small;
-            if (Widgets.ButtonText(new Rect(new Vector2(centeredX - DefaultButtonSize.x / 2, rect.yMax - DefaultButtonSize.y), DefaultButtonSize), "Close"))
+            if (Widgets.ButtonText(closeBtn, "Close"))
                 Close();
         }
 
@@ -83,10 +86,10 @@ namespace GameClient.Dialogs
                 .Where(x => x.Reachability == Reachability.Reachable && x._version == CommonValues.ExecutableVersion)
                 .ToArray();
 
-            float rowH = 30f;
+            float rowH = 34f;
             float height = 6f + servers.Length * rowH;
 
-            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - GenUI.ScrollBarWidth, height);
 
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
             try
@@ -111,16 +114,23 @@ namespace GameClient.Dialogs
             }
         }
 
-        private void DrawCustomRow(Rect rect, ServerInfo server, int index)
+        private void DrawCustomRow(Rect row, ServerInfo server, int index)
         {
+            if (server == null) return;
+
+            if (index % 2 == 0) Widgets.DrawAltRect(row);
+            Widgets.DrawHighlightIfMouseover(row);
+
+            Rect inner = row.ContractedBy(6f, 4f);
+
+            float btnW = 90f;
+            Rect btn = new Rect(inner.xMax - btnW, inner.y, btnW, inner.height);
+
+            Rect labelRect = new Rect(inner.x, inner.y, inner.width - btnW - 8f, inner.height);
+
             Text.Font = GameFont.Small;
+            Widgets.LabelEllipses(labelRect, $"{server._name}  |  {server._ip}  |  {server._currentPlayerCount}/{server._maximumPlayerCount}");
 
-            Rect fixedRect = new Rect(rect.x, rect.y + 5f, rect.width - 16f, rect.height - 5f);
-            if (index % 2 == 0) Widgets.DrawHighlight(fixedRect);
-
-            Widgets.Label(fixedRect, $"{server._name} - {server._ip} - {server._currentPlayerCount} / {server._maximumPlayerCount}");
-
-            Rect btn = new Rect(rect.xMax - SmallerButtonSize.x - 5f, rect.y + (rect.height - TinyButtonSize.y) / 2f, SmallerButtonSize.x, TinyButtonSize.y);
             if (Widgets.ButtonText(btn, "Select"))
                 RT_Dialog_Base.PushNewDialog(new RT_Dialog_ServerListingInfo(server));
         }

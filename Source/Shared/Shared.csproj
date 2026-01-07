@@ -16,12 +16,15 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="MessagePack" Version="3.1.4" />
+		<PackageReference Include="MessagePack" Version="3.1.4" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Reference Include="Newtonsoft.Json">
-	    <HintPath>Assemblies\Newtonsoft.Json.dll</HintPath>
-	  </Reference>
+		<Reference Include="Newtonsoft.Json">
+			<HintPath>Assemblies\Newtonsoft.Json.dll</HintPath>
+		</Reference>
+
+		<Reference Include="System.IO.Compression" />
+		<Reference Include="System.IO.Compression.FileSystem" />
 	</ItemGroup>
 </Project>

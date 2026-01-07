@@ -6,7 +6,7 @@ namespace GameClient.Dialogs
 {
     public class RT_Dialog_Inputs : RT_Dialog_Base
     {
-        private float InputWidth { get; set; } = 300f;
+        private float InputWidth { get; set; } = 320f;
         private float InputHeight { get; set; } = 30f;
         private int MaxChars { get; set; } = 512;
 
@@ -49,74 +49,61 @@ namespace GameClient.Dialogs
             CalculateWindowSize();
         }
 
-        public override void DoWindowContents(Rect rect)
+        public override void DoWindowContents(Rect inRect)
         {
-            Text.Font = GameFont.Medium;
-            Text.Anchor = TextAnchor.UpperCenter;
+            float y = DrawStandardHeader(inRect);
+            if (y < 0f) return;
 
-            float titleH = Text.CalcHeight(Title, rect.width);
-            Rect titleRect = new Rect(rect.x, rect.y, rect.width, titleH);
-            Widgets.Label(titleRect, Title);
+            float footerH = SmallButtonSize.y + FooterPad * 2f;
 
-            Text.Anchor = TextAnchor.UpperLeft;
-
-            float sepY = titleRect.yMax + (StandardMargin / 2f);
-            Widgets.DrawLineHorizontal(rect.x, sepY, rect.width);
+            Rect contentOuter = new Rect(0f, y, inRect.width, inRect.height - y - footerH);
+            Rect content = contentOuter.ContractedBy(ContentPad);
 
             Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.UpperLeft;
 
-            float y = sepY + StandardMargin;
+            float inputW = Mathf.Min(InputWidth, content.width);
+            float inputX = content.x + (content.width - inputW) / 2f;
 
-            if (Labels.Length > 0)
+            float curY = content.y;
+
+            int blocks = Mathf.Min(3, Labels.Length);
+            for (int i = 0; i < blocks; i++)
             {
-                y = DrawInputBlock(rect, y, 0);
+                string label = Labels[i] ?? string.Empty;
+                float labelH = Mathf.Max(18f, Text.CalcHeight(label, content.width));
 
-                if (Labels.Length > 1)
-                {
-                    y = DrawInputBlock(rect, y, 1);
+                Rect labelRect = new Rect(content.x, curY, content.width, labelH);
+                Widgets.Label(labelRect, label);
+                curY = labelRect.yMax + 6f;
 
-                    if (Labels.Length > 2)
-                    {
-                        y = DrawInputBlock(rect, y, 2);
-                    }
-                }
+                Rect inputRect = new Rect(inputX, curY, inputW, InputHeight);
+                DrawInputField(inputRect, i);
+
+                curY = inputRect.yMax + 10f;
             }
 
-            if (Widgets.ButtonText(GetRectForLocation(rect, SmallButtonSize, RectLocation.BottomLeft), ConfirmText))
+            Rect footer = new Rect(0f, inRect.height - footerH, inRect.width, footerH);
+            float btnAvailHalf = (footer.width - (FooterPad * 3f)) / 2f;
+            Vector2 btnSize = ClampButtonSize(SmallButtonSize, btnAvailHalf);
+
+            Rect confirmBtn = new Rect(FooterPad, footer.y + FooterPad, btnSize.x, btnSize.y);
+            Rect cancelBtn = new Rect(footer.xMax - FooterPad - btnSize.x, footer.y + FooterPad, btnSize.x, btnSize.y);
+
+            if (Widgets.ButtonText(confirmBtn, ConfirmText))
             {
                 DialogInputResults = new string[] { Results[0] ?? "", Results[1] ?? "", Results[2] ?? "" };
                 OnAccept?.Invoke();
                 Close();
             }
 
-            if (Widgets.ButtonText(GetRectForLocation(rect, SmallButtonSize, RectLocation.BottomRight), CancelText))
+            if (Widgets.ButtonText(cancelBtn, CancelText))
             {
                 OnCancel?.Invoke();
                 Close();
             }
-        }
 
-        private float DrawInputBlock(Rect rect, float startY, int index)
-        {
-            if (index < 0 || index >= 3) return startY;
-            if (index >= Labels.Length) return startY;
-
-            string label = Labels[index] ?? string.Empty;
-
-            Text.Anchor = TextAnchor.UpperCenter;
-            float labelH = Text.CalcHeight(label, rect.width);
-            Rect labelRect = new Rect(rect.x, startY, rect.width, labelH);
-            Widgets.Label(labelRect, label);
             Text.Anchor = TextAnchor.UpperLeft;
-
-            float inputY = labelRect.yMax + (StandardMargin / 2f);
-
-            float inputX = rect.x + ((rect.width - InputWidth) / 2f);
-            Rect inputRect = new Rect(inputX, inputY, InputWidth, InputHeight);
-
-            DrawInputField(inputRect, index);
-
-            return inputRect.yMax + StandardMargin;
         }
 
         private void DrawInputField(Rect inputRect, int index)
@@ -126,10 +113,8 @@ namespace GameClient.Dialogs
 
             if (!AcceptsInput)
             {
-                if (censor)
-                    DrawPasswordField(inputRect, current);
-                else
-                    Widgets.TextField(inputRect, current);
+                if (censor) DrawPasswordField(inputRect, current);
+                else Widgets.TextField(inputRect, current);
                 return;
             }
 
@@ -157,16 +142,20 @@ namespace GameClient.Dialogs
 
         private void CalculateWindowSize()
         {
-            Vector2 sizeVector;
+            int blocks = Mathf.Clamp(Labels?.Length ?? 0, 1, 3);
 
-            if (Labels.Length <= 1) sizeVector = new Vector2(400f, 190f);
-            else if (Labels.Length == 2) sizeVector = new Vector2(400f, 280f);
-            else if (Labels.Length == 3) sizeVector = new Vector2(400f, 370f);
-            else throw new ArgumentOutOfRangeException();
+            float baseW = 460f;
+            float baseH = 150f;
+            float perBlock = 68f;
+
+            Vector2 sizeVector = new Vector2(baseW, baseH + (blocks * perBlock));
+
+            float w = Mathf.Min(sizeVector.x, UI.screenWidth * 0.92f);
+            float h = Mathf.Min(sizeVector.y, UI.screenHeight * 0.92f);
 
             windowRect = new Rect(
-                new Vector2((UI.screenWidth - sizeVector.x) / 2f, (UI.screenHeight - sizeVector.y) / 2f),
-                sizeVector);
+                new Vector2((UI.screenWidth - w) / 2f, (UI.screenHeight - h) / 2f),
+                new Vector2(w, h));
 
             windowRect.Rounded();
         }

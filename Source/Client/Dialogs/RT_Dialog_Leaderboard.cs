@@ -15,12 +15,15 @@ namespace GameClient.Dialogs
         private Vector2 _scroll = Vector2.zero;
         private int _selectedIndex = -1;
 
-        private const float HeaderHeight = 38f;
-        private const float ControlsHeight = 34f;
-        private const float FooterHeight = 58f;
+        private const float HeaderHeight = 42f;
+        private const float ControlsHeight = 36f;
+        private const float FooterHeight = 60f;
 
+        private const float HeaderRowHeight = 30f;
         private const float RowHeight = 26f;
-        private const float HeaderRowHeight = 28f;
+
+        private const float OuterPadding = 10f;
+        private const float InnerPadding = 8f;
 
         private struct SortOption
         {
@@ -43,6 +46,18 @@ namespace GameClient.Dialogs
             new SortOption("Last Saved", InformationData.LeaderboardSortMode.LastSavedUtcTicks),
         };
 
+        private struct ColumnLayout
+        {
+            public float Rank;
+            public float Player;
+            public float Community;
+            public float Faction;
+            public float Wealth;
+            public float Cols;
+            public float Days;
+            public float Time;
+        }
+
         public RT_Dialog_Leaderboard()
         {
             Title = "Leaderboard";
@@ -61,99 +76,159 @@ namespace GameClient.Dialogs
 
         public override void DoWindowContents(Rect rect)
         {
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(0f, 0f, rect.width, HeaderHeight), Title);
-
-            Text.Font = GameFont.Small;
-            Widgets.DrawLineHorizontal(0f, HeaderHeight - 6f, rect.width);
+            DrawHeader(rect);
 
             Rect controls = new Rect(0f, HeaderHeight, rect.width, ControlsHeight);
             DrawControls(controls);
 
-            Rect outer = new Rect(0f, HeaderHeight + ControlsHeight, rect.width,
+            Rect outer = new Rect(
+                0f,
+                HeaderHeight + ControlsHeight,
+                rect.width,
                 rect.height - HeaderHeight - ControlsHeight - FooterHeight);
 
             Widgets.DrawMenuSection(outer);
 
-            Rect inner = outer.ContractedBy(10f);
+            Rect inner = outer.ContractedBy(OuterPadding);
+            if (inner.width <= 30f || inner.height <= 30f)
+            {
+                DrawFooter(new Rect(0f, rect.height - FooterHeight, rect.width, FooterHeight), Array.Empty<LeaderboardEntryFile>());
+                return;
+            }
 
             LeaderboardEntryFile[] entries = LeaderboardManager.Entries ?? Array.Empty<LeaderboardEntryFile>();
 
-            float viewH = Math.Max(240f, HeaderRowHeight + 2f + (entries.Length * RowHeight) + 20f);
-            Rect viewRect = new Rect(0f, 0f, inner.width - 16f, viewH);
+            float viewW = Mathf.Max(1f, inner.width - 16f);
+            float viewH = Mathf.Max(inner.height, HeaderRowHeight + 2f + (entries.Length * RowHeight) + 10f);
+
+            Rect viewRect = new Rect(0f, 0f, viewW, viewH);
 
             Widgets.BeginScrollView(inner, ref _scroll, viewRect);
-
-            float y = 0f;
-
-            Rect headerRow = new Rect(0f, y, viewRect.width, HeaderRowHeight);
-            DrawHeaderRow(headerRow);
-            y += HeaderRowHeight + 2f;
-
-            if (entries.Length == 0)
+            try
             {
-                Widgets.Label(new Rect(0f, y + 10f, viewRect.width, 30f),
-                    "<color=grey>No leaderboard data yet (save a map to generate stats).</color>");
-            }
-            else
-            {
-                for (int i = 0; i < entries.Length; i++)
+                float y = 0f;
+
+                Rect headerRow = new Rect(0f, y, viewRect.width, HeaderRowHeight);
+                DrawHeaderRow(headerRow);
+                y += HeaderRowHeight + 2f;
+
+                if (entries.Length == 0)
                 {
-                    Rect row = new Rect(0f, y, viewRect.width, RowHeight);
+                    Text.Font = GameFont.Small;
+                    Text.Anchor = TextAnchor.UpperCenter;
+                    Widgets.Label(new Rect(0f, y + 12f, viewRect.width, 30f),
+                        "<color=grey>No leaderboard data yet (save a map to generate stats).</color>");
+                    Text.Anchor = TextAnchor.UpperLeft;
+                }
+                else
+                {
+                    float yMin = _scroll.y - RowHeight;
+                    float yMax = _scroll.y + inner.height + RowHeight;
 
-                    if (i % 2 == 0) Widgets.DrawAltRect(row);
+                    ColumnLayout cols = GetColumnLayout(viewRect.width);
 
-                    if (_selectedIndex == i)
-                        Widgets.DrawBoxSolid(row, new Color(1f, 1f, 1f, 0.06f));
+                    for (int i = 0; i < entries.Length; i++)
+                    {
+                        float rowY = y + (i * RowHeight);
+                        if (rowY < yMin || rowY > yMax) continue;
 
-                    Widgets.DrawHighlightIfMouseover(row);
+                        Rect row = new Rect(0f, rowY, viewRect.width, RowHeight);
 
-                    int rank = LeaderboardManager.CurrentOffset + i + 1;
-                    DrawEntryRow(row, entries[i], rank);
+                        if (i % 2 == 0) Widgets.DrawAltRect(row);
 
-                    if (Widgets.ButtonInvisible(row))
-                        _selectedIndex = i;
+                        if (_selectedIndex == i)
+                            Widgets.DrawBoxSolid(row, new Color(1f, 1f, 1f, 0.06f));
 
-                    y += RowHeight;
+                        Widgets.DrawHighlightIfMouseover(row);
+
+                        int rank = LeaderboardManager.CurrentOffset + i + 1;
+                        DrawEntryRow(row, cols, entries[i], rank);
+
+                        if (Widgets.ButtonInvisible(row))
+                            _selectedIndex = i;
+                    }
                 }
             }
-
-            Widgets.EndScrollView();
+            finally
+            {
+                Widgets.EndScrollView();
+            }
 
             Rect footer = new Rect(0f, rect.height - FooterHeight, rect.width, FooterHeight);
             DrawFooter(footer, entries);
         }
 
+        private void DrawHeader(Rect rect)
+        {
+            Text.Font = GameFont.Medium;
+            Text.Anchor = TextAnchor.MiddleCenter;
+
+            Rect titleRect = new Rect(0f, 0f, rect.width, HeaderHeight);
+            Widgets.Label(titleRect, Title);
+
+            Text.Anchor = TextAnchor.UpperLeft;
+            Text.Font = GameFont.Small;
+
+            Widgets.DrawLineHorizontal(0f, HeaderHeight - 1f, rect.width);
+        }
+
         private void DrawControls(Rect rect)
         {
-            float x = rect.x + 6f;
-            float y = rect.y + 4f;
-
+            float pad = 6f;
             float btnH = 26f;
 
-            Rect sortBtn = new Rect(x, y, 220f, btnH);
-            x += sortBtn.width + 6f;
+            float y = rect.y + Mathf.Max(0f, (rect.height - btnH) * 0.5f);
 
-            Rect orderBtn = new Rect(x, y, 170f, btnH);
-            x += orderBtn.width + 6f;
+            float refreshW = Mathf.Clamp(120f, 90f, rect.width * 0.22f);
+            Rect refreshBtn = new Rect(rect.xMax - pad - refreshW, y, refreshW, btnH);
 
-            Rect topBtn = new Rect(x, y, 120f, btnH);
-            x += topBtn.width + 6f;
+            float leftW = refreshBtn.xMin - (rect.x + pad) - pad;
+            leftW = Mathf.Max(0f, leftW);
 
-            Rect refreshBtn = new Rect(x, y, 120f, btnH);
+            float spacing = 6f;
 
-            if (Widgets.ButtonText(sortBtn, $"Sort: {FriendlySort(LeaderboardManager.CurrentSort)}"))
+            float wEach = (leftW - (spacing * 2f)) / 3f;
+            float sortW = Mathf.Clamp(wEach, 90f, 260f);
+            float orderW = Mathf.Clamp(wEach, 90f, 220f);
+            float topW = Mathf.Clamp(wEach, 90f, 160f);
+
+            float required = sortW + orderW + topW + (spacing * 2f);
+            if (required > leftW && required > 0.01f)
+            {
+                float scale = leftW / required;
+                sortW *= scale;
+                orderW *= scale;
+                topW *= scale;
+            }
+
+            float x = rect.x + pad;
+
+            Rect sortBtn = new Rect(x, y, sortW, btnH);
+            x += sortBtn.width + spacing;
+
+            Rect orderBtn = new Rect(x, y, orderW, btnH);
+            x += orderBtn.width + spacing;
+
+            Rect topBtn = new Rect(x, y, topW, btnH);
+
+            string sortLabel = $"Sort: {FriendlySort(LeaderboardManager.CurrentSort)}";
+            string orderLabel = $"Order: {FriendlyOrder(LeaderboardManager.CurrentOrder)}";
+            string topLabel = $"Top: {LeaderboardManager.CurrentLimit}";
+
+            if (Widgets.ButtonText(sortBtn, sortLabel))
                 OpenSortMenu();
 
-            if (Widgets.ButtonText(orderBtn, $"Order: {FriendlyOrder(LeaderboardManager.CurrentOrder)}"))
+            if (Widgets.ButtonText(orderBtn, orderLabel))
                 OpenOrderMenu();
 
-            if (Widgets.ButtonText(topBtn, $"Top: {LeaderboardManager.CurrentLimit}"))
+            if (Widgets.ButtonText(topBtn, topLabel))
                 OpenLimitMenu();
 
             if (Widgets.ButtonText(refreshBtn, "Refresh"))
             {
                 _selectedIndex = -1;
+                _scroll = Vector2.zero;
+
                 LeaderboardManager.AskForLeaderboard(
                     LeaderboardManager.CurrentSort,
                     LeaderboardManager.CurrentOrder,
@@ -170,7 +245,6 @@ namespace GameClient.Dialogs
             {
                 InformationData.LeaderboardSortMode mode = opt.Mode;
                 bool isCurrent = FriendlySort(mode) == FriendlySort(LeaderboardManager.CurrentSort);
-
                 string label = isCurrent ? $"✓ {opt.Label}" : opt.Label;
 
                 opts.Add(new FloatMenuOption(label, () =>
@@ -199,6 +273,8 @@ namespace GameClient.Dialogs
             opts.Add(new FloatMenuOption(isDesc ? "✓ High → Low" : "High → Low", () =>
             {
                 _selectedIndex = -1;
+                _scroll = Vector2.zero;
+
                 LeaderboardManager.AskForLeaderboard(
                     LeaderboardManager.CurrentSort,
                     InformationData.LeaderboardOrder.Desc,
@@ -209,6 +285,8 @@ namespace GameClient.Dialogs
             opts.Add(new FloatMenuOption(isAsc ? "✓ Low → High" : "Low → High", () =>
             {
                 _selectedIndex = -1;
+                _scroll = Vector2.zero;
+
                 LeaderboardManager.AskForLeaderboard(
                     LeaderboardManager.CurrentSort,
                     InformationData.LeaderboardOrder.Asc,
@@ -269,71 +347,171 @@ namespace GameClient.Dialogs
                 string days = FormatDays(e.GameTicks);
                 string play = FormatTime(e);
 
-                detailText = $"{rangeText}  |  {player}  |  Tile {tile}  |  Wealth {wealth}  |  Cols {cols}  |  Days {days}  |  Playtime {play}  |  Saved {saved}";
+                detailText = $"{rangeText} | {player} | Tile {tile} | Wealth {wealth} | Cols {cols} | Days {days} | Playtime {play} | Saved {saved}";
             }
 
-            // ✅ FIX: Taller + slightly higher label rect so it never clips.
-            Rect leftLabel = new Rect(rect.x + 10f, rect.y + 10f, rect.width - 420f, rect.height - 14f);
-            Text.Anchor = TextAnchor.MiddleLeft;
-            Text.Font = GameFont.Small;
-            Widgets.LabelEllipses(leftLabel, detailText);
-            Text.Anchor = TextAnchor.UpperLeft;
+            float pad = 10f;
+            float spacing = 6f;
+            float btnH = 30f;
 
             float btnW = 120f;
+            float maxBtnW = (rect.width - (pad * 2f) - (spacing * 2f)) / 3f;
+            if (btnW > maxBtnW) btnW = Mathf.Max(80f, maxBtnW);
 
-            GUI.color = LeaderboardManager.CanPagePrev() ? Color.white : Color.gray;
-            if (Widgets.ButtonText(new Rect(rect.xMax - (btnW * 3 + 20f), rect.y + 14f, btnW, 30f), "Prev") && LeaderboardManager.CanPagePrev())
+            float totalBtnsW = (btnW * 3f) + (spacing * 2f);
+
+            Rect okBtn = new Rect(rect.xMax - pad - btnW, rect.y + (rect.height - btnH) * 0.5f, btnW, btnH);
+            Rect nextBtn = new Rect(okBtn.xMin - spacing - btnW, okBtn.y, btnW, btnH);
+            Rect prevBtn = new Rect(nextBtn.xMin - spacing - btnW, okBtn.y, btnW, btnH);
+
+            float labelW = Mathf.Max(80f, rect.width - (pad * 2f) - totalBtnsW - spacing);
+            Rect leftLabel = new Rect(rect.x + pad, rect.y + 8f, labelW, rect.height - 16f);
+
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Text.Font = GameFont.Small;
+
+            string labelText = (leftLabel.width < 220f) ? rangeText : detailText;
+            Widgets.LabelEllipses(leftLabel, labelText);
+
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            bool canPrev = LeaderboardManager.CanPagePrev();
+            bool canNext = LeaderboardManager.CanPageNext();
+
+            GUI.color = canPrev ? Color.white : Color.gray;
+            if (Widgets.ButtonText(prevBtn, "Prev") && canPrev)
             {
                 _selectedIndex = -1;
                 LeaderboardManager.PrevPage();
             }
 
-            GUI.color = LeaderboardManager.CanPageNext() ? Color.white : Color.gray;
-            if (Widgets.ButtonText(new Rect(rect.xMax - (btnW * 2 + 15f), rect.y + 14f, btnW, 30f), "Next") && LeaderboardManager.CanPageNext())
+            GUI.color = canNext ? Color.white : Color.gray;
+            if (Widgets.ButtonText(nextBtn, "Next") && canNext)
             {
                 _selectedIndex = -1;
                 LeaderboardManager.NextPage();
             }
 
             GUI.color = Color.white;
-            if (Widgets.ButtonText(new Rect(rect.xMax - (btnW + 10f), rect.y + 14f, btnW, 30f), "OK"))
+            if (Widgets.ButtonText(okBtn, "OK"))
             {
                 Close();
             }
+
+            GUI.color = Color.white;
         }
 
-        private void DrawHeaderRow(Rect rect)
+        private ColumnLayout GetColumnLayout(float totalWidth)
         {
-            Widgets.DrawBoxSolid(rect, new Color(0f, 0f, 0f, 0.18f));
-
-            float x = rect.x + 8f;
+            float pad = InnerPadding;
+            float available = Mathf.Max(1f, totalWidth - (pad * 2f));
 
             float wRank = 40f;
-            float wPlayer = 150f;
-            float wCommunity = 170f;
-            float wFaction = 170f;
             float wWealth = 120f;
             float wCols = 55f;
             float wDays = 55f;
             float wTime = 80f;
 
-            Text.Anchor = TextAnchor.MiddleLeft;
-            Widgets.Label(new Rect(x, rect.y, wRank, rect.height), "#"); x += wRank;
-            Widgets.Label(new Rect(x, rect.y, wPlayer, rect.height), "Player"); x += wPlayer;
-            Widgets.Label(new Rect(x, rect.y, wCommunity, rect.height), "Community"); x += wCommunity;
-            Widgets.Label(new Rect(x, rect.y, wFaction, rect.height), "Faction"); x += wFaction;
+            float fixedW = wRank + wWealth + wCols + wDays + wTime;
 
-            Text.Anchor = TextAnchor.MiddleRight;
-            Widgets.Label(new Rect(x, rect.y, wWealth, rect.height), "Wealth"); x += wWealth;
-            Widgets.Label(new Rect(x, rect.y, wCols, rect.height), "Cols"); x += wCols;
-            Widgets.Label(new Rect(x, rect.y, wDays, rect.height), "Days"); x += wDays;
-            Widgets.Label(new Rect(x, rect.y, wTime, rect.height), "Time");
+            float minPlayer = 130f;
+            float minCommunity = 150f;
+            float minFaction = 150f;
+            float minTextW = minPlayer + minCommunity + minFaction;
 
-            Text.Anchor = TextAnchor.UpperLeft;
-            Widgets.DrawLineHorizontal(rect.x, rect.yMax - 1f, rect.width);
+            float remaining = available - fixedW;
+
+            float wPlayer = minPlayer;
+            float wCommunity = minCommunity;
+            float wFaction = minFaction;
+
+            if (remaining <= 1f)
+            {
+                float tiny = Mathf.Max(40f, (available - fixedW) / 3f);
+                wPlayer = tiny;
+                wCommunity = tiny;
+                wFaction = tiny;
+            }
+            else if (remaining < minTextW)
+            {
+                float scale = Mathf.Clamp01(remaining / Mathf.Max(1f, minTextW));
+                scale = Mathf.Max(0.35f, scale);
+
+                wPlayer = Mathf.Max(60f, minPlayer * scale);
+                wCommunity = Mathf.Max(70f, minCommunity * scale);
+                wFaction = Mathf.Max(70f, minFaction * scale);
+
+                float sum = wPlayer + wCommunity + wFaction;
+                float target = Mathf.Max(1f, remaining);
+                if (sum > target)
+                {
+                    float s = target / sum;
+                    wPlayer *= s;
+                    wCommunity *= s;
+                    wFaction *= s;
+                }
+            }
+            else
+            {
+                float extra = remaining - minTextW;
+
+                wPlayer = minPlayer + (extra * 0.30f);
+                wCommunity = minCommunity + (extra * 0.35f);
+                wFaction = minFaction + (extra * 0.35f);
+            }
+
+            float total = fixedW + wPlayer + wCommunity + wFaction;
+            if (total > available)
+            {
+                float over = total - available;
+                float reducible = Mathf.Max(1f, wPlayer + wCommunity + wFaction);
+                float ratio = over / reducible;
+
+                wPlayer = Mathf.Max(50f, wPlayer - (wPlayer * ratio));
+                wCommunity = Mathf.Max(60f, wCommunity - (wCommunity * ratio));
+                wFaction = Mathf.Max(60f, wFaction - (wFaction * ratio));
+            }
+
+            return new ColumnLayout
+            {
+                Rank = wRank,
+                Player = wPlayer,
+                Community = wCommunity,
+                Faction = wFaction,
+                Wealth = wWealth,
+                Cols = wCols,
+                Days = wDays,
+                Time = wTime
+            };
         }
 
-        private void DrawEntryRow(Rect rect, LeaderboardEntryFile e, int rank)
+        private void DrawHeaderRow(Rect rect)
+        {
+            Widgets.DrawBoxSolid(rect, new Color(0f, 0f, 0f, 0.18f));
+            Widgets.DrawLineHorizontal(rect.x, rect.yMax - 1f, rect.width);
+
+            ColumnLayout c = GetColumnLayout(rect.width);
+
+            float x = rect.x + InnerPadding;
+
+            Text.Font = GameFont.Small;
+
+            Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(new Rect(x, rect.y, c.Rank, rect.height), "#"); x += c.Rank;
+            Widgets.Label(new Rect(x, rect.y, c.Player, rect.height), "Player"); x += c.Player;
+            Widgets.Label(new Rect(x, rect.y, c.Community, rect.height), "Community"); x += c.Community;
+            Widgets.Label(new Rect(x, rect.y, c.Faction, rect.height), "Faction"); x += c.Faction;
+
+            Text.Anchor = TextAnchor.MiddleRight;
+            Widgets.Label(new Rect(x, rect.y, c.Wealth, rect.height), "Wealth"); x += c.Wealth;
+            Widgets.Label(new Rect(x, rect.y, c.Cols, rect.height), "Cols"); x += c.Cols;
+            Widgets.Label(new Rect(x, rect.y, c.Days, rect.height), "Days"); x += c.Days;
+            Widgets.Label(new Rect(x, rect.y, c.Time, rect.height), "Time");
+
+            Text.Anchor = TextAnchor.UpperLeft;
+        }
+
+        private void DrawEntryRow(Rect rect, ColumnLayout c, LeaderboardEntryFile e, int rank)
         {
             e ??= new LeaderboardEntryFile();
 
@@ -346,32 +524,25 @@ namespace GameClient.Dialogs
             string days = FormatDays(e.GameTicks);
             string time = FormatTime(e);
 
-            float x = rect.x + 8f;
+            float x = rect.x + InnerPadding;
 
-            float wRank = 40f;
-            float wPlayer = 150f;
-            float wCommunity = 170f;
-            float wFaction = 170f;
-            float wWealth = 120f;
-            float wCols = 55f;
-            float wDays = 55f;
-            float wTime = 80f;
+            Rect rRank = new Rect(x, rect.y, c.Rank, rect.height); x += c.Rank;
+            Rect rPlayer = new Rect(x, rect.y, c.Player, rect.height); x += c.Player;
+            Rect rCommunity = new Rect(x, rect.y, c.Community, rect.height); x += c.Community;
+            Rect rFaction = new Rect(x, rect.y, c.Faction, rect.height); x += c.Faction;
 
-            Rect rRank = new Rect(x, rect.y, wRank, rect.height); x += wRank;
-            Rect rPlayer = new Rect(x, rect.y, wPlayer, rect.height); x += wPlayer;
-            Rect rCommunity = new Rect(x, rect.y, wCommunity, rect.height); x += wCommunity;
-            Rect rFaction = new Rect(x, rect.y, wFaction, rect.height); x += wFaction;
+            Rect rWealth = new Rect(x, rect.y, c.Wealth, rect.height); x += c.Wealth;
+            Rect rCols = new Rect(x, rect.y, c.Cols, rect.height); x += c.Cols;
+            Rect rDays = new Rect(x, rect.y, c.Days, rect.height); x += c.Days;
+            Rect rTime = new Rect(x, rect.y, c.Time, rect.height);
 
-            Rect rWealth = new Rect(x, rect.y, wWealth, rect.height); x += wWealth;
-            Rect rCols = new Rect(x, rect.y, wCols, rect.height); x += wCols;
-            Rect rDays = new Rect(x, rect.y, wDays, rect.height); x += wDays;
-            Rect rTime = new Rect(x, rect.y, wTime, rect.height);
+            Text.Font = GameFont.Small;
 
             Text.Anchor = TextAnchor.MiddleLeft;
             Widgets.Label(rRank, rank.ToString());
-            Widgets.LabelEllipses(rPlayer, player);
-            Widgets.LabelEllipses(rCommunity, community);
-            Widgets.LabelEllipses(rFaction, faction);
+            Widgets.LabelEllipses(rPlayer.ContractedBy(2f, 0f), player);
+            Widgets.LabelEllipses(rCommunity.ContractedBy(2f, 0f), community);
+            Widgets.LabelEllipses(rFaction.ContractedBy(2f, 0f), faction);
 
             Text.Anchor = TextAnchor.MiddleRight;
             Widgets.Label(rWealth, wealth);
@@ -434,11 +605,13 @@ namespace GameClient.Dialogs
         {
             if (e == null) return "?";
 
-            if (e.RealPlayTimeInteractingSeconds >= 0)
+            double seconds = e.RealPlayTimeSeconds >= 0 ? e.RealPlayTimeSeconds : e.RealPlayTimeInteractingSeconds;
+
+            if (seconds >= 0)
             {
                 try
                 {
-                    TimeSpan ts = TimeSpan.FromSeconds(e.RealPlayTimeInteractingSeconds);
+                    TimeSpan ts = TimeSpan.FromSeconds(seconds);
                     int hours = (int)Math.Floor(ts.TotalHours);
                     int minutes = ts.Minutes;
                     return $"{hours}h {minutes}m";

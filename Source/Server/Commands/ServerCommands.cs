@@ -9,6 +9,11 @@ using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
 using Shared.Files.Configs.Mods;
 using Shared.Misc;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
 
 namespace GameServer.Commands
 {
@@ -39,15 +44,15 @@ namespace GameServer.Commands
             DeopCommandAction);
 
         public static readonly CommandBase KickCommand = new CommandBase("kick", 1,
-            "Kicks the selected player from the server",
+            "Kicks the selected player (username OR ip)",
             KickCommandAction);
 
         public static readonly CommandBase BanCommand = new CommandBase("ban", 1,
-            "Bans the selected player from the server",
+            "Bans the selected player (username OR ip)",
             BanCommandAction);
 
         public static readonly CommandBase PardonCommand = new CommandBase("pardon", 1,
-            "Pardons the selected player from the server",
+            "Pardons the selected player",
             PardonCommandAction);
 
         public static readonly CommandBase DeepListCommand = new CommandBase("deeplist", 0,
@@ -171,6 +176,12 @@ namespace GameServer.Commands
 
     public static class ConsoleCommandActions
     {
+        private static bool LooksLikeIP(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return false;
+            return IPAddress.TryParse(input.Trim(), out _);
+        }
+
         public static void HelpCommandAction()
         {
             Printer.Title($"List of available commands: [{ConsoleCommands.Commands.Count()}]");
@@ -207,17 +218,33 @@ namespace GameServer.Commands
                     Printer.Error($"{response} is not a valid option; The options must be capitalized");
                     goto DeleteUser;
                 }
-
             }
         }
+
         public static void ListCommandAction()
         {
-            Printer.Title($"Connected players: [{ServerNetwork.Instance.GetConnectedClientsSafe().Count()}]");
+            var clients = ServerNetwork.Instance.GetConnectedClientsSafe();
+
+            Printer.Title($"Connected players: [{clients.Length}]");
             Printer.Title("----------------------------------------");
-            foreach (ServerClient client in ServerNetwork.Instance.GetConnectedClientsSafe())
+
+            foreach (ServerClient client in clients)
             {
-                Printer.Warning($"{client.CurrentIP} - {client.UserFile.Username}");
+                if (client == null)
+                    continue;
+
+                string ip = string.IsNullOrWhiteSpace(client.CurrentIP) ? "(unknown ip)" : client.CurrentIP;
+
+                string user = null;
+                if (client.UserFile != null && !string.IsNullOrWhiteSpace(client.UserFile.Username))
+                    user = client.UserFile.Username;
+
+                if (string.IsNullOrWhiteSpace(user))
+                    user = "(pre-login)";
+
+                Printer.Warning($"{ip} - {user}");
             }
+
             Printer.Title("----------------------------------------");
         }
 
@@ -237,13 +264,17 @@ namespace GameServer.Commands
         public static void OpCommandAction()
         {
             UserFile toFind = UserManagerH.GetAllUserFiles().Where(x => x.Username == ConsoleManager.commandParameters[0]).FirstOrDefault();
-            if (toFind == null) 
+            if (toFind == null)
             {
                 ThrowUserNotFoundError();
                 return;
             }
 
-            if (CheckIfIsAlready(toFind)) return;
+            if (toFind.IsAdmin)
+            {
+                Printer.Warning($"User '{toFind.Username}' was already an admin");
+                return;
+            }
 
             toFind.UpdateAdmin(true);
 
@@ -253,21 +284,11 @@ namespace GameServer.Commands
                 CommandData commandData = new CommandData();
                 commandData._commandMode = CommandMode.Op;
 
-                client.UserFile.UpdateAdmin(true);
+                if (client.UserFile != null) client.UserFile.UpdateAdmin(true);
                 client.Listener.EnqueuePacket(PacketHeader.ConsoleManager, commandData);
             }
 
             Printer.Warning($"User '{toFind.Username}' has now admin privileges");
-            bool CheckIfIsAlready(UserFile userFile)
-            {
-                if (userFile.IsAdmin)
-                {
-                    Printer.Warning($"User '{userFile.Username}' was already an admin");
-                    return true;
-                }
-
-                else return false;
-            }
         }
 
         public static void DeopCommandAction()
@@ -280,45 +301,54 @@ namespace GameServer.Commands
                 return;
             }
 
-            if (CheckIfIsAlready(toFind)) return;
+            if (!toFind.IsAdmin)
+            {
+                Printer.Warning($"User '{toFind.Username}' was not an admin");
+                return;
+            }
 
             toFind.UpdateAdmin(false);
+
             ServerClient client = ServerNetwork.Instance.GetConnectedClientFromUsername(toFind.Username);
             if (client != null)
             {
                 CommandData commandData = new CommandData();
                 commandData._commandMode = CommandMode.Deop;
 
-                client.UserFile.UpdateAdmin(false);
+                if (client.UserFile != null) client.UserFile.UpdateAdmin(false);
                 client.Listener.EnqueuePacket(PacketHeader.ConsoleManager, commandData);
             }
 
             Printer.Warning($"User '{toFind.Username}' is no longer an admin");
-
-            bool CheckIfIsAlready(UserFile client)
-            {
-                if (!client.IsAdmin)
-                {
-                    Printer.Warning($"User '{client.Username}' was not an admin");
-                    return true;
-                }
-
-                else return false;
-            }
         }
 
         public static void KickCommandAction()
         {
-            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(ConsoleManager.commandParameters[0]);
+            string target = ConsoleManager.commandParameters[0];
+
+            if (LooksLikeIP(target))
+            {
+                bool kicked = ServerNetwork.Instance.KickByIP(target);
+                if (!kicked)
+                {
+                    Printer.Warning($"IP '{target}' was not found (they may have already disconnected).");
+                    return;
+                }
+
+                Printer.Warning($"IP '{target}' has been kicked");
+                return;
+            }
+
+            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(target);
 
             if (toFind == null)
             {
-                ThrowUserNotFoundError();
+                Printer.Warning($"User '{target}' was not found (they may be pre-login). Use `list` to grab their IP and run: kick <ip>");
                 return;
             }
 
             toFind.Listener.DisconnectNow();
-            Printer.Warning($"User '{toFind.UserFile.Username}' has been kicked from the server");
+            Printer.Warning($"User '{(toFind.UserFile != null ? toFind.UserFile.Username : target)}' has been kicked from the server");
         }
 
         public static void BanListCommandAction()
@@ -331,7 +361,19 @@ namespace GameServer.Commands
             Printer.Title("----------------------------------------");
         }
 
-        public static void BanCommandAction() { UserManager.BanPlayerFromName(ConsoleManager.commandParameters[0]); }
+        public static void BanCommandAction()
+        {
+            string target = ConsoleManager.commandParameters[0];
+
+            if (LooksLikeIP(target))
+            {
+                ServerNetwork.Instance.BanByIP(target);
+                Printer.Warning($"IP '{target}' has been banned (runtime-only)");
+                return;
+            }
+
+            UserManager.BanPlayerFromName(target);
+        }
 
         public static void PardonCommandAction() { UserManager.PardonPlayerFromName(ConsoleManager.commandParameters[0]); }
 
@@ -378,8 +420,6 @@ namespace GameServer.Commands
                     EventData eventData = new EventData();
                     eventData._stepMode = EventStepMode.Receive;
                     eventData._eventFile = toFind;
-
-                    //We set it to -1 to let the client know it will fall at any settlement
                     eventData._toTile = -1;
 
                     client.Listener.EnqueuePacket(PacketHeader.EventManager, eventData);
@@ -400,8 +440,6 @@ namespace GameServer.Commands
                     EventData eventData = new EventData();
                     eventData._stepMode = EventStepMode.Receive;
                     eventData._eventFile = toFind;
-
-                    //We set it to -1 to let the client know it will fall at any settlement
                     eventData._toTile = -1;
 
                     client.Listener.EnqueuePacket(PacketHeader.EventManager, eventData);
@@ -462,19 +500,13 @@ namespace GameServer.Commands
             if (userFile == null) ThrowUserNotFoundError();
             else
             {
-                if (CheckIfIsAlready(userFile)) return;
-                else WhitelistManager.AddUserToWhitelist(ConsoleManager.commandParameters[0]);
-            }
-
-            bool CheckIfIsAlready(UserFile userFile)
-            {
                 if (Master.Whitelist.WhitelistedUsers.Contains(userFile.Username))
                 {
                     Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' was already whitelisted");
-                    return true;
+                    return;
                 }
 
-                else return false;
+                WhitelistManager.AddUserToWhitelist(ConsoleManager.commandParameters[0]);
             }
         }
 
@@ -482,38 +514,35 @@ namespace GameServer.Commands
         {
             UserFile userFile = UserManagerH.GetUserFileFromName(ConsoleManager.commandParameters[0]);
             if (userFile == null) ThrowUserNotFoundError();
-
             else
-            {
-                if (CheckIfIsAlready(userFile)) return;
-                else WhitelistManager.RemoveUserFromWhitelist(ConsoleManager.commandParameters[0]);
-            }
-
-            bool CheckIfIsAlready(UserFile userFile)
             {
                 if (!Master.Whitelist.WhitelistedUsers.Contains(userFile.Username))
                 {
                     Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' was not whitelisted");
-                    return true;
+                    return;
                 }
 
-                else return false;
+                WhitelistManager.RemoveUserFromWhitelist(ConsoleManager.commandParameters[0]);
             }
         }
 
         public static void ForceSaveCommandAction()
         {
-            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(ConsoleManager.commandParameters[0]);
-            if (toFind == null) ThrowUserNotFoundError();
-            else
+            string target = ConsoleManager.commandParameters[0];
+            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(target);
+
+            if (toFind == null)
             {
-                CommandData commandData = new CommandData();
-                commandData._commandMode = CommandMode.ForceSave;
-
-                toFind.Listener.EnqueuePacket(PacketHeader.ConsoleManager, commandData);
-
-                Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' has been forced to save");
+                Printer.Warning($"User '{target}' was not found (they may be pre-login). Try again once they finish connecting.");
+                return;
             }
+
+            CommandData commandData = new CommandData();
+            commandData._commandMode = CommandMode.ForceSave;
+
+            toFind.Listener.EnqueuePacket(PacketHeader.ConsoleManager, commandData);
+
+            Printer.Warning($"User '{(toFind.UserFile != null ? toFind.UserFile.Username : target)}' has been forced to save");
         }
 
         public static void ResetPlayerCommandAction()
@@ -535,7 +564,6 @@ namespace GameServer.Commands
 
         public static void ResetWorldCommandAction()
         {
-            //Make sure the user wants to reset the world
             Printer.Warning("Are you sure you want to reset the world?");
             Printer.Warning("Please type 'YES' or 'NO'");
 
@@ -582,17 +610,22 @@ namespace GameServer.Commands
 
         public static void ThrowUserNotFoundError()
         {
-            Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' was not found");
-            UserFile[] allUsers = UserManagerH.GetAllUserFiles();
-            if (allUsers.Any(u => u.Username == ConsoleManager.commandParameters[0]))
-                Printer.Warning($"Username detected. You can only use UIDs for user commands. " +
-                    $"Use the command `deeplist` to get the UID of {ConsoleManager.commandParameters[0]}.");
-            UserFile[] usersWithMatchingUsername = allUsers.Where(u => u.Username == ConsoleManager.commandParameters[0]).ToArray();
-            if (usersWithMatchingUsername.Length == 1)
+            string input = ConsoleManager.commandParameters != null && ConsoleManager.commandParameters.Length > 0
+                ? ConsoleManager.commandParameters[0]
+                : "(unknown)";
+
+            Printer.Warning($"User '{input}' was not found");
+
+            try
             {
-                Printer.Warning($"Since only one person with the username {ConsoleManager.commandParameters[0]} exists, " +
-                    $"we were able to fetch his UID automatically: {usersWithMatchingUsername.First().Username}");
+                UserFile[] allUsers = UserManagerH.GetAllUserFiles();
+                if (allUsers != null && allUsers.Any(u => u != null && string.Equals(u.Username, input, StringComparison.OrdinalIgnoreCase)))
+                {
+                    Printer.Warning($"Username exists in server files. If they are connecting, wait until they finish logging in, then try again.");
+                    Printer.Warning("Tip: Use `list` for connected users and `deeplist` for all registered users.");
+                }
             }
+            catch { }
         }
     }
 }

@@ -39,37 +39,34 @@ namespace GameClient.Misc
             (double totalSeconds, double interactingSeconds) = GetRimWorldPlaytimesSafe(map);
 
             mapFile.RealPlayTimeInteractingSeconds = interactingSeconds;
-
             mapFile.RealPlayTimeSeconds = totalSeconds;
 
             GetMapTerrain(mapFile, map);
-
             GetMapThings(mapFile, map, factionThings, nonFactionThings);
-
             GetMapHumans(mapFile, map, factionHumans, nonFactionHumans);
-
             GetMapAnimals(mapFile, map, factionAnimals, nonFactionAnimals);
 
             return mapFile;
         }
 
         public static Map StringToMap(MapFile mapFile, bool factionThings, bool nonFactionThings, bool factionHumans, bool nonFactionHumans,
-            bool factionAnimals, bool nonFactionAnimals, bool lessLoot = false)
+            bool factionAnimals, bool nonFactionAnimals, bool lessLoot = false, bool enforceIDs = false)
         {
             Map map = SetEmptyMap(mapFile, SessionHandler.ChosenSettlement.Tile);
 
             SetMapTerrain(mapFile, map);
 
-            if (factionThings || nonFactionThings) SetMapThings(mapFile, map, factionThings, nonFactionThings, lessLoot);
+            if (factionThings || nonFactionThings)
+                SetMapThings(mapFile, map, factionThings, nonFactionThings, lessLoot, enforceIDs);
 
-            if (factionHumans || nonFactionHumans) SetMapHumans(mapFile, map, factionHumans, nonFactionHumans);
+            if (factionHumans || nonFactionHumans)
+                SetMapHumans(mapFile, map, factionHumans, nonFactionHumans);
 
-            if (factionAnimals || nonFactionAnimals) SetMapAnimals(mapFile, map, factionAnimals, nonFactionAnimals);
+            if (factionAnimals || nonFactionAnimals)
+                SetMapAnimals(mapFile, map, factionAnimals, nonFactionAnimals);
 
             SetWeatherData(mapFile, map);
-
             SetMapFog(map);
-
             SetMapRoofs(map);
 
             return map;
@@ -88,18 +85,23 @@ namespace GameClient.Misc
                         MapTile component = new MapTile();
 
                         TerrainDef terrainDef = map.terrainGrid.TerrainAt(vectorToCheck);
-                        if (terrainDef != null) component.TileByte = (byte)DefDatabase<TerrainDef>.AllDefs.FirstIndexOf(fetch => fetch == terrainDef);
+                        if (terrainDef != null)
+                            component.TileByte = (byte)DefDatabase<TerrainDef>.AllDefs.FirstIndexOf(fetch => fetch == terrainDef);
 
                         component.IsPolluted = map.pollutionGrid.IsPolluted(vectorToCheck);
 
                         RoofDef roofDef = map.roofGrid.RoofAt(vectorToCheck);
-                        if (roofDef != null) component.RoofByte = (byte)DefDatabase<RoofDef>.AllDefs.FirstIndexOf(fetch => fetch == roofDef);
+                        if (roofDef != null)
+                            component.RoofByte = (byte)DefDatabase<RoofDef>.AllDefs.FirstIndexOf(fetch => fetch == roofDef);
 
                         mapFile.Tiles.Add(component);
                     }
                 }
             }
-            catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+            }
         }
 
         private static void GetMapThings(MapFile mapFile, Map map, bool factionThings, bool nonFactionThings)
@@ -109,10 +111,15 @@ namespace GameClient.Misc
                 try
                 {
                     string data = ScribeManager.SerializeToString(thing, ScribeManager.SerializableType.Thing, thing.stackCount);
-                    if (thing.def.alwaysHaulable && factionThings) mapFile.FactionThings.Add(data);
-                    else if (!thing.def.alwaysHaulable && nonFactionThings) mapFile.NonFactionThings.Add(data);
+                    if (thing.def.alwaysHaulable && factionThings)
+                        mapFile.FactionThings.Add(data);
+                    else if (!thing.def.alwaysHaulable && nonFactionThings)
+                        mapFile.NonFactionThings.Add(data);
                 }
-                catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                catch (Exception e)
+                {
+                    Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                }
             }
         }
 
@@ -123,10 +130,15 @@ namespace GameClient.Misc
                 try
                 {
                     string humanData = ScribeManager.SerializeToString(thing as Pawn, ScribeManager.SerializableType.Thing);
-                    if (thing.Faction == Faction.OfPlayer && factionHumans) mapFile.FactionHumans.Add(humanData);
-                    else if (thing.Faction != Faction.OfPlayer && nonFactionHumans) mapFile.NonFactionHumans.Add(humanData);
+                    if (thing.Faction == Faction.OfPlayer && factionHumans)
+                        mapFile.FactionHumans.Add(humanData);
+                    else if (thing.Faction != Faction.OfPlayer && nonFactionHumans)
+                        mapFile.NonFactionHumans.Add(humanData);
                 }
-                catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                catch (Exception e)
+                {
+                    Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                }
             }
         }
 
@@ -137,10 +149,15 @@ namespace GameClient.Misc
                 try
                 {
                     string animalData = ScribeManager.SerializeToString(thing as Pawn, ScribeManager.SerializableType.Thing);
-                    if (thing.Faction == Faction.OfPlayer && factionAnimals) mapFile.FactionAnimals.Add(animalData);
-                    else if (thing.Faction != Faction.OfPlayer && nonFactionAnimals) mapFile.NonFactionAnimals.Add(animalData);
+                    if (thing.Faction == Faction.OfPlayer && factionAnimals)
+                        mapFile.FactionAnimals.Add(animalData);
+                    else if (thing.Faction != Faction.OfPlayer && nonFactionAnimals)
+                        mapFile.NonFactionAnimals.Add(animalData);
                 }
-                catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                catch (Exception e)
+                {
+                    Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                }
             }
         }
 
@@ -158,7 +175,10 @@ namespace GameClient.Misc
 
                 return toReturn;
             }
-            catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+            }
 
             return toReturn;
         }
@@ -182,23 +202,32 @@ namespace GameClient.Misc
                             map.terrainGrid.SetTerrain(vectorToCheck, terrainToUse);
                             map.pollutionGrid.SetPolluted(vectorToCheck, component.IsPolluted);
                         }
-                        catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                        catch (Exception e)
+                        {
+                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                        }
 
                         try
                         {
                             RoofDef roofToUse = DefDatabase<RoofDef>.AllDefs.ToList()[component.RoofByte];
                             map.roofGrid.SetRoof(vectorToCheck, roofToUse);
                         }
-                        catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                        catch (Exception e)
+                        {
+                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                        }
 
                         index++;
                     }
                 }
             }
-            catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+            }
         }
 
-        private static void SetMapThings(MapFile mapFile, Map map, bool factionThings, bool nonFactionThings, bool lessLoot)
+        private static void SetMapThings(MapFile mapFile, Map map, bool factionThings, bool nonFactionThings, bool lessLoot, bool enforceIDs)
         {
             try
             {
@@ -212,16 +241,24 @@ namespace GameClient.Misc
                     {
                         try
                         {
-                            Thing toGet = (Thing)ScribeManager.SerializeFromString<Thing>(item);
+                            Thing toGet = (Thing)ScribeManager.SerializeFromString<Thing>(item, ScribeManager.SerializableType.Thing, enforceIDs);
 
                             if (lessLoot)
                             {
-                                if (rnd.Next(1, 100) > 70) thingsToGetInThisTile.Add(toGet);
-                                else continue;
+                                if (rnd.Next(1, 100) > 70)
+                                    thingsToGetInThisTile.Add(toGet);
+                                else
+                                    continue;
                             }
-                            else thingsToGetInThisTile.Add(toGet);
+                            else
+                            {
+                                thingsToGetInThisTile.Add(toGet);
+                            }
                         }
-                        catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                        catch (Exception e)
+                        {
+                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                        }
                     }
                 }
 
@@ -234,7 +271,10 @@ namespace GameClient.Misc
                             Thing toGet = (Thing)ScribeManager.SerializeFromString<Thing>(item);
                             thingsToGetInThisTile.Add(toGet);
                         }
-                        catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                        catch (Exception e)
+                        {
+                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                        }
                     }
                 }
 
@@ -242,13 +282,21 @@ namespace GameClient.Misc
                 {
                     try
                     {
-                        if (thing.def.CanHaveFaction) thing.SetFaction(SessionHandler.NeutralFaction);
+                        if (thing.def.CanHaveFaction)
+                            thing.SetFaction(SessionHandler.NeutralFaction);
+
                         GenPlace.TryPlaceThing(thing, thing.Position, map, ThingPlaceMode.Direct, rot: thing.Rotation);
                     }
-                    catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                    catch (Exception e)
+                    {
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    }
                 }
             }
-            catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+            }
         }
 
         private static void SetMapHumans(MapFile mapFile, Map map, bool factionHumans, bool nonFactionHumans)
@@ -266,7 +314,10 @@ namespace GameClient.Misc
 
                             GenSpawn.Spawn(human, human.Position, map, human.Rotation);
                         }
-                        catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                        catch (Exception e)
+                        {
+                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                        }
                     }
                 }
 
@@ -279,11 +330,17 @@ namespace GameClient.Misc
                             Pawn human = ScribeManager.SerializeFromString<Pawn>(pawn);
                             GenSpawn.Spawn(human, human.Position, map, human.Rotation);
                         }
-                        catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                        catch (Exception e)
+                        {
+                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                        }
                     }
                 }
             }
-            catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+            }
         }
 
         private static void SetMapAnimals(MapFile mapFile, Map map, bool factionAnimals, bool nonFactionAnimals)
@@ -301,7 +358,10 @@ namespace GameClient.Misc
 
                             GenSpawn.Spawn(animal, animal.Position, map, animal.Rotation);
                         }
-                        catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                        catch (Exception e)
+                        {
+                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                        }
                     }
                 }
 
@@ -314,11 +374,17 @@ namespace GameClient.Misc
                             Pawn animal = (Pawn)ScribeManager.SerializeFromString<Pawn>(pawn);
                             GenSpawn.Spawn(animal, animal.Position, map, animal.Rotation);
                         }
-                        catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+                        catch (Exception e)
+                        {
+                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                        }
                     }
                 }
             }
-            catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+            }
         }
 
         private static void SetWeatherData(MapFile mapFile, Map map)
@@ -328,13 +394,22 @@ namespace GameClient.Misc
                 WeatherDef weatherDef = DefDatabase<WeatherDef>.AllDefs.ToList()[mapFile.WeatherByte];
                 map.weatherManager.TransitionTo(weatherDef);
             }
-            catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+            }
         }
 
         private static void SetMapFog(Map map)
         {
-            try { FloodFillerFog.FloodUnfog(MapGenerator.PlayerStartSpot, map); }
-            catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+            try
+            {
+                FloodFillerFog.FloodUnfog(MapGenerator.PlayerStartSpot, map);
+            }
+            catch (Exception e)
+            {
+                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+            }
         }
 
         private static void SetMapRoofs(Map map)
@@ -344,7 +419,10 @@ namespace GameClient.Misc
                 map.roofCollapseBuffer.Clear();
                 map.roofGrid.Drawer.SetDirty();
             }
-            catch (Exception e) { Printer.Warning(e.ToString(), LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+            }
         }
 
         private static string GetFactionNameSafe()
@@ -353,11 +431,16 @@ namespace GameClient.Misc
             {
                 if (Faction.OfPlayer != null)
                 {
-                    if (!string.IsNullOrWhiteSpace(Faction.OfPlayer.Name)) return Faction.OfPlayer.Name;
-                    if (Faction.OfPlayer.def != null && !string.IsNullOrWhiteSpace(Faction.OfPlayer.def.label)) return Faction.OfPlayer.def.label;
+                    if (!string.IsNullOrWhiteSpace(Faction.OfPlayer.Name))
+                        return Faction.OfPlayer.Name;
+
+                    if (Faction.OfPlayer.def != null && !string.IsNullOrWhiteSpace(Faction.OfPlayer.def.label))
+                        return Faction.OfPlayer.def.label;
                 }
             }
-            catch { }
+            catch
+            {
+            }
 
             return string.Empty;
         }
@@ -366,7 +449,8 @@ namespace GameClient.Misc
         {
             try
             {
-                if (map == null) return string.Empty;
+                if (map == null)
+                    return string.Empty;
 
                 try
                 {
@@ -379,18 +463,23 @@ namespace GameClient.Misc
                         object labelObj = labelProp != null ? labelProp.GetValue(parent, null) : null;
                         string label = labelObj as string;
 
-                        if (!string.IsNullOrWhiteSpace(label)) return label;
+                        if (!string.IsNullOrWhiteSpace(label))
+                            return label;
                     }
                 }
-                catch { }
+                catch
+                {
+                }
 
                 object infoObj = null;
 
                 PropertyInfo infoPropLower = map.GetType().GetProperty("info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 PropertyInfo infoPropUpper = map.GetType().GetProperty("Info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-                if (infoPropLower != null) infoObj = infoPropLower.GetValue(map, null);
-                else if (infoPropUpper != null) infoObj = infoPropUpper.GetValue(map, null);
+                if (infoPropLower != null)
+                    infoObj = infoPropLower.GetValue(map, null);
+                else if (infoPropUpper != null)
+                    infoObj = infoPropUpper.GetValue(map, null);
 
                 if (infoObj != null)
                 {
@@ -405,11 +494,14 @@ namespace GameClient.Misc
                         object labelObj = labelProp != null ? labelProp.GetValue(parent, null) : null;
                         string label = labelObj as string;
 
-                        if (!string.IsNullOrWhiteSpace(label)) return label;
+                        if (!string.IsNullOrWhiteSpace(label))
+                            return label;
                     }
                 }
             }
-            catch { }
+            catch
+            {
+            }
 
             return string.Empty;
         }
@@ -421,17 +513,20 @@ namespace GameClient.Misc
 
             try
             {
-                // Current.Game.info (GameInfo) is the authoritative tracker used by RimWorld saves + stats.
-                if (Current.Game == null) return (-1, -1);
+                if (Current.Game == null)
+                    return (-1, -1);
 
                 object infoObj = null;
 
                 try
                 {
                     FieldInfo infoField = Current.Game.GetType().GetField("info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    if (infoField != null) infoObj = infoField.GetValue(Current.Game);
+                    if (infoField != null)
+                        infoObj = infoField.GetValue(Current.Game);
                 }
-                catch { }
+                catch
+                {
+                }
 
                 if (infoObj == null)
                 {
@@ -439,9 +534,13 @@ namespace GameClient.Misc
                     {
                         PropertyInfo infoProp = Current.Game.GetType().GetProperty("Info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                                              ?? Current.Game.GetType().GetProperty("info", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                        if (infoProp != null) infoObj = infoProp.GetValue(Current.Game, null);
+
+                        if (infoProp != null)
+                            infoObj = infoProp.GetValue(Current.Game, null);
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
 
                 if (infoObj != null)
@@ -450,15 +549,17 @@ namespace GameClient.Misc
                     interacting = ReadNumericMember(infoObj, "realPlayTimeInteracting", "RealPlayTimeInteracting");
                 }
 
-                // Fallback to old component if interacting missing
                 if (interacting < 0 && map != null)
                 {
                     try
                     {
                         RT_MapPlaytimeComponent comp = map.GetComponent<RT_MapPlaytimeComponent>();
-                        if (comp != null) interacting = comp.TotalSeconds;
+                        if (comp != null)
+                            interacting = comp.TotalSeconds;
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
 
                 return (total, interacting);
@@ -477,10 +578,13 @@ namespace GameClient.Misc
                 if (f != null)
                 {
                     object v = f.GetValue(obj);
-                    if (v != null) return Convert.ToDouble(v);
+                    if (v != null)
+                        return Convert.ToDouble(v);
                 }
             }
-            catch { }
+            catch
+            {
+            }
 
             try
             {
@@ -490,10 +594,13 @@ namespace GameClient.Misc
                 if (p != null)
                 {
                     object v = p.GetValue(obj, null);
-                    if (v != null) return Convert.ToDouble(v);
+                    if (v != null)
+                        return Convert.ToDouble(v);
                 }
             }
-            catch { }
+            catch
+            {
+            }
 
             return -1;
         }

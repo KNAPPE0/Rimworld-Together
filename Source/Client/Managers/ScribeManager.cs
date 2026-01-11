@@ -75,7 +75,7 @@ namespace GameClient.Managers
             return scribeData.ToString();
         }
 
-        public static T SerializeFromString<T>(string scribeData, SerializableType type = SerializableType.Thing)
+        public static T SerializeFromString<T>(string scribeData, SerializableType type = SerializableType.Thing, bool enforceID = false)
         {
             SessionHandler.IsUsingScriber = true;
 
@@ -92,13 +92,14 @@ namespace GameClient.Managers
                 if (type == SerializableType.Thing)
                 {
                     Thing thing = toLoad as Thing;
-                    thing.thingIDNumber = Find.UniqueIDsManager.GetNextThingID();
+                    if (!enforceID) thing.thingIDNumber = Find.UniqueIDsManager.GetNextThingID();
                 }
 
                 else if (type == SerializableType.Pawn)
                 {
                     Pawn pawn = toLoad as Pawn;
                     if (pawn.def.CanHaveFaction) pawn.SetFactionDirect(Faction.OfPlayer);
+                    if (!enforceID) pawn.thingIDNumber = Find.UniqueIDsManager.GetNextThingID();
                 }
             }
             catch (Exception e) { Printer.Error(e.ToString(), LogImportanceMode.Verbose); }

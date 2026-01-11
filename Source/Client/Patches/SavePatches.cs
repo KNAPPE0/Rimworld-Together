@@ -19,6 +19,7 @@ namespace GameClient.Patches
             {
                 if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return true;
                 if (SessionHandler.IsSavingGame) return false;
+                if (SessionHandler.SynchronousMap != null) return false;
 
                 SessionHandler.IsSavingGame = true;
 
@@ -42,12 +43,8 @@ namespace GameClient.Patches
 
                 if (SessionHandler.CurrentNetworkState.Equals(ClientNetworkState.Connected))
                 {
-                    Printer.Message("Sending maps to server", LogImportanceMode.Verbose);
                     MapManager.SendPlayerMapsToServer();
-
-                    Printer.Message("Sending save to server", LogImportanceMode.Verbose);
                     SaveManager.SendSaveToServer();
-
                     RT_Dialog_Wait.Instance.Close();
                 }
             }

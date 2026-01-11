@@ -1,8 +1,10 @@
 ﻿using GameClient.Misc;
 using Shared;
-using Verse;
-using TCPNetwork.Packets;
 using Shared.Files.Maps;
+using Shared.Misc;
+using TCPNetwork.Packets;
+using Verse;
+using static Shared.CommonEnumerators;
 
 namespace GameClient.Managers
 {
@@ -10,6 +12,8 @@ namespace GameClient.Managers
     {
         public static void SendPlayerMapsToServer()
         {
+            Printer.Message("Sending maps to server", LogImportanceMode.Verbose);
+
             foreach (Map map in Find.Maps.ToArray())
             {
                 if (map != null && map.IsPlayerHome)

@@ -147,6 +147,8 @@ namespace GameClient.Managers
 
         public static void SendSaveToServer()
         {
+            Printer.Message("Sending save to server", LogImportanceMode.Verbose);
+
             byte[] saveBytes;
             if (string.IsNullOrEmpty(LatestSavePath)) saveBytes = File.ReadAllBytes(SaveFilePath);
             else saveBytes = File.ReadAllBytes(LatestSavePath);

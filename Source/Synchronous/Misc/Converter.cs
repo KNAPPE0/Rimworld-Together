@@ -35,21 +35,17 @@ namespace Synchronous.Misc
         {
             Pawn pawn = Finder.GetPawnFromID(SessionHandler.SynchronousMap, value);
             if (pawn != null) return new LocalTargetInfo(pawn);
-            //else if (thing != null) ;
-            else return new LocalTargetInfo(StringToIntVec3(value));
+
+            Thing thing = Finder.GetThingFromID(SessionHandler.SynchronousMap, value);
+            if (thing != null) return new LocalTargetInfo(thing);
+
+            return new LocalTargetInfo(StringToIntVec3(value));
         }
 
         public static List<string> LocalTargetQueueToString(List<LocalTargetInfo> value)
         {
             List<string> results = new List<string>();
             foreach (LocalTargetInfo info in value) results.Add(LocalTargetInfoToString(info));
-            return results;
-        }
-
-        public static List<LocalTargetInfo> StringToLocalTargetQueue(List<string> value)
-        {
-            List<LocalTargetInfo> results = new List<LocalTargetInfo>();
-            foreach (string str in value) results.Add(StringToLocalTargetInfo(str));
             return results;
         }
 

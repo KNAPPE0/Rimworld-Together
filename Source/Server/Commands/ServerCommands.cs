@@ -22,7 +22,7 @@ namespace GameServer.Commands
         private static readonly CommandBase HelpCommand = new CommandBase("help", 0,
             "Shows a list of all available commands to use",
             HelpCommandAction);
-
+        
         public static readonly CommandBase BackupCommand = new CommandBase("backup", 0,
             "Backup the server.",
             BackupCommandAction);
@@ -139,6 +139,10 @@ namespace GameServer.Commands
             "Forces every connected user to get site rewards",
             ForceSiteRewardsCommandAction);
 
+        private static readonly CommandBase ToggleVerboseCommand = new CommandBase("toggleverbose", 0,
+            "Toggles extreme verbose and verbose",
+            ToggleVerboseAndExtremeVerboseCommand);
+        
         public static List<CommandBase> Commands = new List<CommandBase>
         {
             BackupCommand,
@@ -170,7 +174,8 @@ namespace GameServer.Commands
             WhitelistCommand,
             WhitelistRemoveCommand,
             DebugGCClearCommand,
-            SiteRewardsCommand
+            SiteRewardsCommand,
+            ToggleVerboseCommand
         };
     }
 
@@ -193,7 +198,7 @@ namespace GameServer.Commands
             }
             Printer.Title("----------------------------------------");
         }
-
+        
         public static void BackupCommandAction()
         {
             BackupManager.BackupServer();
@@ -626,6 +631,14 @@ namespace GameServer.Commands
                 }
             }
             catch { }
+        }
+        
+        public static void ToggleVerboseAndExtremeVerboseCommand()
+        {
+            Master.ServerConfig.VerboseLogs = !Master.ServerConfig.VerboseLogs;
+            Master.ServerConfig.ExtremeVerboseLogs = !Master.ServerConfig.VerboseLogs;
+            Master.ServerConfig.Save();
+            Printer.Warning($"Verbose logging is now {(Master.ServerConfig.VerboseLogs ? "on":"off")}");
         }
     }
 }

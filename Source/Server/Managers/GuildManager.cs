@@ -16,7 +16,7 @@ namespace GameServer.Managers
     public static class GuildManager
     {
         [HandlesPacket(PacketHeader.GuildManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        private static void ParsePacket(ServerClient client, byte[] bytes)
         {
             if (!Master.ActionConfigs.EnableFactions)
             {

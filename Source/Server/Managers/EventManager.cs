@@ -12,7 +12,7 @@ namespace GameServer.Managers
     public static class EventManager
     {
         [HandlesPacket(PacketHeader.EventManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        private static void ParsePacket(ServerClient client, byte[] bytes)
         {
             if (!Master.ActionConfigs.EventAction.IsEnabled)
             {

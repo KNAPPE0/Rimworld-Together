@@ -9,7 +9,7 @@ namespace GameServer.Managers
     public static class InformationManager
     {
         [HandlesPacket(PacketHeader.InformationManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        private static void ParsePacket(ServerClient client, byte[] bytes)
         {
             InformationData data = Serializer.ConvertBytesToObject<InformationData>(bytes);
             if (data == null) return;

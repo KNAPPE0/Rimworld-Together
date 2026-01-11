@@ -27,4 +27,8 @@
 		<Reference Include="System.IO.Compression" />
 		<Reference Include="System.IO.Compression.FileSystem" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Files\Network\" />
+	</ItemGroup>
 </Project>

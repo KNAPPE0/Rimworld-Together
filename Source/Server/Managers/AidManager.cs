@@ -12,7 +12,7 @@ namespace GameServer.Managers
     public static class AidManager
     {
         [HandlesPacket(PacketHeader.AidManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        private static void ParsePacket(ServerClient client, byte[] bytes)
         {
             if (!Master.ActionConfigs.AidAction.IsEnabled)
             {

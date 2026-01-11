@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TCPNetwork;
 using TCPNetwork.Files.Client;
+using TCPNetwork.Misc;
 using Verse;
 using static Shared.CommonEnumerators;
 
@@ -34,7 +35,7 @@ namespace GameClient
 
             MainThreadHandler.Instance.Enqueue(delegate
             {
-                MethodGatherer.ClientMethodDictionary[header].Invoke(null, new object[] { buffer });
+                PacketCache.ClientMethodDictionary[header](buffer);
             });
         };
 
@@ -116,7 +117,10 @@ namespace GameClient
                 ClientListener = new Listener(null, tcpClient, OnReadPacket, OnWritePacket, OnConnect, OnDisconnect,
                     OnMessage, OnWarning, OnError, Listener.ListenerMode.Client);
             }
-            catch { return false; }
+            catch
+            {
+                return false;
+            }
 
             return true;
         }

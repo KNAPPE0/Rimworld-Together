@@ -16,7 +16,7 @@ namespace GameServer.Managers
     public static class GoodwillManager
     {
         [HandlesPacket(PacketHeader.GoodWillManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        private static void ParsePacket(ServerClient client, byte[] bytes)
         {
             FactionGoodwillData data = Serializer.ConvertBytesToObject<FactionGoodwillData>(bytes);
 

@@ -13,7 +13,7 @@ namespace GameServer.Managers
     public static class PollutionManager
     {
         [HandlesPacket(PacketHeader.PollutionManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        private static void ParsePacket(ServerClient client, byte[] bytes)
         {
             if (!Master.ActionConfigs.EnablePollutionSpread)
             {

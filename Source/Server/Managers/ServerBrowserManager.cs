@@ -32,7 +32,7 @@ namespace GameServer.Managers
         private static bool IsRunning { get; set; }= false;
 
         [HandlesPacket(PacketHeader.ServerBrowserReachability)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        private static void ParsePacket(ServerClient client, byte[] _)
         {
             if(!IsRunning)
                 ResponseShortcutManager.SendIllegalPacket(client, 

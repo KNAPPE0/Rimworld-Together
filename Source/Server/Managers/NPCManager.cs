@@ -14,7 +14,7 @@ namespace GameServer.Managers
     public static class NPCManager
     {
         [HandlesPacket(PacketHeader.NPCManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        private static void ParsePacket(ServerClient client, byte[] bytes)
         {
             if (!Master.ActionConfigs.EnableNPCDestruction)
             {

@@ -13,7 +13,7 @@ namespace GameServer.Managers
     public static class GameParameterManager
     {
         [HandlesPacket(PacketHeader.GameParameterManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        private static void ParsePacket(ServerClient client, byte[] bytes)
         {
             GameParameterData data = Serializer.ConvertBytesToObject<GameParameterData>(bytes);
 

@@ -4,15 +4,16 @@ using GameServer.Managers;
 using GameServer.Misc;
 using TCPNetwork;
 using Shared;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using static Shared.CommonEnumerators;
 using TCPNetwork.Files.Client;
 using Shared.Misc;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+using TCPNetwork.Misc;
 
 namespace GameServer
 {
@@ -26,7 +27,7 @@ namespace GameServer
 
         public override Action<PacketHeader, byte[], ServerClient> OnReadPacket { get; set; } = delegate (PacketHeader header, byte[] buffer, ServerClient client)
         {
-            MethodGatherer.ServerMethodDictionary[header].Invoke(null, new object[] { client, buffer, header });
+            PacketCache.ServerMethodDictionary[header](client, buffer);
         };
 
         public override Action<bool> OnWritePacket { get; set; } = delegate (bool mode) { };

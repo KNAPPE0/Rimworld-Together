@@ -14,7 +14,7 @@ namespace GameServer.Managers
     public static class SiteManager
     {
         [HandlesPacket(PacketHeader.SiteManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes)
+        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if (!Master.ActionConfigs.SiteAction.IsEnabled)
             {

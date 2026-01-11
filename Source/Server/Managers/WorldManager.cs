@@ -12,7 +12,7 @@ namespace GameServer.Managers
     public static class WorldManager
     {
         [HandlesPacket(PacketHeader.WorldManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes)
+        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             WorldData data = Serializer.ConvertBytesToObject<WorldData>(bytes);
 

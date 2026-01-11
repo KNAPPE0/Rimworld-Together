@@ -14,7 +14,7 @@ namespace GameServer.Managers
     public static class SettlementManager
     {
         [HandlesPacket(PacketHeader.SettlementManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes)
+        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             PlayerSettlementData data = Serializer.ConvertBytesToObject<PlayerSettlementData>(bytes);
 

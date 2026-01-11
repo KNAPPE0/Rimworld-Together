@@ -10,7 +10,7 @@ namespace GameServer.Managers
     public static class ActivityManager
     {
         [HandlesPacket(PacketHeader.ActivityManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes)
+        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if (client == null || bytes == null || bytes.Length == 0) return;
 

@@ -10,7 +10,7 @@ namespace GameServer.Managers
     public static class CaravanManager
     {
         [HandlesPacket(PacketHeader.CaravanManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes)
+        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             CaravanData data = Serializer.ConvertBytesToObject<CaravanData>(bytes);
 

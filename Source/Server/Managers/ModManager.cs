@@ -19,7 +19,7 @@ namespace GameServer.Managers
         }
 
         [HandlesPacket(PacketHeader.ModManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes)
+        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             ModConfigData data = Serializer.ConvertBytesToObject<ModConfigData>(bytes);
 

@@ -15,7 +15,7 @@ namespace GameServer.Managers
     public static class SaveManager
     {
         [HandlesPacket(PacketHeader.SaveManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes)
+        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             int read = SaveData.ParseSavePacket(bytes, out SaveDataHeader saveHeader);
             var save = bytes.AsSpan(read);

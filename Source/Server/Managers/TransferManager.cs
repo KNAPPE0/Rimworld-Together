@@ -13,7 +13,7 @@ namespace GameServer.Managers
     public static class TransferManager
     {
         [HandlesPacket(PacketHeader.TransferManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes)
+        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if (!Master.ActionConfigs.EnableTrading)
             {

@@ -10,7 +10,7 @@ namespace GameServer.Managers
     public static class VersionManager
     {
         [HandlesPacket(PacketHeader.VersionManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes)
+        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             VersionData data = Serializer.ConvertBytesToObject<VersionData>(bytes);
 

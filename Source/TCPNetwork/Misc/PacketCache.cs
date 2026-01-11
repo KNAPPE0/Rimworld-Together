@@ -8,7 +8,7 @@ using TCPNetwork.Files.Client;
 namespace TCPNetwork.Misc
 {
     public delegate void PacketHandler(byte[] bytes);
-    public delegate void PacketHandlerServer(ServerClient client, byte[] bytes);
+    public delegate void PacketHandlerServer(ServerClient client, byte[] bytes, PacketHeader handler);
     public static class PacketCache
     {
         public static Dictionary<PacketHeader, PacketHandler> ClientMethodDictionary { get; private set; } = new();

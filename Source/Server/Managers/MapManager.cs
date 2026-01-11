@@ -15,7 +15,7 @@ namespace GameServer.Managers
     public static class MapManager
     {
         [HandlesPacket(PacketHeader.MapManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes)
+        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             MapData data = Serializer.ConvertBytesToObject<MapData>(bytes);
             if (data == null) return;

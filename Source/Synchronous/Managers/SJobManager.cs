@@ -56,7 +56,6 @@ namespace Synchronous.Managers
             try
             {
                 PlayerJob newJob = new PlayerJob();
-                newJob.MapTile = pawn.MapHeld.Tile;
                 newJob.PawnID = pawn.ThingID;
                 newJob.PawnPosition = Converter.IntVector3ToString(pawn.Position);
                 newJob.TargetA = Converter.LocalTargetInfoToString(job.GetTarget(TargetIndex.A));
@@ -88,12 +87,10 @@ namespace Synchronous.Managers
                 {
                     try
                     {
-                        Map map = Finder.GetMapFromTile(playerJob.MapTile);
-                        Pawn pawn = Finder.GetPawnFromID(map, playerJob.PawnID);
-
                         Job newJob = ScribeManager.SerializeFromString<Job>(playerJob.Job);
                         newJob = Converter.PlayerJobToJob(newJob, playerJob);
 
+                        Pawn pawn = Finder.GetPawnFromID(SessionHandler.SynchronousMap, playerJob.PawnID);
                         pawn.Position = Converter.StringToIntVec3(playerJob.PawnPosition);
                         pawn.jobs.StartJob(newJob, JobCondition.InterruptForced);
                     }

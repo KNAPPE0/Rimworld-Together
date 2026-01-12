@@ -8,8 +8,6 @@ namespace Synchronous.Objects
 {
     public class PlayerJob
     {
-        public int MapTile { get; set; } = -1;
-
         public string PawnID { get; set; } = string.Empty;
 
         public string PawnPosition { get; set; } = string.Empty;

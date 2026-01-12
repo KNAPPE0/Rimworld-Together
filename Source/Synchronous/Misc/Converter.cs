@@ -26,18 +26,38 @@ namespace Synchronous.Misc
 
         public static string LocalTargetInfoToString(LocalTargetInfo value)
         {
-            if (value.Pawn != null) return value.Pawn.ThingID;
-            else if (value.Thing != null) return value.Thing.ThingID;
+            //if (value.Pawn != null) return value.Pawn.ThingID;
+            //else if (value.Thing != null) return value.Thing.ThingID;
+            //else return IntVector3ToString(value.Cell);
+
+            if (value.Pawn != null) return SessionHandler.SynchronousMap.mapPawns.AllPawns.FirstIndexOf(fetch => fetch.ThingID == value.Pawn.ThingID).ToString();
+            else if (value.Thing != null) return SessionHandler.SynchronousMap.listerThings.AllThings.FirstIndexOf(fetch => fetch.ThingID == value.Thing.ThingID).ToString();
             else return IntVector3ToString(value.Cell);
         }
 
         public static LocalTargetInfo StringToLocalTargetInfo(string value)
         {
-            Pawn pawn = Finder.GetPawnFromID(SessionHandler.SynchronousMap, value);
-            if (pawn != null) return new LocalTargetInfo(pawn);
+            //Pawn pawn = Finder.GetPawnFromID(SessionHandler.SynchronousMap, value);
+            //if (pawn != null) return new LocalTargetInfo(pawn);
 
-            Thing thing = Finder.GetThingFromID(SessionHandler.SynchronousMap, value);
-            if (thing != null) return new LocalTargetInfo(thing);
+            //Thing thing = Finder.GetThingFromID(SessionHandler.SynchronousMap, value);
+            //if (thing != null) return new LocalTargetInfo(thing);
+
+            //return new LocalTargetInfo(StringToIntVec3(value));
+
+            try
+            {
+                Pawn pawn = SessionHandler.SynchronousMap.mapPawns.AllPawns[int.Parse(value)];
+                if (pawn != null) return new LocalTargetInfo(pawn);
+            }
+            catch { }
+
+            try
+            {
+                Thing thing = SessionHandler.SynchronousMap.listerThings.AllThings[int.Parse(value)];
+                if (thing != null) return new LocalTargetInfo(thing);
+            }
+            catch { }
 
             return new LocalTargetInfo(StringToIntVec3(value));
         }

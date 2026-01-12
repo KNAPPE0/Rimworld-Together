@@ -139,6 +139,7 @@ namespace GameClient.Managers
             MainThreadHandler.Instance.DoOnSynchronousStartMethods();
 
             RT_Dialog_Wait.Instance.Close();
+            CameraJumper.TryJump(SessionHandler.SynchronousMap.Center, SessionHandler.SynchronousMap, CameraJumper.MovementMode.Pan);
         }
 
         private static void OnStart()

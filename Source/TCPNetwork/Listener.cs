@@ -125,24 +125,15 @@ namespace TCPNetwork
 
                     if (Stream.DataAvailable)
                     {
-                        // Read packet header
                         Stream.Read(headerBuffer, 0, sizeof(PacketHeader));
                         PacketHeader header = (PacketHeader)headerBuffer[0];
 
-                        // Read packet size
                         Stream.Read(lengthBuffer, 0, Network.PacketLengthSizeInBytes);
 
-                        // Read packet contents
                         var packetBuffer = new byte[BitConverter.ToInt32(lengthBuffer, 0)];
                         ReadFullPacket(packetBuffer);
 
-                        // This prevents tab-out / unfocus from disconnecting due to main thread not processing packets.
                         CurrentKeepAliveTime = 0;
-
-                        if (!IgnoreLogPackets.Contains(header))
-                            OnMessage($"[Packet] > Received packet {header}", LogImportanceMode.Verbose);
-                        else
-                            OnMessage($"[Packet] > Received packet {header}", LogImportanceMode.Extreme);
 
                         try
                         {
@@ -150,7 +141,7 @@ namespace TCPNetwork
                         }
                         catch (Exception e)
                         {
-                            OnWarning(e, LogImportanceMode.Extreme);
+                            OnWarning(e, LogImportanceMode.Normal);
                         }
                     }
                 }
@@ -161,7 +152,7 @@ namespace TCPNetwork
             }
             catch (Exception e)
             {
-                OnWarning(e, LogImportanceMode.Extreme);
+                OnWarning(e, LogImportanceMode.Normal);
             }
 
             DisconnectNow();
@@ -189,17 +180,13 @@ namespace TCPNetwork
 
                         byte[] packetSize = BitConverter.GetBytes(packetData.Value.Length);
 
-                        // Write packet header
                         headerBuffer[0] = packetData.Key;
                         Stream.Write(headerBuffer, 0, sizeof(PacketHeader));
 
-                        // Write packet size
                         Stream.Write(packetSize, 0, packetSize.Length);
 
-                        // Write packet data
                         Stream.Write(packetData.Value, 0, packetData.Value.Length);
 
-                        // Log the packet data
                         if (!IgnoreLogPackets.Contains((PacketHeader)packetData.Key))
                             OnMessage($"[Packet] Sent packet > {(PacketHeader)packetData.Key}", LogImportanceMode.Verbose);
                         else

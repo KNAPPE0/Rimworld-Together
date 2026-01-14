@@ -44,7 +44,7 @@ namespace TCPNetwork
 
         public int CurrentKeepAliveTime { get; set; } = 0;
 
-        public static readonly int KeepAliveMaxTime = 30000;
+        public static readonly int KeepAliveMaxTime = 60000;
 
         public static readonly string DefaultParserMethodName = "ParsePacket";
 

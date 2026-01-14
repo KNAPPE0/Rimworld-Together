@@ -74,7 +74,7 @@ namespace GameClient.Patches
                     if (!RimworldManager.CheckIfHasEnoughSilverInMap(Find.AnyPlayerHomeMap, 1))
                     {
                         Thing silver = ThingMaker.MakeThing(ThingDefOf.Silver);
-                        RimworldManager.PlaceThingIntoMap(silver, Find.AnyPlayerHomeMap);
+                        RimworldManager.PlaceThingIntoMap(silver, Find.AnyPlayerHomeMap, Find.AnyPlayerHomeMap.Center);
                     }
                 }
 

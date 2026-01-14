@@ -91,7 +91,7 @@ namespace Synchronous.Managers
                         newJob = Converter.PlayerJobToJob(newJob, playerJob);
 
                         Pawn pawn = Finder.GetPawnFromID(SessionHandler.SynchronousMap, playerJob.PawnID);
-                        pawn.Position = Converter.StringToIntVec3(playerJob.PawnPosition);
+                        pawn.SetPositionDirect(Converter.StringToIntVec3(playerJob.PawnPosition));
                         pawn.jobs.StartJob(newJob, JobCondition.InterruptForced);
                     }
                     catch { };

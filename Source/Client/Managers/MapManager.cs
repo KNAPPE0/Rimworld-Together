@@ -27,13 +27,12 @@ namespace GameClient.Managers
         {
             if (map == null) return;
 
-            MapFile mapFile = MapSaveLoader.MapToString(map, true, true, true, true, true, true);
+            MapFile mapFile = MapSaveLoader.MapToString(map);
             if (mapFile == null) return;
 
             MapData mapData = new MapData();
             mapData._mapTile = mapFile.Tile;
             mapData._mapFile = mapFile;
-
             mapData._rawData = Serializer.ConvertObjectToBytes(mapFile);
 
             ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.MapManager, mapData);

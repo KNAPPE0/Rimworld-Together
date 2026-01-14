@@ -1,4 +1,5 @@
 ﻿using GameServer.Core;
+using GameServer.Managers;
 using Shared;
 using Shared.Files;
 using Shared.Misc;
@@ -13,7 +14,7 @@ using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
 
-namespace GameServer.Managers
+namespace GameServer.Hooks.Synchronous
 {
     public static class SynchronousManager
     {

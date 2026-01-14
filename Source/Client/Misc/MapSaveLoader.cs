@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using GameClient.Managers;
 using RimWorld;
 using Shared.Files;
 using Shared.Files.Maps;
 using Shared.Misc;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Verse;
 using static Shared.CommonEnumerators;
 
@@ -14,13 +14,11 @@ namespace GameClient.Misc
 {
     public static class MapSaveLoader
     {
-        public static MapFile MapToString(Map map, bool factionThings, bool nonFactionThings, bool factionHumans, bool nonFactionHumans,
-            bool factionAnimals, bool nonFactionAnimals)
+        public static MapFile MapToString(Map map)
         {
             MapFile mapFile = new MapFile();
 
             mapFile.Tile = map.Tile;
-
             mapFile.Size = ValueParser.IntVec3ToArray(map.Size);
 
             mapFile.Wealth = (int)map.wealthWatcher.WealthTotal;
@@ -37,14 +35,13 @@ namespace GameClient.Misc
             mapFile.FactionName = GetFactionNameSafe();
 
             (double totalSeconds, double interactingSeconds) = GetRimWorldPlaytimesSafe(map);
-
             mapFile.RealPlayTimeInteractingSeconds = interactingSeconds;
             mapFile.RealPlayTimeSeconds = totalSeconds;
 
             GetMapTerrain(mapFile, map);
-            GetMapThings(mapFile, map, factionThings, nonFactionThings);
-            GetMapHumans(mapFile, map, factionHumans, nonFactionHumans);
-            GetMapAnimals(mapFile, map, factionAnimals, nonFactionAnimals);
+            GetMapThings(mapFile, map);
+            GetMapHumans(mapFile, map);
+            GetMapAnimals(mapFile, map);
 
             return mapFile;
         }
@@ -52,7 +49,8 @@ namespace GameClient.Misc
         public static Map StringToMap(MapFile mapFile, bool factionThings, bool nonFactionThings, bool factionHumans, bool nonFactionHumans,
             bool factionAnimals, bool nonFactionAnimals, bool lessLoot = false, bool enforceIDs = false)
         {
-            Map map = SetEmptyMap(mapFile, SessionHandler.ChosenSettlement.Tile);
+            Map map = SetEmptyMap(mapFile, mapFile.Tile);
+            if (map == null) return null;
 
             SetMapTerrain(mapFile, map);
 
@@ -60,14 +58,14 @@ namespace GameClient.Misc
                 SetMapThings(mapFile, map, factionThings, nonFactionThings, lessLoot, enforceIDs);
 
             if (factionHumans || nonFactionHumans)
-                SetMapHumans(mapFile, map, factionHumans, nonFactionHumans);
+                SetMapHumans(mapFile, map, factionHumans, nonFactionHumans, enforceIDs);
 
             if (factionAnimals || nonFactionAnimals)
-                SetMapAnimals(mapFile, map, factionAnimals, nonFactionAnimals);
+                SetMapAnimals(mapFile, map, factionAnimals, nonFactionAnimals, enforceIDs);
 
-            SetWeatherData(mapFile, map);
-            SetMapFog(map);
-            SetMapRoofs(map);
+            SetWeather(mapFile, map);
+            SetFog(map);
+            SetRoofs(map);
 
             return map;
         }
@@ -104,16 +102,21 @@ namespace GameClient.Misc
             }
         }
 
-        private static void GetMapThings(MapFile mapFile, Map map, bool factionThings, bool nonFactionThings)
+        private static void GetMapThings(MapFile mapFile, Map map)
         {
-            foreach (Thing thing in map.listerThings.AllThings.Where(fetch => !ScriberH.CheckIfThingIsHuman(fetch) && !ScriberH.CheckIfThingIsAnimal(fetch)))
+            Thing[] toList = map.listerThings.AllThings
+                .Where(fetch => !ScriberH.CheckIfThingIsHuman(fetch) && !ScriberH.CheckIfThingIsAnimal(fetch))
+                .ToArray();
+
+            foreach (Thing thing in toList)
             {
                 try
                 {
-                    string data = ScribeManager.SerializeToString(thing, ScribeManager.SerializableType.Thing, thing.stackCount);
-                    if (thing.def.alwaysHaulable && factionThings)
+                    string data = ScribeManager.SerializeToString(thing, ScribeManager.SerializableType.Thing);
+
+                    if (thing.def.alwaysHaulable)
                         mapFile.FactionThings.Add(data);
-                    else if (!thing.def.alwaysHaulable && nonFactionThings)
+                    else
                         mapFile.NonFactionThings.Add(data);
                 }
                 catch (Exception e)
@@ -123,16 +126,21 @@ namespace GameClient.Misc
             }
         }
 
-        private static void GetMapHumans(MapFile mapFile, Map map, bool factionHumans, bool nonFactionHumans)
+        private static void GetMapHumans(MapFile mapFile, Map map)
         {
-            foreach (Thing thing in map.listerThings.AllThings.Where(fetch => ScriberH.CheckIfThingIsHuman(fetch)))
+            Thing[] toList = map.listerThings.AllThings
+                .Where(fetch => ScriberH.CheckIfThingIsHuman(fetch))
+                .ToArray();
+
+            foreach (Thing thing in toList)
             {
                 try
                 {
                     string humanData = ScribeManager.SerializeToString(thing as Pawn, ScribeManager.SerializableType.Thing);
-                    if (thing.Faction == Faction.OfPlayer && factionHumans)
+
+                    if (thing.Faction == Faction.OfPlayer)
                         mapFile.FactionHumans.Add(humanData);
-                    else if (thing.Faction != Faction.OfPlayer && nonFactionHumans)
+                    else
                         mapFile.NonFactionHumans.Add(humanData);
                 }
                 catch (Exception e)
@@ -142,16 +150,21 @@ namespace GameClient.Misc
             }
         }
 
-        private static void GetMapAnimals(MapFile mapFile, Map map, bool factionAnimals, bool nonFactionAnimals)
+        private static void GetMapAnimals(MapFile mapFile, Map map)
         {
-            foreach (Thing thing in map.listerThings.AllThings.Where(fetch => ScriberH.CheckIfThingIsAnimal(fetch)))
+            Thing[] toList = map.listerThings.AllThings
+                .Where(fetch => ScriberH.CheckIfThingIsAnimal(fetch))
+                .ToArray();
+
+            foreach (Thing thing in toList)
             {
                 try
                 {
                     string animalData = ScribeManager.SerializeToString(thing as Pawn, ScribeManager.SerializableType.Thing);
-                    if (thing.Faction == Faction.OfPlayer && factionAnimals)
+
+                    if (thing.Faction == Faction.OfPlayer)
                         mapFile.FactionAnimals.Add(animalData);
-                    else if (thing.Faction != Faction.OfPlayer && nonFactionAnimals)
+                    else
                         mapFile.NonFactionAnimals.Add(animalData);
                 }
                 catch (Exception e)
@@ -163,32 +176,27 @@ namespace GameClient.Misc
 
         private static Map SetEmptyMap(MapFile mapFile, int tileToUse)
         {
-            Map toReturn = null;
-
             try
             {
-                IntVec3 mapSize = ValueParser.ArrayToIntVec3(mapFile.Size);
-
                 PlanetManagerHelper.SetOverrideGenerators();
-                toReturn = GetOrGenerateMapUtility.GetOrGenerateMap(tileToUse, mapSize, null);
+                Map toReturn = GetOrGenerateMapUtility.GetOrGenerateMap(tileToUse, ValueParser.ArrayToIntVec3(mapFile.Size), null);
                 PlanetManagerHelper.SetDefaultGenerators();
 
                 return toReturn;
             }
             catch (Exception e)
             {
-                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                Printer.Error(e.ToString(), LogImportanceMode.Verbose);
+                return null;
             }
-
-            return toReturn;
         }
 
         private static void SetMapTerrain(MapFile mapFile, Map map)
         {
+            int index = 0;
+
             try
             {
-                int index = 0;
-
                 for (int z = 0; z < map.Size.z; ++z)
                 {
                     for (int x = 0; x < map.Size.x; ++x)
@@ -229,63 +237,23 @@ namespace GameClient.Misc
 
         private static void SetMapThings(MapFile mapFile, Map map, bool factionThings, bool nonFactionThings, bool lessLoot, bool enforceIDs)
         {
-            try
+            Random rnd = new Random();
+
+            if (factionThings)
             {
-                List<Thing> thingsToGetInThisTile = new List<Thing>();
-
-                if (factionThings)
-                {
-                    Random rnd = new Random();
-
-                    foreach (string item in mapFile.FactionThings)
-                    {
-                        try
-                        {
-                            Thing toGet = (Thing)ScribeManager.SerializeFromString<Thing>(item, ScribeManager.SerializableType.Thing, enforceIDs);
-
-                            if (lessLoot)
-                            {
-                                if (rnd.Next(1, 100) > 70)
-                                    thingsToGetInThisTile.Add(toGet);
-                                else
-                                    continue;
-                            }
-                            else
-                            {
-                                thingsToGetInThisTile.Add(toGet);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
-                        }
-                    }
-                }
-
-                if (nonFactionThings)
-                {
-                    foreach (string item in mapFile.NonFactionThings)
-                    {
-                        try
-                        {
-                            Thing toGet = (Thing)ScribeManager.SerializeFromString<Thing>(item);
-                            thingsToGetInThisTile.Add(toGet);
-                        }
-                        catch (Exception e)
-                        {
-                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
-                        }
-                    }
-                }
-
-                foreach (Thing thing in thingsToGetInThisTile)
+                foreach (string str in mapFile.FactionThings)
                 {
                     try
                     {
+                        if (lessLoot && rnd.Next(1, 100) <= 70)
+                            continue;
+
+                        Thing thing = ScribeManager.SerializeFromString<Thing>(str, ScribeManager.SerializableType.Thing, enforceIDs);
+
                         if (thing.def.CanHaveFaction)
                             thing.SetFaction(SessionHandler.NeutralFaction);
 
-                        GenPlace.TryPlaceThing(thing, thing.Position, map, ThingPlaceMode.Direct, rot: thing.Rotation);
+                        RimworldManager.PlaceThingIntoMap(thing, map, thing.Position);
                     }
                     catch (Exception e)
                     {
@@ -293,101 +261,101 @@ namespace GameClient.Misc
                     }
                 }
             }
-            catch (Exception e)
+
+            if (nonFactionThings)
             {
-                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                foreach (string str in mapFile.NonFactionThings)
+                {
+                    try
+                    {
+                        Thing thing = ScribeManager.SerializeFromString<Thing>(str, ScribeManager.SerializableType.Thing, enforceIDs);
+
+                        if (thing.def.CanHaveFaction)
+                            thing.SetFaction(SessionHandler.NeutralFaction);
+
+                        RimworldManager.PlaceThingIntoMap(thing, map, thing.Position);
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    }
+                }
             }
         }
 
-        private static void SetMapHumans(MapFile mapFile, Map map, bool factionHumans, bool nonFactionHumans)
+        private static void SetMapHumans(MapFile mapFile, Map map, bool factionHumans, bool nonFactionHumans, bool enforceIDs)
         {
-            try
+            if (factionHumans)
             {
-                if (factionHumans)
+                foreach (string str in mapFile.FactionHumans)
                 {
-                    foreach (string pawn in mapFile.FactionHumans)
+                    try
                     {
-                        try
-                        {
-                            Pawn human = ScribeManager.SerializeFromString<Pawn>(pawn);
-                            human.SetFaction(SessionHandler.NeutralFaction);
-
-                            GenSpawn.Spawn(human, human.Position, map, human.Rotation);
-                        }
-                        catch (Exception e)
-                        {
-                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
-                        }
+                        Pawn pawn = ScribeManager.SerializeFromString<Pawn>(str, ScribeManager.SerializableType.Pawn, enforceIDs);
+                        pawn.SetFaction(SessionHandler.NeutralFaction);
+                        RimworldManager.PlaceThingIntoMap(pawn, map, pawn.PositionHeld);
                     }
-                }
-
-                if (nonFactionHumans)
-                {
-                    foreach (string pawn in mapFile.NonFactionHumans)
+                    catch (Exception e)
                     {
-                        try
-                        {
-                            Pawn human = ScribeManager.SerializeFromString<Pawn>(pawn);
-                            GenSpawn.Spawn(human, human.Position, map, human.Rotation);
-                        }
-                        catch (Exception e)
-                        {
-                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
-                        }
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
                     }
                 }
             }
-            catch (Exception e)
+
+            if (nonFactionHumans)
             {
-                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                foreach (string str in mapFile.NonFactionHumans)
+                {
+                    try
+                    {
+                        Pawn pawn = ScribeManager.SerializeFromString<Pawn>(str, ScribeManager.SerializableType.Pawn, enforceIDs);
+                        RimworldManager.PlaceThingIntoMap(pawn, map, pawn.PositionHeld);
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    }
+                }
             }
         }
 
-        private static void SetMapAnimals(MapFile mapFile, Map map, bool factionAnimals, bool nonFactionAnimals)
+        private static void SetMapAnimals(MapFile mapFile, Map map, bool factionAnimals, bool nonFactionAnimals, bool enforceIDs)
         {
-            try
+            if (factionAnimals)
             {
-                if (factionAnimals)
+                foreach (string str in mapFile.FactionAnimals)
                 {
-                    foreach (string pawn in mapFile.FactionAnimals)
+                    try
                     {
-                        try
-                        {
-                            Pawn animal = (Pawn)ScribeManager.SerializeFromString<Pawn>(pawn);
-                            animal.SetFaction(SessionHandler.NeutralFaction);
-
-                            GenSpawn.Spawn(animal, animal.Position, map, animal.Rotation);
-                        }
-                        catch (Exception e)
-                        {
-                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
-                        }
+                        Pawn pawn = ScribeManager.SerializeFromString<Pawn>(str, ScribeManager.SerializableType.Pawn, enforceIDs);
+                        pawn.SetFaction(SessionHandler.NeutralFaction);
+                        RimworldManager.PlaceThingIntoMap(pawn, map, pawn.PositionHeld);
                     }
-                }
-
-                if (nonFactionAnimals)
-                {
-                    foreach (string pawn in mapFile.NonFactionAnimals)
+                    catch (Exception e)
                     {
-                        try
-                        {
-                            Pawn animal = (Pawn)ScribeManager.SerializeFromString<Pawn>(pawn);
-                            GenSpawn.Spawn(animal, animal.Position, map, animal.Rotation);
-                        }
-                        catch (Exception e)
-                        {
-                            Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
-                        }
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
                     }
                 }
             }
-            catch (Exception e)
+
+            if (nonFactionAnimals)
             {
-                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                foreach (string str in mapFile.NonFactionAnimals)
+                {
+                    try
+                    {
+                        Pawn pawn = ScribeManager.SerializeFromString<Pawn>(str, ScribeManager.SerializableType.Pawn, enforceIDs);
+                        RimworldManager.PlaceThingIntoMap(pawn, map, pawn.PositionHeld);
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    }
+                }
             }
         }
 
-        private static void SetWeatherData(MapFile mapFile, Map map)
+        private static void SetWeather(MapFile mapFile, Map map)
         {
             try
             {
@@ -400,7 +368,7 @@ namespace GameClient.Misc
             }
         }
 
-        private static void SetMapFog(Map map)
+        private static void SetFog(Map map)
         {
             try
             {
@@ -412,7 +380,7 @@ namespace GameClient.Misc
             }
         }
 
-        private static void SetMapRoofs(Map map)
+        private static void SetRoofs(Map map)
         {
             try
             {

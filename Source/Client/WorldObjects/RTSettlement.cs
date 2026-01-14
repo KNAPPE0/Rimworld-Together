@@ -1,4 +1,5 @@
 ﻿using GameClient.Dialogs;
+using GameClient.Hooks.Synchronous;
 using GameClient.Managers;
 using GameClient.Misc;
 using RimWorld;

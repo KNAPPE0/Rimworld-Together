@@ -179,7 +179,7 @@ namespace GameClient.Managers
             Thing silverToReturn = ThingMaker.MakeThing(ThingDefOf.Silver);
             silverToReturn.stackCount = EventManagerH.EnabledEvents[RT_Dialog_ScrollButtons.SelectedScrollButton].Cost;
 
-            RimworldManager.PlaceThingIntoMap(silverToReturn, toReturnTo, ThingPlaceMode.Near, true);
+            RimworldManager.PlaceThingIntoMap(silverToReturn, toReturnTo, toReturnTo.Center, false);
 
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "Player is not currently available!" }));
         }

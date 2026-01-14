@@ -20,7 +20,7 @@ namespace GameClient.Misc
     {
         public static string Username { get; set; } = string.Empty;
 
-        public static ClientNetworkState CurrentNetworkState = ClientNetworkState.Disconnected;
+        public static ClientNetworkState CurrentNetworkState { get; set; } = ClientNetworkState.Disconnected;
 
         public static ActivityType latestActivity { get; set; } = ActivityType.None;
 

@@ -22,8 +22,6 @@ namespace GameClient.Patches.Pages
         [HarmonyPrefix]
         public static bool DoPre(Rect rect, Page_SelectScenario __instance)
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return true;
-
             if (!SessionHandler.IsGeneratingFreshWorld && SessionHandler.CurrentScenario.IsEnforced)
             {
                 if (executedMessage) return true;
@@ -61,9 +59,8 @@ namespace GameClient.Patches.Pages
         [HarmonyPostfix]
         public static void DoPost(Rect rect)
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return;
-
-            if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize, RT_Dialog_Base.RectLocation.BottomLeft), "Disconnect")) { };
+            if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize, 
+                RT_Dialog_Base.RectLocation.BottomLeft), "Disconnect")) { };
         }
     }
 
@@ -73,8 +70,7 @@ namespace GameClient.Patches.Pages
         [HarmonyPrefix]
         public static bool DoPre()
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return true;
-            else if (SessionHandler.CurrentActionValues.EnableCustomScenarios) return true;
+            if (SessionHandler.CurrentActionValues.EnableCustomScenarios) return true;
             else
             {
                 RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This server doesn't allow custom scenarios!" }));
@@ -93,7 +89,6 @@ namespace GameClient.Patches.Pages
         [HarmonyPrefix]
         public static bool DoPre(Rect rect, ref Scenario ___curScen)
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return true;
             if (SessionHandler.CurrentActionValues.EnableCustomScenarios) return true;
 
             if (curScen != null) ___curScen = curScen;

@@ -24,8 +24,7 @@ namespace GameClient.Patches.Pages
         [HarmonyPrefix]
         public static bool Prefix(Dialog_Options __instance)
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return true;
-
+            if (!SessionHandler.CurrentModConfig.IsEnforced) return true;
             if (SessionHandler.IsAdmin) return true;
 
             try

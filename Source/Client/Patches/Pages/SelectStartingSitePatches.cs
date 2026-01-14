@@ -73,8 +73,6 @@ namespace GameClient.Patches.Pages
             [HarmonyPostfix]
             public static void DoPost()
             {
-                if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return;
-
                 if (!SessionHandler.IsGeneratingFreshWorld)
                 {
                     WorldManager.SetPlanetFeatures();

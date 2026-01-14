@@ -16,20 +16,16 @@ namespace GameClient.Patches.Pages
         [HarmonyPrefix]
         public static bool DoPre(ref DifficultyDef ___difficulty, ref Difficulty ___difficultyValues)
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return true;
-            else
+            Find.GameInitData.permadeathChosen = true;
+            Find.GameInitData.permadeath = true;
+
+            if (!SessionHandler.IsGeneratingFreshWorld)
             {
-                Find.GameInitData.permadeathChosen = true;
-                Find.GameInitData.permadeath = true;
-
-                if (!SessionHandler.IsGeneratingFreshWorld)
-                {
-                    ___difficulty = DifficultyDefOf.Rough;
-                    ___difficultyValues = new Difficulty(___difficulty);
-                }
-
-                return true;
+                ___difficulty = DifficultyDefOf.Rough;
+                ___difficultyValues = new Difficulty(___difficulty);
             }
+
+            return true;
         }
     }
 
@@ -41,8 +37,6 @@ namespace GameClient.Patches.Pages
         [HarmonyPrefix]
         public static bool DoPre(Rect rect, Page_SelectStoryteller __instance)
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return true;
-
             if (!SessionHandler.IsGeneratingFreshWorld)
             {
                 if (SessionHandler.CurrentStoryteller.IsEnforced)
@@ -76,8 +70,6 @@ namespace GameClient.Patches.Pages
         [HarmonyPrefix]
         public static bool DoPre()
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return true;
-
             if (SessionHandler.IsAdmin)
             {
                 RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", new string[] { "Difficulty settings overriden due to being an admin" }));

@@ -51,8 +51,7 @@ namespace GameClient.Patches
             [HarmonyPostfix]
             public static void DoPost(float pollutionAmount)
             {
-                if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return;
-                else if (!SessionHandler.CurrentActionValues.EnablePollutionSpread) return;
+                if (!SessionHandler.CurrentActionValues.EnablePollutionSpread) return;
                 else if (addedByServer) addedByServer = false;
                 else
                 {

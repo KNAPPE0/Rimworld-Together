@@ -14,8 +14,7 @@ namespace GameClient.Patches
         [HarmonyPrefix]
         public static bool DoPre(Settlement factionBase)
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return true;
-            else if (SessionHandler.PlayerFactions.Contains(factionBase.Faction)) return false;
+            if (SessionHandler.PlayerFactions.Contains(factionBase.Faction)) return false;
             else return true;
         }
     }
@@ -26,7 +25,6 @@ namespace GameClient.Patches
         [HarmonyPostfix]
         public static void DoPost(Map map)
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return;
             if (!SessionHandler.PlayerFactions.Contains(map.Parent.Faction)) return;
 
             FloodFillerFog.DebugRefogMap(map);
@@ -39,7 +37,6 @@ namespace GameClient.Patches
         [HarmonyPostfix]
         public static void DoPost(Map map)
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return;
             if (!SessionHandler.PlayerFactions.Contains(map.Parent.Faction)) return;
 
             FloodFillerFog.DebugRefogMap(map);
@@ -52,8 +49,6 @@ namespace GameClient.Patches
         [HarmonyPrefix]
         public static bool DoPre(Site site, ref int __result)
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return true;
-
             if (SessionHandler.PlayerFactions.Contains(site.Faction) || site.Faction == Faction.OfPlayer)
             {
                 __result = 25;

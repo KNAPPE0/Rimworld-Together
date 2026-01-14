@@ -10,6 +10,8 @@ using System.Reflection;
 using Shared.Misc;
 using TCPNetwork.Misc;
 using static Shared.CommonEnumerators;
+using GameServer.Hooks.TCPNetwork;
+using GameServer.Hooks.Shared;
 
 namespace GameServer.Core
 {

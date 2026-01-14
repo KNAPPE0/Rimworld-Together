@@ -10,6 +10,7 @@ using static Shared.CommonEnumerators;
 using TCPNetwork.Packets;
 using Shared.Details.Planet;
 using GameClient.Misc;
+using GameClient.Hooks.TCPNetwork;
 
 namespace GameClient.Patches
 {

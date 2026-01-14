@@ -8,11 +8,11 @@ namespace Shared
 {
     public static class MethodGatherer
     {
-        public static MethodInfo[] OnStartMethods { get; private set; }
+        public static MethodInfo[] OnStartMethods { get; private set; } = null;
 
-        public static MethodInfo[] OnEndMethods { get; private set; }
+        public static MethodInfo[] OnEndMethods { get; private set; } = null;
 
-        public static MethodInfo[] PerFrameMethods { get; private set; }
+        public static MethodInfo[] PerFrameMethods { get; private set; } = null;
 
         public static MethodInfo[] OnSynchronousStartMethods { get; private set; }
 
@@ -27,10 +27,6 @@ namespace Shared
                 PerFrameMethods = GetPerFrameMethods(GetAllGameTypes());
                 OnSynchronousStartMethods = GetSynchronousStartMethods(GetAllGameTypes());
                 OnSynchronousEndMethods = GetSynchronousEndMethods(GetAllGameTypes());
-            }
-            else
-            {
-                // nothing to cache
             }
         }
 

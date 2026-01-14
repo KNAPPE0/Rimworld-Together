@@ -6,6 +6,7 @@ using static Shared.CommonEnumerators;
 using TCPNetwork.Files.Client;
 using Shared.Misc;
 using GameServer.Integrations.Discord;
+using GameServer.Hooks.TCPNetwork;
 
 namespace GameServer.Managers
 {
@@ -89,7 +90,6 @@ namespace GameServer.Managers
                 if (SaveManager.CheckIfUserHasSave(client)) SaveManager.SendSaveToClient(client);
                 else WorldManager.SendWorld(client);
             }
-
             else
             {
                 Printer.Warning($"Giving first join admin permission to {client.UserFile.Username}");

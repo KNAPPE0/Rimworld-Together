@@ -6,6 +6,7 @@ using System;
 using Verse;
 using static Shared.CommonEnumerators;
 using TCPNetwork.Packets;
+using GameClient.Hooks.TCPNetwork;
 
 namespace GameClient.Managers
 {

@@ -1,5 +1,6 @@
 using System.Linq;
 using GameClient.Dialogs;
+using GameClient.Hooks.TCPNetwork;
 using GameClient.Misc;
 
 namespace GameClient.Managers

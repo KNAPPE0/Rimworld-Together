@@ -1,6 +1,6 @@
 ﻿using GameClient.Core.Configs;
 using GameClient.Files;
-using GameClient.Managers;
+using GameClient.Hooks.Shared;
 using GameClient.Misc;
 using HarmonyLib;
 using Shared;

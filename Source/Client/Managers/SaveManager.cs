@@ -18,6 +18,7 @@ using TCPNetwork.Packets;
 using System.Threading.Tasks;
 using System.Threading;
 using Shared.Misc;
+using GameClient.Hooks.TCPNetwork;
 
 namespace GameClient.Managers
 {

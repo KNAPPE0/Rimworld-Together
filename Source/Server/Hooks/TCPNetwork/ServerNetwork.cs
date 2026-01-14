@@ -15,7 +15,7 @@ using TCPNetwork.Files.Client;
 using Shared.Misc;
 using TCPNetwork.Misc;
 
-namespace GameServer
+namespace GameServer.Hooks.TCPNetwork
 {
     public class ServerNetwork : Network
     {
@@ -85,21 +85,6 @@ namespace GameServer
             }
         };
 
-        public override Action<object, LogImportanceMode> OnMessage { get; set; } = delegate (object obj, LogImportanceMode mode)
-        {
-            Printer.Message(obj, mode);
-        };
-
-        public override Action<object, LogImportanceMode> OnWarning { get; set; } = delegate (object obj, LogImportanceMode mode)
-        {
-            Printer.Warning(obj, mode);
-        };
-
-        public override Action<object, LogImportanceMode> OnError { get; set; } = delegate (object obj, LogImportanceMode mode)
-        {
-            Printer.Error(obj, mode);
-        };
-
         public ServerNetwork()
         {
             Instance = this;
@@ -141,8 +126,7 @@ namespace GameServer
             TcpClient newTCP = ServerListener.AcceptTcpClient();
 
             ServerClient client = new ServerClient(newTCP);
-            client.Listener = new Listener(client, newTCP, OnReadPacket, OnWritePacket, OnConnect, OnDisconnect,
-                OnMessage, OnWarning, OnError, Listener.ListenerMode.Server);
+            client.Listener = new Listener(client, newTCP, OnReadPacket, OnWritePacket, OnConnect, OnDisconnect, Listener.ListenerMode.Server);
 
             try
             {

@@ -16,6 +16,7 @@ using static Shared.CommonEnumerators;
 using Shared.Details.Planet;
 using Shared.Files.Configs;
 using Shared.Misc;
+using GameClient.Hooks.TCPNetwork;
 
 namespace GameClient.Managers
 {

@@ -10,6 +10,7 @@ using System.Reflection;
 using Verse;
 using static Shared.CommonEnumerators;
 using Shared.Files.Maps;
+using GameClient.Hooks.TCPNetwork;
 
 namespace GameClient.Managers
 {

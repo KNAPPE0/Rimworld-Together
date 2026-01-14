@@ -9,6 +9,7 @@ using Verse;
 using static Shared.CommonEnumerators;
 using Shared.Files;
 using TCPNetwork.Packets;
+using GameClient.Hooks.TCPNetwork;
 
 namespace GameClient.Managers
 {

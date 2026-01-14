@@ -174,6 +174,13 @@ namespace GameServer.Hooks.TCPNetwork
             VersionManager.AskForClientVersion(client);
         }
 
+            Main_.ChangeTitle();
+
+            try { InformationDisplayer.DisplayConnect(client); } catch { }
+
+            VersionManager.AskForClientVersion(client);
+        }
+
         public ServerClient[] GetConnectedClientsSafe(ServerClient toExclude = null)
         {
             ServerClient[] snapshot;

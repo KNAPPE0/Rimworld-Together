@@ -102,23 +102,13 @@ namespace GameClient.Hooks.Synchronous
         {
             RT_Dialog_Wait.Instance.Close();
 
-            Printer.Warning(1);
-
             SetMap(SynchronousSide.Guest, data);
-
-            Printer.Warning(2);
 
             EnterMap(SynchronousSide.Guest);
 
-            Printer.Warning(3);
-
             SpawnOtherPawns(SynchronousSide.Guest, data._party.Pawns.ToArray());
 
-            Printer.Warning(4);
-
             StartSession(SynchronousSide.Guest);
-
-            Printer.Warning(5);
         }
 
         private static void OnReject(SynchronousData data)
@@ -181,7 +171,10 @@ namespace GameClient.Hooks.Synchronous
             foreach (string str in pawnData)
             {
                 Pawn pawn = ScribeManager.SerializeFromString<Pawn>(str, ScribeManager.SerializableType.Pawn, true);
-                RimworldManager.PlaceThingIntoMap(pawn, SessionHandler.SynchronousMap, pawn.PositionHeld);
+
+                RimworldManager.PlaceThingIntoMap(pawn, SessionHandler.SynchronousMap, 
+                    side == SynchronousSide.Host ? SessionHandler.SynchronousMap.Center : pawn.PositionHeld);
+
                 pawn.SetFactionDirect(SessionHandler.NeutralFaction);
             }
         }

@@ -84,7 +84,7 @@ namespace TCPNetwork
             else PacketQueue.Enqueue(new KeyValuePair<byte, byte[]>((byte)header, Serializer.ConvertObjectToBytes(obj)));
         }
 
-        public void EnqueueBytes(PacketHeader header, byte[] bytes)
+        public void EnqueuePacket(PacketHeader header, byte[] bytes)
         {
             if (IsDisconnecting) return;
             else PacketQueue.Enqueue(new KeyValuePair<byte, byte[]>((byte)header, bytes));

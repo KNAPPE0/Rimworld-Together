@@ -276,7 +276,7 @@ namespace GameClient.WorldObjects
 
             gizmos.Add(command_Raid);
             gizmos.Add(command_Transfer);
-            gizmos.Add(command_Synchronous);
+            //gizmos.Add(command_Synchronous);
 
             return gizmos;
         }

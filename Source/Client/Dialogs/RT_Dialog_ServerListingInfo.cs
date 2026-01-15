@@ -1,12 +1,9 @@
 ﻿using System.Reflection;
-using GameClient.Dialogs;
 using HarmonyLib;
-using Rimworld_Together_Master_Server.Data;
 using UnityEngine;
 using Verse;
-using static Shared.CommonEnumerators;
-using Shared.Files.Configs.Mods;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork.Packets.ServerBrowser;
 
 namespace GameClient.Dialogs
 {

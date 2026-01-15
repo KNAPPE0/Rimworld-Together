@@ -2,8 +2,6 @@
 using System.Net.Mime;
 using System.Text;
 using GameServer.Core;
-using GameServer.Misc;
-using Rimworld_Together_Master_Server.Data;
 using Shared;
 using static Shared.CommonEnumerators;
 using TCPNetwork.Packets;
@@ -11,6 +9,7 @@ using Shared.Files.Configs;
 using TCPNetwork.Files.Client;
 using Shared.Misc;
 using GameServer.Hooks.TCPNetwork;
+using TCPNetwork.Packets.ServerBrowser;
 
 namespace GameServer.Managers
 {

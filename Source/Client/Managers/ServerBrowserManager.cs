@@ -4,14 +4,12 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using GameClient.Misc;
-using Rimworld_Together_Master_Server.Data;
-using TCPNetwork.Packets;
 using Shared;
 using Steamworks;
 using TCPNetwork;
 using static Shared.CommonEnumerators;
 using Shared.Misc;
+using TCPNetwork.Packets.ServerBrowser;
 
 namespace GameClient.Managers
 {

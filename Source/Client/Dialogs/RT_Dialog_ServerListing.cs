@@ -1,12 +1,11 @@
 ﻿using System.Linq;
 using GameClient.Managers;
-using GameClient.Misc;
-using Rimworld_Together_Master_Server.Data;
 using Shared;
 using UnityEngine;
 using Verse;
-using Reachability = Rimworld_Together_Master_Server.Data.Reachability;
 using Shared.Misc;
+using TCPNetwork.Packets.ServerBrowser;
+using Reachability = TCPNetwork.Packets.ServerBrowser.Reachability;
 
 namespace GameClient.Dialogs
 {

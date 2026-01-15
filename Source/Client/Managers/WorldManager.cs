@@ -261,74 +261,7 @@ namespace GameClient.Managers
         public static List<FactionDef> GetFactionDefsFromNPCFaction(NPCFactionDetail[] factions)
         {
             List<FactionDef> defList = new List<FactionDef>();
-            List<NPCFactionDetail> serverFactions = factions.ToList();
-            foreach (NPCFactionDetail faction in factions)
-            {
-                FactionDef newFaction = DefDatabase<FactionDef>.GetNamedSilentFail(faction.DefName);
-                if (newFaction == null)
-                {
-                    Printer.Warning($"Failed to get FactionDef '{faction.DefName}' from server.", LogImportanceMode.Verbose);
-
-                    switch (faction.DefName)
-                    {
-                        case "OutlanderRoughPig":
-                            newFaction = FactionDefOf.OutlanderRough;
-                            defList.Add(newFaction);
-                            serverFactions.Add(new NPCFactionDetail() { DefName = FactionDefOf.OutlanderRough.defName, Color = faction.Color, Name = faction.Name });
-                            break;
-
-                        case "PirateYttakin":
-                            newFaction = FactionDefOf.Pirate;
-                            defList.Add(newFaction);
-                            serverFactions.Add(new NPCFactionDetail() { DefName = FactionDefOf.Pirate.defName, Color = faction.Color, Name = faction.Name });
-                            break;
-
-                        case "PirateWaster":
-                            newFaction = FactionDefOf.Pirate;
-                            defList.Add(newFaction);
-                            serverFactions.Add(new NPCFactionDetail() { DefName = FactionDefOf.Pirate.defName, Color = faction.Color, Name = faction.Name });
-                            break;
-
-                        case "TribeRoughNeanderthal":
-                            newFaction = FactionDefOf.TribeRough;
-                            defList.Add(newFaction);
-                            serverFactions.Add(new NPCFactionDetail() { DefName = FactionDefOf.TribeRough.defName, Color = faction.Color, Name = faction.Name });
-                            break;
-
-                        case "TribeSavageImpid":
-                            newFaction = FactionDefOf.TribeRough;
-                            defList.Add(newFaction);
-                            serverFactions.Add(new NPCFactionDetail() { DefName = FactionDefOf.TribeRough.defName, Color = faction.Color, Name = faction.Name });
-                            break;
-
-                        case "TribeCannibal":
-                            newFaction = FactionDefOf.TribeRough;
-                            defList.Add(newFaction);
-                            serverFactions.Add(new NPCFactionDetail() { DefName = FactionDefOf.TribeRough.defName, Color = faction.Color, Name = faction.Name });
-                            break;
-
-                        case "Empire":
-                            newFaction = FactionDefOf.OutlanderCivil;
-                            defList.Add(newFaction);
-                            serverFactions.Add(new NPCFactionDetail() { DefName = FactionDefOf.OutlanderCivil.defName, Color = faction.Color, Name = faction.Name });
-                            break;
-
-                        default:
-                            break;
-                    }
-
-                    if (newFaction != null) Printer.Warning($"Replaced {faction.DefName} with {newFaction.defName}", LogImportanceMode.Verbose);
-                    serverFactions.Remove(faction);
-                }
-
-                else
-                {
-                    defList.Add(newFaction);
-                    Printer.Warning($"Loaded {newFaction.defName}", LogImportanceMode.Verbose);
-                }
-
-                SessionHandler.CurrentWorld.NPCFactions = serverFactions.ToArray();
-            }
+            foreach (NPCFactionDetail faction in factions) defList.Add(DefDatabase<FactionDef>.GetNamed(faction.DefName));
 
             return defList;
         }

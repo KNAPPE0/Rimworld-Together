@@ -25,8 +25,8 @@ namespace GameServer.Core
 
             if (!File.Exists(ServerConfigFile.SavePath))
             {
-                Printer.Error("If this is your first time installing Rimworld Together, please take a look around the configuration files " +
-                    "and our wiki > https://github.com/RimWorld-Together/Rimworld-Together/wiki");
+                Printer.Error("If this is your first time installing Rimworld Together, please take a look at our wiki > " +
+                    "https://rimworldtogether.wiki.gg/");
             }
 
             LoadFiles();

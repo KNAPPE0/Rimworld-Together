@@ -7,6 +7,7 @@ using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -22,6 +23,12 @@ namespace GameClient.Patches.Pages
         [HarmonyPrefix]
         public static bool DoPre(Rect rect, Page_SelectScenario __instance)
         {
+            if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize, RT_Dialog_Base.RectLocation.BottomLeft), "") || KeyBindingDefOf.Cancel.KeyDownEvent)
+            {
+                __instance.Close();
+                ClientNetwork.Instance.ClientListener.DisconnectNow();
+            }
+
             if (!SessionHandler.IsGeneratingFreshWorld && SessionHandler.CurrentScenario.IsEnforced)
             {
                 if (executedMessage) return true;
@@ -44,21 +51,14 @@ namespace GameClient.Patches.Pages
                 }
             }
 
-            else
-            {
-                if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize, RT_Dialog_Base.RectLocation.BottomLeft), "") || KeyBindingDefOf.Cancel.KeyDownEvent)
-                {
-                    __instance.Close();
-                    ClientNetwork.Instance.ClientListener.DisconnectNow();
-                }
-            }
-
             return true;
         }
 
         [HarmonyPostfix]
         public static void DoPost(Rect rect)
         {
+            Text.Font = GameFont.Small;
+
             if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize, 
                 RT_Dialog_Base.RectLocation.BottomLeft), "Disconnect")) { };
         }

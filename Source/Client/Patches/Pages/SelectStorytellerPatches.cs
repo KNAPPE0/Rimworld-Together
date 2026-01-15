@@ -1,9 +1,11 @@
-﻿using System;
-using GameClient.Dialogs;
+﻿using GameClient.Dialogs;
+using GameClient.Hooks.TCPNetwork;
 using GameClient.Managers;
 using GameClient.Misc;
 using HarmonyLib;
 using RimWorld;
+using Shared.Misc;
+using System;
 using UnityEngine;
 using Verse;
 using static Shared.CommonEnumerators;
@@ -37,30 +39,44 @@ namespace GameClient.Patches.Pages
         [HarmonyPrefix]
         public static bool DoPre(Rect rect, Page_SelectStoryteller __instance)
         {
-            if (!SessionHandler.IsGeneratingFreshWorld)
+            if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize, RT_Dialog_Base.RectLocation.BottomLeft), "") || KeyBindingDefOf.Cancel.KeyDownEvent)
             {
-                if (SessionHandler.CurrentStoryteller.IsEnforced)
+                __instance.Close();
+                ClientNetwork.Instance.ClientListener.DisconnectNow();
+            }
+            
+            if (!SessionHandler.IsGeneratingFreshWorld && SessionHandler.CurrentStoryteller.IsEnforced)
+            {
+                if (executedMessage) return true;
+                else
                 {
-                    if (executedMessage) return true;
-                    else
+                    Printer.Warning(3);
+
+                    Action toDo = delegate
                     {
-                        Action toDo = delegate
-                        {
-                            GameParameterManager.SetStoryteller(SessionHandler.CurrentStoryteller);
-                            GameParameterManager.SetDifficulty(SessionHandler.CurrentDifficulty, true);
-                            RT_Dialog_Base.PushNewDialog(__instance.next);
-                            __instance.Close();
+                        GameParameterManager.SetStoryteller(SessionHandler.CurrentStoryteller);
+                        GameParameterManager.SetDifficulty(SessionHandler.CurrentDifficulty, true);
+                        RT_Dialog_Base.PushNewDialog(__instance.next);
+                        __instance.Close();
 
-                            executedMessage = false;
-                        };
-                        RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", new string[] { "Storyteller will be forced by the server" }, toDo));
+                        executedMessage = false;
+                    };
+                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", new string[] { "Storyteller will be forced by the server" }, toDo));
 
-                        executedMessage = true;
-                    }
+                    executedMessage = true;
                 }
             }
 
             return true;
+        }
+
+        [HarmonyPostfix]
+        public static void DoPost(Rect rect)
+        {
+            Text.Font = GameFont.Small;
+
+            if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize,
+                RT_Dialog_Base.RectLocation.BottomLeft), "Disconnect")) { };
         }
     }
 

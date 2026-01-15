@@ -3,6 +3,7 @@ namespace Shared
     public class CommonEnumerators
     {
         public enum AssemblyType { None, Client, Server }
+
         public enum ClientNetworkState { Disconnected, Connected }
 
         public enum GenStepMode { Scenario, Storyteller, Difficulty }

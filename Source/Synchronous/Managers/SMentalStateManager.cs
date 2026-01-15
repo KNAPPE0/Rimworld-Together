@@ -1,4 +1,5 @@
 ﻿using GameClient;
+using GameClient.Hooks.TCPNetwork;
 using GameClient.Misc;
 using Shared;
 using Synchronous.Misc;

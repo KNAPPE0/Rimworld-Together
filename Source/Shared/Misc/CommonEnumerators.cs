@@ -11,7 +11,7 @@ namespace Shared
 
         public enum ResponseStepMode { IllegalAction, UserUnavailable, Pop, NoPower }
 
-        public enum SaveStepMode : byte { Send, Receive, Reset } 
+        public enum SaveStepMode { Send, Receive, Reset } 
 
         public enum SpyStepMode { Request, Accept, Deny }
 

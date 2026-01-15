@@ -1,5 +1,6 @@
 ﻿using GameClient;
 using GameClient.Core.Configs;
+using GameClient.Hooks.TCPNetwork;
 using GameClient.Managers;
 using GameClient.Misc;
 using RimWorld;

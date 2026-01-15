@@ -58,7 +58,6 @@ namespace GameClient.Hooks.TCPNetwork
 
                 DisconnectionManager.HandleDisconnect();
                 MainThreadHandler.Instance.DoOnEndMethods();
-                SessionHandler.CurrentNetworkState = ClientNetworkState.Disconnected;
                 Printer.Warning($"Disconnecting from server", LogImportanceMode.Verbose);
             });
         };

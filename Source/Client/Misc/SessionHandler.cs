@@ -137,6 +137,8 @@ namespace GameClient.Misc
             IsSynchronousHost = false;
             SynchronousMap = null;
 
+            CurrentNetworkState = ClientNetworkState.Disconnected;
+
             Patch_Page_SelectScenario_DoWindowContents.executedMessage = false;
             Patch_DialogOptions_DoModOptions.executedMessage = false;
             Patch_Page_SelectStoryteller_DoWindowContents.executedMessage = false;

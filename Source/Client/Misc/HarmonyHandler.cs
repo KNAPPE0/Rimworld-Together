@@ -55,22 +55,34 @@ namespace GameClient.Misc
 
                 foreach (HarmonyLib.Patch patch in patchInfo.Prefixes)
                 {
-                    if (patch.owner != HarmonyMainID) CollidingMods.Add(patch.owner);
+                    if (patch.owner != HarmonyMainID)
+                    {
+                        if (!CollidingMods.Contains(patch.owner)) CollidingMods.Add(patch.owner);
+                    }
                 }
 
                 foreach (HarmonyLib.Patch patch in patchInfo.Postfixes)
                 {
-                    if (patch.owner != HarmonyMainID) CollidingMods.Add(patch.owner);
+                    if (patch.owner != HarmonyMainID)
+                    {
+                        if (!CollidingMods.Contains(patch.owner)) CollidingMods.Add(patch.owner);
+                    }
                 }
 
                 foreach (HarmonyLib.Patch patch in patchInfo.Transpilers)
                 {
-                    if (patch.owner != HarmonyMainID) CollidingMods.Add(patch.owner);
+                    if (patch.owner != HarmonyMainID)
+                    {
+                        if (!CollidingMods.Contains(patch.owner)) CollidingMods.Add(patch.owner);
+                    }
                 }
 
                 foreach (HarmonyLib.Patch patch in patchInfo.Finalizers)
                 {
-                    if (patch.owner != HarmonyMainID) CollidingMods.Add(patch.owner);
+                    if (patch.owner != HarmonyMainID)
+                    {
+                        if (!CollidingMods.Contains(patch.owner)) CollidingMods.Add(patch.owner);
+                    }
                 }
             }
 

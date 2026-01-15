@@ -8,7 +8,7 @@ using static Shared.CommonEnumerators;
 namespace GameClient.Patches
 {
     [HarmonyPatch(typeof(QuestManager), nameof(QuestManager.Add))]
-    public static class PatchAddPollution
+    public static class PatchAddQuest
     {
         [HarmonyPrefix]
         public static bool DoPre(Quest quest)

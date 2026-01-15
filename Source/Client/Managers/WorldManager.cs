@@ -68,6 +68,8 @@ namespace GameClient.Managers
 
         public static void OnExistingWorld()
         {
+            SessionHandler.IsGeneratingFreshWorld = false;
+
             RT_Dialog_Wait.Instance.Close();
 
             RT_Dialog_Base.PushNewDialog(new Page_SelectScenario());

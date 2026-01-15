@@ -8,17 +8,6 @@ using static Shared.CommonEnumerators;
 
 namespace GameClient.Patches
 {
-    [HarmonyPatch(typeof(SettlementDefeatUtility), nameof(SettlementDefeatUtility.CheckDefeated))]
-    public static class PatchSettlementJoin
-    {
-        [HarmonyPrefix]
-        public static bool DoPre(Settlement factionBase)
-        {
-            if (SessionHandler.PlayerFactions.Contains(factionBase.Faction)) return false;
-            else return true;
-        }
-    }
-
     [HarmonyPatch(typeof(CaravanEnterMapUtility), nameof(CaravanEnterMapUtility.Enter), new[] { typeof(Caravan), typeof(Map), typeof(Func<Pawn, IntVec3>), typeof(CaravanDropInventoryMode), typeof(bool) })]
     public static class PatchCaravanEnterMapUtility1
     {
@@ -40,21 +29,6 @@ namespace GameClient.Patches
             if (!SessionHandler.PlayerFactions.Contains(map.Parent.Faction)) return;
 
             FloodFillerFog.DebugRefogMap(map);
-        }
-    }
-
-    [HarmonyPatch(typeof(SitePartWorker_Outpost), "GetEnemiesCount")]
-    public static class PatchSiteEnemyCount
-    {
-        [HarmonyPrefix]
-        public static bool DoPre(Site site, ref int __result)
-        {
-            if (SessionHandler.PlayerFactions.Contains(site.Faction) || site.Faction == Faction.OfPlayer)
-            {
-                __result = 25;
-                return false;
-            }
-            else return true;
         }
     }
 }

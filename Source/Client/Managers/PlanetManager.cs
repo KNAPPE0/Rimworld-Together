@@ -17,7 +17,6 @@ namespace GameClient.Managers
         public static void BuildPlanet()
         {
             PlanetManagerHelper.GetPlayerFactionsInWorld();
-            PlanetManagerHelper.GetMapGenerators();
 
             //This step gets skiped if it's the first time building the planet
             if (SessionHandler.IsGeneratingFreshWorld) return;
@@ -54,10 +53,6 @@ namespace GameClient.Managers
 
     public static class PlanetManagerHelper
     {
-        public static MapGeneratorDef emptyGenerator;
-        public static MapGeneratorDef defaultSettlementGenerator;
-        public static MapGeneratorDef defaultSiteGenerator;
-
         //Returns an online faction depending on the value
 
         public static Faction GetPlayerFactionFromGoodwill(Goodwill goodwill)
@@ -141,39 +136,6 @@ namespace GameClient.Managers
 
                 return factions;
             }
-        }
-
-        //Gets the default generator for the map builder
-
-        public static void GetMapGenerators()
-        {
-            emptyGenerator = DefDatabase<MapGeneratorDef>.AllDefs.First(fetch => fetch.defName == "Empty");
-
-            WorldObjectDef settlement = WorldObjectDefOf.Settlement;
-            defaultSettlementGenerator = settlement.mapGenerator;
-
-            WorldObjectDef site = WorldObjectDefOf.Site;
-            defaultSiteGenerator = site.mapGenerator;
-        }
-
-        //Sets the default generator for the map builder
-
-        public static void SetDefaultGenerators()
-        {
-            WorldObjectDef settlement = WorldObjectDefOf.Settlement;
-            settlement.mapGenerator = defaultSettlementGenerator;
-
-            WorldObjectDef site = WorldObjectDefOf.Site;
-            site.mapGenerator = defaultSiteGenerator;
-        }
-
-        public static void SetOverrideGenerators()
-        {
-            WorldObjectDef settlement = WorldObjectDefOf.Settlement;
-            settlement.mapGenerator = emptyGenerator;
-
-            WorldObjectDef site = WorldObjectDefOf.Site;
-            site.mapGenerator = emptyGenerator;
         }
 
         public static void GetPlayerFactionsInWorld()

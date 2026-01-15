@@ -27,7 +27,7 @@ namespace Synchronous.Misc
         public static string LocalTargetInfoToString(LocalTargetInfo value)
         {
             if (value.Pawn != null) return value.Pawn.ThingID.ToString();
-            else if (value.Thing != null) return SessionHandler.SynchronousMap.listerThings.AllThings.FirstIndexOf(fetch => fetch.ThingID == value.Thing.ThingID).ToString();
+            else if (value.Thing != null) return value.Thing.ThingID.ToString();
             else return IntVector3ToString(value.Cell);
         }
 
@@ -36,12 +36,8 @@ namespace Synchronous.Misc
             Pawn pawn = SessionHandler.SynchronousMap.mapPawns.AllPawns.FirstOrDefault(fetch => fetch.ThingID == value);
             if (pawn != null) return new LocalTargetInfo(pawn);
 
-            try
-            {
-                Thing thing = SessionHandler.SynchronousMap.listerThings.AllThings[int.Parse(value)];
-                if (thing != null) return new LocalTargetInfo(thing);
-            }
-            catch { }
+            Thing thing = SessionHandler.SynchronousMap.listerThings.AllThings.FirstOrDefault(fetch => fetch.ThingID == value);
+            if (thing != null) return new LocalTargetInfo(thing);
 
             return new LocalTargetInfo(StringToIntVec3(value));
         }

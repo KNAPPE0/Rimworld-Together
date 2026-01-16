@@ -86,7 +86,10 @@ namespace GameClient.Managers
 
                 return double.Parse(node.Value);
             }
-            catch { return 0; }
+            catch
+            {
+                return 0;
+            }
         }
 
         public static double GetRealPlayTimeFromSave(string filePath)
@@ -104,24 +107,30 @@ namespace GameClient.Managers
 
                 return double.Parse(node.Value);
             }
-            catch { return 0; }
+            catch
+            {
+                return 0;
+            }
         }
 
         public static Dictionary<string, string> GetAllSaveFiles()
         {
             Dictionary<string, string> result = new Dictionary<string, string>();
-            foreach (string file in Directory.GetFiles(Master.SavesFolderPath))
+
+            foreach (string str in Directory.GetFiles(Master.SavesFolderPath))
             {
-                if (Path.GetExtension(file) == ".rws")
-                    result.Add(Path.GetFileNameWithoutExtension(file), file);
+                if (Path.GetExtension(str) == ".rws")
+                    result.Add(Path.GetFileNameWithoutExtension(str), str);
             }
+
             return result;
         }
 
         public static void OpenSaveUploaderMenu()
         {
             Dictionary<string, string> saves = SaveManager.GetAllSaveFiles();
-            RT_Dialog_ListingWithButton dialog = new RT_Dialog_ListingWithButton("Save uploader",
+            RT_Dialog_ListingWithButton dialog = new RT_Dialog_ListingWithButton(
+                "Save uploader",
                 "Select a save to upload:",
                 saves.Keys.ToArray(),
                 delegate
@@ -151,8 +160,10 @@ namespace GameClient.Managers
             Printer.Message("Sending save to server", LogImportanceMode.Verbose);
 
             byte[] saveBytes;
-            if (string.IsNullOrEmpty(LatestSavePath)) saveBytes = File.ReadAllBytes(SaveFilePath);
-            else saveBytes = File.ReadAllBytes(LatestSavePath);
+            if (string.IsNullOrEmpty(LatestSavePath))
+                saveBytes = File.ReadAllBytes(SaveFilePath);
+            else
+                saveBytes = File.ReadAllBytes(LatestSavePath);
 
             SaveData data = new SaveData();
             data._stepMode = SaveStepMode.Receive;
@@ -175,7 +186,6 @@ namespace GameClient.Managers
                 File.Delete(SaveFilePath);
                 File.Move(TempSaveFilePath, SaveFilePath);
             }
-
             else
             {
                 double remoteTotal = GetRealPlayTimeFromSave(TempSaveFilePath);
@@ -194,7 +204,6 @@ namespace GameClient.Managers
                     File.Delete(SaveManager.SaveFilePath);
                     File.Move(SaveManager.TempSaveFilePath, SaveManager.SaveFilePath);
                 }
-
                 else
                 {
                     Printer.Message("Loading local save", LogImportanceMode.Verbose);

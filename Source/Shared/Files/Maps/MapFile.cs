@@ -35,16 +35,8 @@ namespace Shared.Files.Maps
 
         public List<MapTile> Tiles { get; set; } = new List<MapTile>();
 
-        public List<string> FactionThings { get; set; } = new List<string>();
+        public List<MapThing> Things { get; set; } = new List<MapThing>();
 
-        public List<string> NonFactionThings { get; set; } = new List<string>();
-
-        public List<string> FactionHumans { get; set; } = new List<string>();
-
-        public List<string> NonFactionHumans { get; set; } = new List<string>();
-
-        public List<string> FactionAnimals { get; set; } = new List<string>();
-
-        public List<string> NonFactionAnimals { get; set; } = new List<string>();
+        public List<MapPawn> Pawns { get; set; } = new List<MapPawn>();
     }
 }

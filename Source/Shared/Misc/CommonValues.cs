@@ -2,8 +2,6 @@ namespace Shared
 {
     public static class CommonValues
     {
-        public static readonly string MasterServer = "https://rimworldtogether.eragon.dev";
-
         public static readonly string ExecutableVersion = "dev";
 
         public static readonly string DefaultSaveFormat = ".json";

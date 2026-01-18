@@ -23,7 +23,7 @@ namespace Shared
 
         //Serialize from and to byte arrays
 
-        public static byte[] ConvertObjectToBytes(object toConvert, bool compression = true)
+        public static byte[] ConvertObjectToBytes<T>(T toConvert, bool compression = true)
         {
             try 
             { 

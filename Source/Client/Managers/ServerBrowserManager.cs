@@ -75,7 +75,6 @@ namespace GameClient.Managers
                 
                 if (await Task.WhenAny(connectTask, Task.Delay(500)) != connectTask)
                 {
-                    // Timed out
                     server.Reachability = Reachability.Unreachable;
                     Printer.Warning($"Server found but not reachable {server._name}", LogImportanceMode.Verbose);
                     return;
@@ -83,17 +82,14 @@ namespace GameClient.Managers
 
                 using (var stream = client.GetStream())
                 {
-                    // Again, 4 because we use an int32 for length
                     await stream.WriteAsync(SenderBuffer, token.Token);
                     _ = await stream.ReadAsync(ReceiverBuffer, token.Token);
-                    // The server is reachable
                     server.Reachability = Reachability.Reachable;
                     Printer.Warning($"Server found and reachable {server._name}", LogImportanceMode.Verbose);
                 }
             }
             catch (OperationCanceledException)
             {
-                // do nothing, timed out for some reason
                 server.Reachability = Reachability.Unreachable;
                 Printer.Warning($"Server found but not reachable {server._name}", LogImportanceMode.Verbose);
             }
@@ -108,14 +104,8 @@ namespace GameClient.Managers
         {
             try
             {
-                Client.Headers.Clear();
-                Client.Headers.Add("action", "Server-Infos");
-                string response = Client.DownloadString(CommonValues.MasterServer);
-                if (string.IsNullOrEmpty(response))
-                {
-                    Printer.Warning($"response was null");
-                }
-                AllServersPacket data = Serializer.SerializeFromString<AllServersPacket>(response);
+                byte[] response = Client.DownloadData(ServerBrowserValues.GetServersUrl);
+                AllServersPacket data = Serializer.ConvertBytesToObject<AllServersPacket>(response);
                 AllServers = data._serverInfos;
                 TurnOnReachabilityChecks();
             }

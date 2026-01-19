@@ -32,8 +32,6 @@ namespace GameServer.Managers
 
         private static ServerAuth Auth = default;
 
-        private static bool IsTelemetryOnly = false;
-
         private static readonly byte[] TelemetryBuffer = new byte[ServerAuth.PacketSize + Telemetry.PacketSize];
         
         [HandlesPacket(PacketHeader.ServerBrowserReachability)]
@@ -232,7 +230,7 @@ namespace GameServer.Managers
                 if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
                     await GetServerSecret();
-                    if (!IsTelemetryOnly)
+                    if (Master.ServerBrowserConfig.EnableServerBrowser)
                     {
                         await RegisterServer();
                     }

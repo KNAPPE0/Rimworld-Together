@@ -37,9 +37,11 @@ namespace TCPNetwork
 
         private bool IsDisconnecting { get; set; } = false;
 
-        public int CurrentKeepAliveTime { get; set; } = 0;
+        public DateTime LastKAPacket { get; set; } = DateTime.Now;
 
-        public static readonly int KeepAliveMaxTime = 60000;
+        public static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(10);
+
+        public static readonly TimeSpan KeepAliveMaxTime = TimeSpan.FromSeconds(60);
 
         public static readonly string DefaultParserMethodName = "ParsePacket";
 
@@ -81,13 +83,13 @@ namespace TCPNetwork
         public void EnqueuePacket(PacketHeader header, object obj)
         {
             if (IsDisconnecting) return;
-            else PacketQueue.Enqueue(new KeyValuePair<byte, byte[]>((byte)header, Serializer.ConvertObjectToBytes(obj)));
+            PacketQueue.Enqueue(new KeyValuePair<byte, byte[]>((byte)header, Serializer.ConvertObjectToBytes(obj)));
         }
 
         public void EnqueuePacket(PacketHeader header, byte[] bytes)
         {
             if (IsDisconnecting) return;
-            else PacketQueue.Enqueue(new KeyValuePair<byte, byte[]>((byte)header, bytes));
+            PacketQueue.Enqueue(new KeyValuePair<byte, byte[]>((byte)header, bytes));
         }
 
         private void Read()
@@ -111,16 +113,32 @@ namespace TCPNetwork
                         var packetBuffer = new byte[BitConverter.ToInt32(lengthBuffer, 0)];
                         ReadFullPacket(packetBuffer);
 
-                        if (!IgnoreLogPackets.Contains(header)) Printer.Message($"[Packet] > Received packet {header}", LogImportanceMode.Verbose);
-                        else Printer.Message($"[Packet] > Received packet {header}", LogImportanceMode.Extreme);
+                        LastKAPacket = DateTime.Now; // Without this the current timeout logic would still cause false disconnections!!!!!!
 
-                        try { OnReadPacket(header, packetBuffer, TargetClient); }
-                        catch (Exception e) { Printer.Warning(e, LogImportanceMode.Normal); }
+                        if (!IgnoreLogPackets.Contains(header))
+                            Printer.Message($"[Packet] > Received packet {header}", LogImportanceMode.Verbose);
+                        else
+                            Printer.Message($"[Packet] > Received packet {header}", LogImportanceMode.Extreme);
+
+                        try
+                        {
+                            OnReadPacket(header, packetBuffer, TargetClient);
+                        }
+                        catch (Exception e)
+                        {
+                            Printer.Warning(e, LogImportanceMode.Normal);
+                        }
                     }
                 }
             }
-            catch (ObjectDisposedException _) { Printer.Warning("Disposed of connection", LogImportanceMode.Extreme); }
-            catch (Exception e) { Printer.Warning(e, LogImportanceMode.Normal); }
+            catch (ObjectDisposedException)
+            {
+                Printer.Warning("Disposed of connection", LogImportanceMode.Extreme);
+            }
+            catch (Exception e)
+            {
+                Printer.Warning(e, LogImportanceMode.Normal);
+            }
 
             DisconnectNow();
         }
@@ -154,8 +172,10 @@ namespace TCPNetwork
 
                         Stream.Write(packetData.Value, 0, packetData.Value.Length);
 
-                        if (!IgnoreLogPackets.Contains((PacketHeader)(packetData.Key))) Printer.Message($"[Packet] Sent packet > {(PacketHeader)(packetData.Key)}", LogImportanceMode.Verbose);
-                        else Printer.Message($"[Packet] > Sent packet {(PacketHeader)(packetData.Key)}", LogImportanceMode.Extreme);
+                        if (!IgnoreLogPackets.Contains((PacketHeader)packetData.Key))
+                            Printer.Message($"[Packet] Sent packet > {(PacketHeader)packetData.Key}", LogImportanceMode.Verbose);
+                        else
+                            Printer.Message($"[Packet] > Sent packet {(PacketHeader)packetData.Key}", LogImportanceMode.Extreme);
                     }
 
                     if (IsDisconnecting)
@@ -164,7 +184,10 @@ namespace TCPNetwork
                     OnWritePacket(false);
                 }
             }
-            catch (Exception e) { Printer.Warning(e, LogImportanceMode.Extreme); }
+            catch (Exception e)
+            {
+                Printer.Warning(e, LogImportanceMode.Extreme);
+            }
 
             DisconnectNow();
         }
@@ -175,12 +198,15 @@ namespace TCPNetwork
             {
                 while (!DisconnectFlag)
                 {
-                    Thread.Sleep(1000);
+                    Thread.Sleep(KeepAliveInterval);
                     KeepAliveData keepAliveData = new KeepAliveData();
                     EnqueuePacket(PacketHeader.KeepAliveManager, keepAliveData);
                 }
             }
-            catch (Exception e) { Printer.Warning(e, LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                Printer.Warning(e, LogImportanceMode.Verbose);
+            }
         }
 
         private void CheckKAFlag()
@@ -189,15 +215,17 @@ namespace TCPNetwork
             {
                 while (!DisconnectFlag)
                 {
-                    Thread.Sleep(1);
+                    Thread.Sleep(KeepAliveInterval);
+                    DateTime current = DateTime.Now;
 
-                    if (CurrentKeepAliveTime < KeepAliveMaxTime)
-                        CurrentKeepAliveTime++;
-                    else
+                    if (current - LastKAPacket > KeepAliveMaxTime)
                         break;
                 }
             }
-            catch (Exception e) { Printer.Warning(e, LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                Printer.Warning(e, LogImportanceMode.Verbose);
+            }
 
             DisconnectNow();
         }
@@ -217,7 +245,10 @@ namespace TCPNetwork
                     readBytes += read;
                 }
             }
-            catch (Exception e) { Printer.Warning(e, LogImportanceMode.Verbose); }
+            catch (Exception e)
+            {
+                Printer.Warning(e, LogImportanceMode.Verbose);
+            }
         }
 
         /// <summary>

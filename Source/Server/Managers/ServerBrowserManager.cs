@@ -55,6 +55,7 @@ namespace GameServer.Managers
                     IsRunning = true;
                     Task.Run(async () =>
                     {
+                        await GetServerSecret();
                         while (true)
                         {
                             await SendServerUpdate();
@@ -74,9 +75,10 @@ namespace GameServer.Managers
                 {
                     Task.Run(async () =>
                     {
+                        await GetServerSecret();
                         while (true)
                         {
-                            await SendServerUpdate();
+                            await SendServerTelemetry();
                             await Task.Delay(ServerBrowserValues.HeartbeatDelay);
                         }
                     });
@@ -212,7 +214,7 @@ namespace GameServer.Managers
             Span<byte> authRaw = await response.Content.ReadAsByteArrayAsync();
             if (authRaw.Length != sizeof(ulong))
             {
-                Printer.Error($"Should never happen, packet size miss-match when receiving auth, got {authRaw.Length}");
+                throw new Exception($"Should never happen, packet size miss-match when receiving auth, got {authRaw.Length}");
             }
             Auth._secret = BinaryPrimitives.ReadUInt64LittleEndian(authRaw);
             Auth._id = id;
@@ -229,7 +231,6 @@ namespace GameServer.Managers
                 HttpResponseMessage response = await Client.PostAsync(ServerBrowserValues.UpdateServerUrl, body);
                 if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
-                    await GetServerSecret();
                     if (Master.ServerBrowserConfig.EnableServerBrowser)
                     {
                         await RegisterServer();
@@ -250,6 +251,14 @@ namespace GameServer.Managers
             }
         }
 
+        private static async Task SendServerTelemetry()
+        {
+            PrepareTelemetryIntoBuffer();
+            ByteArrayContent body = new ByteArrayContent(TelemetryBuffer);
+            HttpResponseMessage response = await Client.PostAsync(ServerBrowserValues.TelemetryServerUrl, body);
+        }
+        
+        
         private static void PrepareTelemetryIntoBuffer()
         {
             var playerCount = ServerNetwork.Instance.ServerClients.Count;

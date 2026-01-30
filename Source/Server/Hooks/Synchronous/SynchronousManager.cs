@@ -143,6 +143,13 @@ namespace GameServer.Hooks.Synchronous
             client.SynchronousClient.Listener.EnqueuePacket(header, bytes);
         }
 
+        [HandlesPacket(PacketHeader.SPlayerDestroy)]
+        private static void SPlayerDestroy(ServerClient client, byte[] bytes, PacketHeader header)
+        {
+            client.Listener.EnqueuePacket(header, bytes);
+            client.SynchronousClient.Listener.EnqueuePacket(header, bytes);
+        }
+
         [HandlesPacket(PacketHeader.SPlayerPosition)]
         private static void SPlayerPosition(ServerClient client, byte[] bytes, PacketHeader header)
         {

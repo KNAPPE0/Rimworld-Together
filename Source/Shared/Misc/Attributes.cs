@@ -69,5 +69,6 @@ namespace Shared
         SPlayerJob,
         SPlayerHediff,
         SPlayerPosition,
+        SPlayerDestroy,
     }
 }

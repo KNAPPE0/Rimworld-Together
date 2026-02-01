@@ -18,7 +18,7 @@ namespace GameClient.Patches
             try
             {
                 if (SessionHandler.IsSavingGame) return false;
-                if (SessionHandler.SynchronousMap != null) return true;
+                if (SessionHandler.SynchronousMap != null) return false;
 
                 SessionHandler.IsSavingGame = true;
 

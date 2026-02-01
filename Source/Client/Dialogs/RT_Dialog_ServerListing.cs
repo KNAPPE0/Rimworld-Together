@@ -45,6 +45,7 @@ namespace GameClient.Dialogs
         {
             if (FailedToFetchServers)
             {
+                PushNewDialog(new RT_Dialog_Message("Server Browser", new[] { "Server browser is currently empty" }));
                 Close();
                 return;
             }

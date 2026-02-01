@@ -55,6 +55,7 @@ namespace GameServer.Hooks.Synchronous
                 SynchronousData _ = new SynchronousData();
                 _._stepMode = SynchronousData.StepMode.Ask;
                 _._fromTile = SettlementManager.GetSettlementFileFromUsername(client.UserFile.Username).Tile;
+                _._username = client.UserFile.Username;
                 _._toTile = data._toTile;
                 _._party = data._party;
 

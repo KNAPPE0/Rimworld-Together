@@ -212,8 +212,8 @@ namespace GameClient.WorldObjects
 
             Command_Action command_Synchronous = new Command_Action
             {
-                defaultLabel = "Synchronous",
-                defaultDesc = "Synchronous this location",
+                defaultLabel = "Invade",
+                defaultDesc = "Invade this location",
                 icon = ContentFinder<Texture2D>.Get("Commands/Synchronous"),
                 action = delegate
                 {

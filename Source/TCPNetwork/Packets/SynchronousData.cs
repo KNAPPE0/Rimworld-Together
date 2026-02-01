@@ -18,6 +18,8 @@ namespace TCPNetwork.Packets
 
         public int _toTile { get; set; } = -1;
 
+        public string _username { get; set; } = string.Empty;
+
         public byte[] _contents { get; set; } = null;
 
         public PartyFile _party { get; set; } = null;

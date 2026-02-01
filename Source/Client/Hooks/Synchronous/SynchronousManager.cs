@@ -95,7 +95,7 @@ namespace GameClient.Hooks.Synchronous
                 ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, _);
             };
 
-            string description = $"Player {data._fromTile} wants to synchronize, accept?";
+            string description = $"Player '{data._username}' wants to synchronize, accept?";
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_YesNo(description, actionYes, actionNo));
         }
 
@@ -127,6 +127,9 @@ namespace GameClient.Hooks.Synchronous
                 SessionHandler.IsSynchronousHost = true;
                 MainThreadHandler.Instance.DoOnSynchronousStartMethods();
                 RT_Dialog_Wait.Instance.Close();
+
+                string[] description = new string[] { "Game will be unable to save while in synchronous!" };
+                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", description));
             }
 
             else
@@ -136,6 +139,9 @@ namespace GameClient.Hooks.Synchronous
                 ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, data);
 
                 MainThreadHandler.Instance.DoOnSynchronousStartMethods();
+
+                string[] description = new string[] { "Game will be unable to save while in synchronous!" };
+                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", description));
             }
         }
 
@@ -157,7 +163,11 @@ namespace GameClient.Hooks.Synchronous
 
         private static void EnterMap(SynchronousSide side)
         {
-            if (side == SynchronousSide.Host) return;
+            if (side == SynchronousSide.Host)
+            {
+                CameraJumper.TryJump(SessionHandler.SynchronousMap.Center, SessionHandler.SynchronousMap, CameraJumper.MovementMode.Pan);
+            }
+
             else
             {
                 CaravanEnterMapUtility.Enter(SessionHandler.ChosenCaravan, SessionHandler.SynchronousMap, CaravanEnterMode.Edge,

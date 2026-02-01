@@ -20,6 +20,7 @@ namespace Synchronous.Patches
         {
             if (PatchHandler.BypassFlag) return true;
             else if (!SessionHandler.IsSynchronousHost) return false;
+            else if (value > TimeSpeed.Normal) return false;
             else
             {
                 SGameSpeedManager.Ask(value);

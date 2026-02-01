@@ -6,7 +6,7 @@ namespace Shared.Misc
     {
         private const string DevServerBrowser = "https://rimworldtogetherdev.eragon.dev";
         private const string ProdServerBrowser = "https://rimworldtogether.eragon.dev";
-        public const string ServerBrowserUrl = DevServerBrowser;
+        public const string ServerBrowserUrl = ProdServerBrowser;
         public const string RegisterServerUrl = $"{ServerBrowserUrl}{RegisterServer}";
         public const string RegisterServer = "/servers/register";
         public const string TelemetryServerUrl = $"{ServerBrowserUrl}{TelemetryServer}";

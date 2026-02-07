@@ -95,7 +95,7 @@ namespace GameClient.Hooks.Synchronous
                 ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, _);
             };
 
-            string description = $"Player '{data._username}' wants to synchronize, accept?";
+            string description = $"Player '{data._username}' wants to interact, accept?";
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_YesNo(description, actionYes, actionNo));
         }
 
@@ -116,7 +116,7 @@ namespace GameClient.Hooks.Synchronous
         {
             RT_Dialog_Wait.Instance.Close();
 
-            string[] description = new string[] { "Reject!" };
+            string[] description = new string[] { "Interaction was rejected by the player!" };
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message(null, description));
         }
 

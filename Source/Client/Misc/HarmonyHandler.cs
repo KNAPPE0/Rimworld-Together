@@ -70,6 +70,7 @@ namespace GameClient.Misc
                 }
             }
 
+            Printer.Warning("Checking for mod collision, if there's no other message than this then everything is good!");
             foreach (string str in CollidingMods)
             {
                 if (str == HarmonyStartID) continue;

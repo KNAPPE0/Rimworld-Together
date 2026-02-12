@@ -2,9 +2,9 @@ namespace Shared.Files.Maps
 {
     public class MapTile
     {
-        public byte TileByte { get; set; } = byte.MaxValue;
+        public string TileString { get; set; } = null;
 
-        public byte RoofByte { get; set; } = byte.MaxValue;
+        public string RoofString { get; set; } = null;
 
         public bool IsPolluted { get; set; } = false;
     }

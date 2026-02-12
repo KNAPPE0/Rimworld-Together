@@ -1,6 +1,7 @@
 using GameClient.Defs;
 using GameClient.Managers;
 using RimWorld;
+using RimWorld.Planet;
 using Shared.Files;
 using Shared.Files.Maps;
 using Shared.Misc;
@@ -15,6 +16,8 @@ namespace GameClient.Misc
 {
     public static class MapSaveLoader
     {
+        public enum OperationType { Get, Set }
+
         public static MapFile MapToString(Map map)
         {
             MapFile mapFile = new MapFile();
@@ -28,7 +31,7 @@ namespace GameClient.Misc
             mapFile.GameTicks = Find.TickManager != null ? Find.TickManager.TicksGame : -1;
             mapFile.LastSavedUtcTicks = DateTime.UtcNow.Ticks;
 
-            mapFile.WeatherByte = (byte)DefDatabase<WeatherDef>.AllDefs.FirstIndexOf(fetch => fetch == map.weatherManager.curWeather);
+            ToggleWeather(OperationType.Get, mapFile, map);
             mapFile.CurWeatherDefName = map.weatherManager?.curWeather?.defName ?? string.Empty;
 
             mapFile.Mods = ModManagerH.GetRunningModList();
@@ -50,15 +53,16 @@ namespace GameClient.Misc
         public static Map StringToMap(MapFile mapFile, bool factionThings, bool nonFactionThings, bool factionPawns, bool nonFactionPawns,
             bool lessLoot = false, bool enforceIDs = false)
         {
-            SetOverrideGenerators();
-
             Map map = GetOrGenerateMapUtility.GetOrGenerateMap(mapFile.Tile, ValueParser.ArrayToIntVec3(mapFile.Size), null);
             if (map == null) return null;
 
             SetMapTerrain(mapFile, map);
             SetMapThings(mapFile, map, factionThings, nonFactionThings, lessLoot, enforceIDs);
             SetMapPawns(mapFile, map, factionPawns, nonFactionPawns, enforceIDs);
-            PostGenerationSteps(mapFile, map);
+
+            ToggleWeather(OperationType.Set, mapFile, map);
+            RegenerateRoofGrid(map);
+            RegenerateFog(map);
 
             return map;
         }
@@ -71,19 +75,18 @@ namespace GameClient.Misc
                 {
                     try
                     {
-                        IntVec3 vectorToCheck = new IntVec3(x, map.Size.y, z);
-
                         MapTile component = new MapTile();
+                        IntVec3 vectorToCheck = new IntVec3(x, map.Size.y, z);
 
                         TerrainDef terrainDef = map.terrainGrid.TerrainAt(vectorToCheck);
                         if (terrainDef != null)
-                            component.TileByte = (byte)DefDatabase<TerrainDef>.AllDefs.FirstIndexOf(fetch => fetch == terrainDef);
+                            component.TileString = terrainDef.defName;
 
                         component.IsPolluted = map.pollutionGrid.IsPolluted(vectorToCheck);
 
                         RoofDef roofDef = map.roofGrid.RoofAt(vectorToCheck);
                         if (roofDef != null)
-                            component.RoofByte = (byte)DefDatabase<RoofDef>.AllDefs.FirstIndexOf(fetch => fetch == roofDef);
+                            component.RoofString = roofDef.defName;
 
                         mapFile.Tiles.Add(component);
                     }
@@ -154,19 +157,26 @@ namespace GameClient.Misc
                         MapTile component = mapFile.Tiles[index];
                         IntVec3 vectorToCheck = new IntVec3(x, map.Size.y, z);
 
-                        TerrainDef terrainToUse = DefDatabase<TerrainDef>.AllDefs.ToList()[component.TileByte];
-                        map.terrainGrid.SetTerrain(vectorToCheck, terrainToUse);
                         map.pollutionGrid.SetPolluted(vectorToCheck, component.IsPolluted);
 
-                        RoofDef roofToUse = DefDatabase<RoofDef>.AllDefs.ToList()[component.RoofByte];
-                        map.roofGrid.SetRoof(vectorToCheck, roofToUse);
+                        if (!string.IsNullOrEmpty(component.TileString))
+                        {
+                            TerrainDef terrainToUse = DefDatabase<TerrainDef>.AllDefs.First(fetch => fetch.defName == component.TileString);
+                            map.terrainGrid.SetTerrain(vectorToCheck, terrainToUse);
+                        }
 
-                        index++;
+                        if (!string.IsNullOrEmpty(component.RoofString))
+                        {
+                            RoofDef roofToUse = DefDatabase<RoofDef>.AllDefs.First(fetch => fetch.defName == component.RoofString);
+                            map.roofGrid.SetRoof(vectorToCheck, roofToUse);
+                        }
                     }
                     catch (Exception e)
                     {
                         Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
                     }
+
+                    index++;
                 }
             }
         }
@@ -243,6 +253,7 @@ namespace GameClient.Misc
                     try
                     {
                         Pawn pawn = ScribeManager.SerializeFromString<Pawn>(mapPawn.ScribeData, ScribeManager.SerializableType.Pawn, enforceIDs);
+                        pawn.SetFaction(SessionHandler.NeutralFaction);
                         RimworldManager.PlaceThingIntoMap(pawn, map, pawn.PositionHeld);
                     }
                     catch (Exception e)
@@ -253,21 +264,29 @@ namespace GameClient.Misc
             }
         }
 
-        private static void PostGenerationSteps(MapFile mapFile, Map map)
+        private static void RegenerateRoofGrid(Map map)
         {
-            try
-            {
+            map.roofCollapseBuffer.Clear();
+            map.roofGrid.Drawer.SetDirty();
+        }
+
+        private static void RegenerateFog(Map map)
+        {
+            Pawn pawn = PawnGenerator.GeneratePawn(PawnKindDefOf.Colonist, Faction.OfPlayer);
+            Caravan caravan = CaravanMaker.MakeCaravan(new Pawn[] { pawn }, Faction.OfPlayer, map.Tile, true);
+            CaravanEnterMapUtility.Enter(caravan, map, CaravanEnterMode.Edge);
+
+            FloodFillerFog.FloodUnfog(MapGenerator.PlayerStartSpot, map);
+
+            pawn.Destroy();
+        }
+
+        private static void ToggleWeather(OperationType type, MapFile mapFile, Map map)
+        {
+            if (type == OperationType.Set)
                 map.weatherManager.TransitionTo(DefDatabase<WeatherDef>.AllDefs.ToList()[mapFile.WeatherByte]);
-
-                FloodFillerFog.FloodUnfog(MapGenerator.PlayerStartSpot, map);
-
-                map.roofCollapseBuffer.Clear();
-                map.roofGrid.Drawer.SetDirty();
-            }
-            catch (Exception e)
-            {
-                Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
-            }
+            else
+                mapFile.WeatherByte = (byte)DefDatabase<WeatherDef>.AllDefs.FirstIndexOf(fetch => fetch == map.weatherManager.curWeather);
         }
 
         private static string GetFactionNameSafe()
@@ -448,17 +467,6 @@ namespace GameClient.Misc
             }
 
             return -1;
-        }
-
-        public static void SetOverrideGenerators()
-        {
-            MapGeneratorDef emptyGenerator = DefDatabase<MapGeneratorDef>.AllDefs.First(fetch => fetch.defName == "Empty");
-
-            WorldObjectDef settlement = RTWorldObjectDefOf.RTSettlement;
-            settlement.mapGenerator = emptyGenerator;
-
-            WorldObjectDef site = RTWorldObjectDefOf.RTSite;
-            site.mapGenerator = emptyGenerator;
         }
     }
 }

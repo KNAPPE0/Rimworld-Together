@@ -114,6 +114,18 @@ namespace GameClient.Misc
             catch { }
         }
 
+        [OnSessionStart]
+        private static void SetOverrideGenerators()
+        {
+            MapGeneratorDef emptyGenerator = DefDatabase<MapGeneratorDef>.AllDefs.First(fetch => fetch.defName == "Empty");
+
+            WorldObjectDef settlement = RTWorldObjectDefOf.RTSettlement;
+            settlement.mapGenerator = emptyGenerator;
+
+            WorldObjectDef site = RTWorldObjectDefOf.RTSite;
+            site.mapGenerator = emptyGenerator;
+        }
+
         [OnSessionEnd]
         private static void CleanValues()
         {

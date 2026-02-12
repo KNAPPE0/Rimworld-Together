@@ -10,6 +10,6 @@ namespace Shared.Files.Actions
     {
         public bool IsEnabled { get; set; } = true;
 
-        public double Cooldown { get; set; } = 3600;
+        public double Cooldown { get; set; } = -1;
     }
 }

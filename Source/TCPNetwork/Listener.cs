@@ -39,8 +39,8 @@ namespace TCPNetwork
 
         public DateTime LastKAPacket { get; set; } = DateTime.Now;
 
-        public static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(10);
-
+        public static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(3);
+        
         public static readonly TimeSpan KeepAliveMaxTime = TimeSpan.FromSeconds(60);
 
         public static readonly string DefaultParserMethodName = "ParsePacket";

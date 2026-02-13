@@ -5,7 +5,7 @@ WORKDIR /App
 COPY Source Source
 
 # Restore as distinct layers
-RUN dotnet publish Source/Server/GameServer.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:WarningLevel=0
+RUN dotnet publish Source/Server/GameServer.csproj -p:LangVersion=preview -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:WarningLevel=0
 
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0

@@ -77,15 +77,16 @@ namespace GameServer.Hooks.TCPNetwork
 
         public ServerNetwork()
         {
+            Start();
+        }
+
+        private void Start()
+        {
             Network.Ip = Master.ServerConfig.IP;
             Network.Port = Master.ServerConfig.Port;
 
-            Task.Run(Setup);
-        }
-
-        private void Setup()
-        {
-            if (Master.ServerConfig.UseUPnP) _ = new UPnP();
+            if (Master.ServerConfig.UseUPnP)
+                _ = new UPnP();
 
             try
             {
@@ -106,7 +107,11 @@ namespace GameServer.Hooks.TCPNetwork
             Printer.Warning($"Listening for users at {Network.Ip}:{Network.Port}");
             Printer.Warning("Type 'help' to get a list of available commands");
 
-            while (true) ListenForNewClients();
+            Task.Run(delegate
+            {
+                while (true)
+                    ListenForNewClients();
+            });
         }
 
         private void ListenForNewClients()

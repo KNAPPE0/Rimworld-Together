@@ -61,10 +61,10 @@ namespace GameClient.Hooks.TCPNetwork
 
         public ClientNetwork()
         {
-            StartConnection();
+            Start();
         }
 
-        private void StartConnection()
+        private void Start()
         {
             if (TryConnect())
             {

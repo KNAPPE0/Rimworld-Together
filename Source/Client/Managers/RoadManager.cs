@@ -13,6 +13,7 @@ using static Shared.CommonEnumerators;
 using Shared.Details.Planet;
 using Shared.Misc;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 namespace GameClient.Managers
 {
@@ -45,7 +46,7 @@ namespace GameClient.Managers
             data._details.ToTile = tileBID;
             data._details.DefName = roadDef.defName;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.RoadManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.RoadManager, data);
         }
 
         public static void SendRoadRemoveRequest(int tileAID, int tileBID)
@@ -57,7 +58,7 @@ namespace GameClient.Managers
             data._details.FromTile = tileAID;
             data._details.ToTile = tileBID;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.RoadManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.RoadManager, data);
         }
 
         public static void AddRoads(RoadDetail[] details, bool forceRefresh)

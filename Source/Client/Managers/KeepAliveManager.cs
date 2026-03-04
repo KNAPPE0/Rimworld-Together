@@ -2,6 +2,7 @@ using System;
 using GameClient.Hooks.TCPNetwork;
 using GameClient.Misc;
 using Shared;
+using TCPNetwork;
 
 namespace GameClient.Managers
 {
@@ -10,7 +11,7 @@ namespace GameClient.Managers
         [HandlesPacket(PacketHeader.KeepAliveManager)]
         private static void ParsePacket(byte[] bytes)
         {
-            ClientNetwork.Instance.ClientListener.LastKAPacket = DateTime.Now;
+            Network.ServerEndpoint.LastKAPacket = DateTime.Now;
         }
     }
 }

@@ -9,6 +9,7 @@ using System.IO;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using TCPNetwork;
 using TCPNetwork.Packets;
 using UnityEngine;
 using Verse;
@@ -40,7 +41,7 @@ namespace GameClient.Managers
             VersionData data = new VersionData();
             data._version = CommonValues.ExecutableVersion;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.VersionManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.VersionManager, data);
         }
 
         public static void PromptChangeVersion()

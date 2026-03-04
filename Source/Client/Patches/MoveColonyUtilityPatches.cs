@@ -10,6 +10,7 @@ using Shared;
 using Verse;
 using TCPNetwork.Packets;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 namespace GameClient.Patches
 {
@@ -63,7 +64,7 @@ namespace GameClient.Patches
                     settlementData._settlementFile.Tile = settlement;
                     settlementData._stepMode = CommonEnumerators.SettlementStepMode.Remove;
 
-                    ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
+                    Network.ServerEndpoint.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
                 }
             }
         }

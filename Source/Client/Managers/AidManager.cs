@@ -7,6 +7,7 @@ using Verse;
 using static Shared.CommonEnumerators;
 using TCPNetwork.Packets;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 namespace GameClient.Managers
 {
@@ -56,7 +57,7 @@ namespace GameClient.Managers
             aidData._humanData = ScribeManager.SerializeToString(toGet, ScribeManager.SerializableType.Thing);
             RimworldManager.RemovePawnFromGame(toGet);
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.AidManager, aidData);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.AidManager, aidData);
 
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait("Waiting for server response"));
         }
@@ -96,7 +97,7 @@ namespace GameClient.Managers
             RimworldManager.PlaceThingIntoMap(pawn, map, map.Center, true);
 
             data._stepMode = AidStepMode.Accept;
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.AidManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.AidManager, data);
 
             RimworldManager.GenerateLetter("Received aid",
                 "You have received aid from a player! The pawn should come to help soon",
@@ -108,7 +109,7 @@ namespace GameClient.Managers
         private static void RejectAid(AidData data)
         {
             data._stepMode = AidStepMode.Reject;
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.AidManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.AidManager, data);
         }
     }
 }

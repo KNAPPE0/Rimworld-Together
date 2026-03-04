@@ -45,7 +45,7 @@ namespace GameServer.Managers
                 return;
             }
 
-            ServerClient clientToFind = ServerNetwork.Instance.GetConnectedClientFromUsername(settlementToFind.Username);
+            ServerClient clientToFind = ServerNetwork.GetConnectedClientFromUsername(settlementToFind.Username);
             data._isPlayerOnline = clientToFind != null;
 
             client.Listener.EnqueuePacket(PacketHeader.InformationManager, data);

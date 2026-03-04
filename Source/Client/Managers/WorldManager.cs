@@ -17,6 +17,7 @@ using Shared.Details.Planet;
 using Shared.Files.Configs;
 using Shared.Misc;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 namespace GameClient.Managers
 {
@@ -83,7 +84,7 @@ namespace GameClient.Managers
             data._stepMode = WorldStepMode.Sent;
             data._fileBytes = Serializer.ConvertObjectToBytes(SessionHandler.CurrentWorld);
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.WorldManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.WorldManager, data);
 
             OnWorldSent();
         }

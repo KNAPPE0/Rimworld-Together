@@ -12,6 +12,7 @@ using static Shared.CommonEnumerators;
 using Shared.Details.Planet;
 using Shared.Misc;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 namespace GameClient.Managers
 {
@@ -142,7 +143,7 @@ namespace GameClient.Managers
             data._stepMode = SettlementStepMode.Remove;
             data._settlementData.Tile = settlement.Tile;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.NPCManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.NPCManager, data);
         }
     }
 

@@ -45,7 +45,7 @@ namespace GameServer.Managers
 
             SaveRoad(data._details, client);
 
-            ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.RoadManager, data);
+            ServerNetwork.SendPacketToAllClients(PacketHeader.RoadManager, data);
         }
 
         private static void RemoveRoad(ServerClient client, RoadData data)
@@ -77,7 +77,7 @@ namespace GameServer.Managers
 
             void BroadcastDeletion(RoadDetail toRemove)
             {
-                ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.RoadManager, data);
+                ServerNetwork.SendPacketToAllClients(PacketHeader.RoadManager, data);
             }
         }
 

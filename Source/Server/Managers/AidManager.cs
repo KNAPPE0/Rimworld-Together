@@ -51,7 +51,7 @@ namespace GameServer.Managers
                 SettlementFile settlementFile = SettlementManager.GetSettlementFileFromTile(data._toTile);
                 if (UserManagerH.CheckIfUserIsConnected(settlementFile.Username))
                 {
-                    ServerClient target = ServerNetwork.Instance.GetConnectedClientFromUsername(settlementFile.Username);
+                    ServerClient target = ServerNetwork.GetConnectedClientFromUsername(settlementFile.Username);
                     
                     if (!PlayerCooldown.CheckIfCanAid(target.UserFile, Master.ActionConfigs.AidAction.IsEnabled, Master.ActionConfigs.AidAction.Cooldown))
                     {
@@ -84,7 +84,7 @@ namespace GameServer.Managers
                 {
                     client.UserFile.Cooldowns.SetAidTimer(TimeConverter.GetCurrentTimeToEpoch(), client.UserFile);
 
-                    ServerClient target = ServerNetwork.Instance.GetConnectedClientFromUsername(settlementFile.Username);
+                    ServerClient target = ServerNetwork.GetConnectedClientFromUsername(settlementFile.Username);
                     target.Listener.EnqueuePacket(PacketHeader.AidManager, data);
                 }
 
@@ -106,7 +106,7 @@ namespace GameServer.Managers
                 SettlementFile settlementFile = SettlementManager.GetSettlementFileFromTile(data._fromTile);
                 if (UserManagerH.CheckIfUserIsConnected(settlementFile.Username))
                 {
-                    ServerClient target = ServerNetwork.Instance.GetConnectedClientFromUsername(settlementFile.Username);
+                    ServerClient target = ServerNetwork.GetConnectedClientFromUsername(settlementFile.Username);
                     target.Listener.EnqueuePacket(PacketHeader.AidManager, data);
                 }
 

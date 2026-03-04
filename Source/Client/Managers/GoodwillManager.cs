@@ -12,6 +12,7 @@ using static UnityEngine.GraphicsBuffer;
 using TCPNetwork.Packets.Goodwills;
 using Shared.Files.Sites;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 
 namespace GameClient.Managers
@@ -80,7 +81,7 @@ namespace GameClient.Managers
             factionGoodwillData._tile = structureTile;
             factionGoodwillData._goodwill = goodwill;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GoodWillManager, factionGoodwillData);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.GoodWillManager, factionGoodwillData);
 
             RT_Dialog_Wait d1 = new RT_Dialog_Wait("Changing settlement goodwill");
             RT_Dialog_Base.PushNewDialog(d1);

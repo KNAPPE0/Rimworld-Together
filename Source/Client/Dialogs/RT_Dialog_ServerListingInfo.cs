@@ -1,9 +1,10 @@
-﻿using System.Reflection;
+﻿using GameClient.Hooks.TCPNetwork;
 using HarmonyLib;
+using System.Reflection;
+using TCPNetwork;
+using TCPNetwork.Packets.ServerBrowser;
 using UnityEngine;
 using Verse;
-using GameClient.Hooks.TCPNetwork;
-using TCPNetwork.Packets.ServerBrowser;
 
 namespace GameClient.Dialogs
 {
@@ -78,8 +79,8 @@ namespace GameClient.Dialogs
 
         private void ConnectToServer()
         {
-            ClientNetwork.Ip = ServerInfo._ip;
-            ClientNetwork.Port = ServerInfo._port.ToString();
+            Network.Ip = ServerInfo._ip;
+            Network.Port = ServerInfo._port;
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait("Trying to connect to server"));
             _ = new ClientNetwork();
             Close();

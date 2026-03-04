@@ -68,7 +68,7 @@ namespace GameServer.Managers
             data._stepMode = SettlementStepMode.Remove;
             data._settlementData = settlement;
 
-            ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.NPCManager, data);
+            ServerNetwork.SendPacketToAllClients(PacketHeader.NPCManager, data);
         }
     }
 

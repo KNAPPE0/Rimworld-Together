@@ -16,6 +16,7 @@ using static TCPNetwork.Packets.TransferData;
 using static Shared.CommonEnumerators;
 using Shared.Misc;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 namespace GameClient.Managers
 {
@@ -121,7 +122,7 @@ namespace GameClient.Managers
                 SessionHandler.OutgoingManifest._fromTile = Find.AnyPlayerHomeMap.Tile;
                 SessionHandler.OutgoingManifest._toTile = TradeSession.playerNegotiator.Tile;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.TransferManager, SessionHandler.OutgoingManifest);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.TransferManager, SessionHandler.OutgoingManifest);
             }
 
             else if (transferLocation == TransferLocation.Settlement)
@@ -132,7 +133,7 @@ namespace GameClient.Managers
                 SessionHandler.OutgoingManifest._fromTile = Find.AnyPlayerHomeMap.Tile;
                 SessionHandler.OutgoingManifest._toTile = SessionHandler.IncomingManifest._fromTile;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.TransferManager, SessionHandler.OutgoingManifest);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.TransferManager, SessionHandler.OutgoingManifest);
             }
 
             else if (transferLocation == TransferLocation.Pod)
@@ -141,7 +142,7 @@ namespace GameClient.Managers
                 SessionHandler.OutgoingManifest._fromTile = Find.AnyPlayerHomeMap.Tile;
                 SessionHandler.OutgoingManifest._toTile = SessionHandler.ChosenSettlement.Tile;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.TransferManager, SessionHandler.OutgoingManifest);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.TransferManager, SessionHandler.OutgoingManifest);
             }
         }
 
@@ -299,7 +300,7 @@ namespace GameClient.Managers
             {
                 SessionHandler.IncomingManifest._stepMode = TransferStepMode.TradeReject;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.TransferManager, SessionHandler.IncomingManifest);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.TransferManager, SessionHandler.IncomingManifest);
             }
 
             else if (transferMode == TransferMode.Pod)
@@ -311,7 +312,7 @@ namespace GameClient.Managers
             {
                 SessionHandler.IncomingManifest._stepMode = TransferStepMode.TradeReReject;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.TransferManager, SessionHandler.IncomingManifest);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.TransferManager, SessionHandler.IncomingManifest);
 
                 RecoverTradeItems(TransferLocation.Caravan);
             }

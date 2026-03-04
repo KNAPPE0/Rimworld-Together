@@ -8,7 +8,6 @@ using Shared.Misc;
 using System;
 using System.Linq;
 using System.Net.Sockets;
-using System.Runtime.Remoting.Messaging;
 using System.Threading;
 using TCPNetwork;
 using TCPNetwork.Files.Client;
@@ -18,11 +17,9 @@ using static Shared.CommonEnumerators;
 
 namespace GameClient.Hooks.TCPNetwork
 {
-    public class ClientNetwork : Network
+    public class ClientNetwork
     {
-        public static ClientNetwork Instance { get; private set; } = null;
-
-        public override Action<PacketHeader, byte[], ServerClient> OnReadPacket { get; set; } = delegate (PacketHeader header, byte[] buffer, ServerClient client)
+        private Action<PacketHeader, byte[], ServerClient> OnReadPacket { get; set; } = delegate (PacketHeader header, byte[] buffer, ServerClient client)
         {
             Thread.Sleep(250 * (int)ModConfigGetter.CurrentSimulatedLag);
 
@@ -38,9 +35,9 @@ namespace GameClient.Hooks.TCPNetwork
             });
         };
 
-        public override Action<ServerClient> OnWritePacket { get; set; } = delegate (ServerClient client) { };
+        private Action<ServerClient> OnWritePacket { get; set; } = delegate (ServerClient client) { };
 
-        public override Action<ServerClient> OnConnect { get; set; } = delegate
+        private Action<ServerClient> OnConnect { get; set; } = delegate
         {
             MainThreadHandler.Instance.Enqueue(delegate
             {
@@ -49,7 +46,7 @@ namespace GameClient.Hooks.TCPNetwork
             });
         };
 
-        public override Action<ServerClient> OnDisconnect { get; set; } = delegate
+        private Action<ServerClient> OnDisconnect { get; set; } = delegate
         {
             MainThreadHandler.Instance.Enqueue(delegate
             {
@@ -64,18 +61,17 @@ namespace GameClient.Hooks.TCPNetwork
 
         public ClientNetwork()
         {
-            Instance = this;
             StartConnection();
         }
 
-        public void StartConnection()
+        private void StartConnection()
         {
             if (TryConnect())
             {
                 SessionHandler.CurrentNetworkState = ClientNetworkState.Connected;
 
                 PersistentSettings settings = PersistentSettings.Load();
-                settings.ServerSettings.Set(Ip, Port);
+                settings.ServerSettings.Set(Network.Ip, Network.Port);
                 settings.Save();
 
                 Printer.Message("Connected to server");
@@ -89,22 +85,22 @@ namespace GameClient.Hooks.TCPNetwork
             }
         }
 
-        public bool TryConnect()
+        private bool TryConnect()
         {
-            if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected) return false;
+            if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected)
+                return false;
 
             try
             {
-                TcpClient tcpClient = new TcpClient(Ip, int.Parse(Port));
+                TcpClient tcpClient = new TcpClient(Network.Ip, Network.Port);
                 NetworkRuleset ruleset = new NetworkRuleset(OnConnect, OnDisconnect, OnReadPacket, OnWritePacket);
-                ClientListener = new Listener(null, tcpClient, ruleset, Listener.ListenerMode.Client);
+                Network.ServerEndpoint = new Listener(null, tcpClient, ruleset, Listener.ListenerMode.Client);
+                return true;
             }
             catch
             {
                 return false;
             }
-
-            return true;
         }
     }
 }

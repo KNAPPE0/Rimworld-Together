@@ -6,6 +6,7 @@ using Shared;
 using Shared.Files.Guilds;
 using System;
 using System.Collections.Generic;
+using TCPNetwork;
 using TCPNetwork.Packets;
 using Verse;
 using static Shared.CommonEnumerators;
@@ -70,7 +71,7 @@ namespace GameClient.Managers
                 PlayerGuildData playerFactionData = new PlayerGuildData();
                 playerFactionData._stepMode = GuildStepMode.MemberList;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
             };
 
             Action r2 = delegate
@@ -79,7 +80,7 @@ namespace GameClient.Managers
                 playerFactionData._stepMode = GuildStepMode.RemoveMember;
                 playerFactionData._dataInt = Find.AnyPlayerHomeMap.Tile;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
             };
 
             Action r1 = delegate
@@ -89,7 +90,7 @@ namespace GameClient.Managers
                 PlayerGuildData playerFactionData = new PlayerGuildData();
                 playerFactionData._stepMode = GuildStepMode.Delete;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
             };
 
             RT_Dialog_YesNo d3 = new RT_Dialog_YesNo("Are you sure you want to LEAVE your guild?", r2, null);
@@ -121,7 +122,7 @@ namespace GameClient.Managers
                     playerFactionData._stepMode = GuildStepMode.Create;
                     playerFactionData._guild.Name = RT_Dialog_Inputs.DialogInputResults[0];
 
-                    ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
+                    Network.ServerEndpoint.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
                 }
             };
             RT_Dialog_Inputs d2 = new RT_Dialog_Inputs("New Guild Name", new string[] { "Input the name of your new guild" }, new bool[] { false }, r2);
@@ -140,7 +141,7 @@ namespace GameClient.Managers
                 playerFactionData._stepMode = GuildStepMode.Demote;
                 playerFactionData._dataInt = SessionHandler.ChosenSettlement.Tile;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
             };
 
             Action r4 = delegate
@@ -149,7 +150,7 @@ namespace GameClient.Managers
                 playerFactionData._stepMode = GuildStepMode.Promote;
                 playerFactionData._dataInt = SessionHandler.ChosenSettlement.Tile;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
             };
 
             Action r3 = delegate
@@ -158,7 +159,7 @@ namespace GameClient.Managers
                 playerFactionData._stepMode = GuildStepMode.RemoveMember;
                 playerFactionData._dataInt = SessionHandler.ChosenSettlement.Tile;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
             };
 
             RT_Dialog_YesNo d5 = new RT_Dialog_YesNo("Are you sure you want to demote this player?", r5);
@@ -187,7 +188,7 @@ namespace GameClient.Managers
                 playerFactionData._stepMode = GuildStepMode.Invite;
                 playerFactionData._dataInt = SessionHandler.ChosenSettlement.Tile;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
             };
 
             RT_Dialog_YesNo d1 = new RT_Dialog_YesNo("Do you want to invite this player to your guild?", r1, null);
@@ -231,7 +232,7 @@ namespace GameClient.Managers
 
                 factionManifest._stepMode = GuildStepMode.AddMember;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GuildManager, factionManifest);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.GuildManager, factionManifest);
 
                 RimworldManager.GenerateLetter("Joined guild", "You have joined a guild!", LetterDefOf.PositiveEvent);
             };

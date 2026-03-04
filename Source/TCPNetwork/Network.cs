@@ -17,21 +17,13 @@ namespace TCPNetwork
 
         public static string Ip { get; set; } = string.Empty;
 
-        public static string Port { get; set; } = string.Empty;
+        public static int Port { get; set; } = int.MaxValue;
 
-        public virtual Action<PacketHeader, byte[], ServerClient> OnReadPacket { get; set; }
+        public static Listener ServerEndpoint { get; set; } = null;
 
-        public virtual Action<ServerClient> OnWritePacket { get; set; }
+        public static TcpListener ServerListener { get; set; } = null;
 
-        public virtual Action<ServerClient> OnConnect { get; set; }
-
-        public virtual Action<ServerClient> OnDisconnect { get; set; }
-
-        public Listener ClientListener { get; set; } = null;
-
-        public TcpListener ServerListener { get; set; }
-
-        public List<ServerClient> ServerClients { get; private set; } = new List<ServerClient>();
+        public static List<ServerClient> ServerClients { get; private set; } = new List<ServerClient>();
 
         public static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(3);
 

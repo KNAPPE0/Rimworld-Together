@@ -11,6 +11,7 @@ using Verse;
 using static Shared.CommonEnumerators;
 using Shared.Files.Maps;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 namespace GameClient.Managers
 {
@@ -54,7 +55,7 @@ namespace GameClient.Managers
             data._stepMode = ActivityStepMode.Request;
             data._targetTile = targetTile;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.ActivityManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.ActivityManager, data);
         }
 
         private static void OnAccept(ActivityData data) 

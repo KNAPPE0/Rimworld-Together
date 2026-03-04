@@ -61,7 +61,7 @@ namespace GameServer.Managers
             siteData._stepMode = SiteStepMode.Build;
             siteData._file = siteFile;
 
-            foreach (ServerClient cClient in ServerNetwork.Instance.GetConnectedClientsSafe())
+            foreach (ServerClient cClient in ServerNetwork.GetConnectedClients())
             {
                 siteData._file.Goodwill = GoodwillManager.GetSiteGoodwill(cClient, siteFile);
                 cClient.Listener.EnqueuePacket(PacketHeader.SiteManager, siteData);
@@ -102,7 +102,7 @@ namespace GameServer.Managers
             siteData._stepMode = SiteStepMode.Destroy;
             siteData._file = siteFile;
 
-            ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.SiteManager, siteData);
+            ServerNetwork.SendPacketToAllClients(PacketHeader.SiteManager, siteData);
 
             File.Delete(Path.Combine(Master.SitesPath, siteFile.Tile + CommonValues.DefaultSaveFormat));
 
@@ -118,7 +118,7 @@ namespace GameServer.Managers
 
         public static void SendRewardsToEveryPlayer()
         {
-            foreach (ServerClient client in ServerNetwork.Instance.GetConnectedClientsSafe())
+            foreach (ServerClient client in ServerNetwork.GetConnectedClients())
             {
                 SendRewardsToPlayer(client);
             }

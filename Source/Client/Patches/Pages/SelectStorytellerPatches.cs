@@ -6,6 +6,7 @@ using HarmonyLib;
 using RimWorld;
 using Shared.Misc;
 using System;
+using TCPNetwork;
 using UnityEngine;
 using Verse;
 using static Shared.CommonEnumerators;
@@ -42,7 +43,7 @@ namespace GameClient.Patches.Pages
             if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize, RT_Dialog_Base.RectLocation.BottomLeft), "") || KeyBindingDefOf.Cancel.KeyDownEvent)
             {
                 __instance.Close();
-                ClientNetwork.Instance.ClientListener.Disconnect();
+                Network.ServerEndpoint.Disconnect();
             }
             
             if (!SessionHandler.IsGeneratingFreshWorld && SessionHandler.CurrentStoryteller.IsEnforced)

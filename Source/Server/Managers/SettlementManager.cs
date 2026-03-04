@@ -1,12 +1,11 @@
 ﻿using GameServer.Core;
+using GameServer.Hooks.TCPNetwork;
 using GameServer.Misc;
 using Shared;
 using Shared.Files;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using TCPNetwork.Files.Client;
-using GameServer.Hooks.TCPNetwork;
 
 namespace GameServer.Managers
 {
@@ -57,7 +56,7 @@ namespace GameServer.Managers
 
             settlementData._stepMode = SettlementStepMode.Add;
 
-            foreach (ServerClient cClient in ServerNetwork.Instance.GetConnectedClientsSafe())
+            foreach (ServerClient cClient in ServerNetwork.GetConnectedClients())
             {
                 if (cClient == client) continue;
 
@@ -101,7 +100,7 @@ namespace GameServer.Managers
             MapManager.DeleteMapByTile(settlementFile.Tile);
 
             settlementData._stepMode = SettlementStepMode.Remove;
-            ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.SettlementManager, settlementData, client);
+            ServerNetwork.SendPacketToAllClients(PacketHeader.SettlementManager, settlementData, client);
 
             InformationDisplayer.DisplayRemoveSettlement(settlementFile.Tile.ToString());
         }
@@ -113,8 +112,8 @@ namespace GameServer.Managers
             string[] settlements = Directory.GetFiles(Master.SettlementsPath);
             foreach (string settlement in settlements)
             {
-                SettlementFile settlementJSON = Serializer.SerializeFromFile<SettlementFile>(settlement);
-                if (settlementJSON != null && settlementJSON.Tile == tileToCheck) return true;
+                SettlementFile settlementJson = Serializer.SerializeFromFile<SettlementFile>(settlement);
+                if (settlementJson != null && settlementJson.Tile == tileToCheck) return true;
             }
 
             return false;

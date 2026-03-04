@@ -53,7 +53,7 @@ namespace GameServer.Managers
 
                 else
                 {
-                    ServerClient target = ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username);
+                    ServerClient target = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
                     if (!PlayerCooldown.CheckIfCanEvent(target.UserFile, Master.ActionConfigs.EventAction.IsEnabled, Master.ActionConfigs.EventAction.Cooldown))
                     {

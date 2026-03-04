@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using TCPNetwork;
 using TCPNetwork.Packets;
 using UnityEngine;
 using Verse;
@@ -55,7 +56,7 @@ namespace GameClient.Managers
             chatData._username = SessionHandler.Username;
             chatData._message = messageToSend;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.ChatManager, chatData);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.ChatManager, chatData);
         }
 
         public static void AddMessageToChat(string username, string message, ChatColor userColor, ChatColor messageColor)

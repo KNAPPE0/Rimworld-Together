@@ -1,12 +1,9 @@
-using Shared;
-using static Shared.CommonEnumerators;
-using static GameServer.Commands.ConsoleCommandActions;
 using GameServer.Core;
+using GameServer.Hooks.TCPNetwork;
 using GameServer.Managers;
 using GameServer.Misc;
+using Shared;
 using Shared.Files;
-using TCPNetwork.Packets;
-using TCPNetwork.Files.Client;
 using Shared.Files.Configs.Mods;
 using Shared.Misc;
 using System;
@@ -14,7 +11,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using GameServer.Hooks.TCPNetwork;
+using TCPNetwork;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
 namespace GameServer.Commands
 {
@@ -197,6 +197,7 @@ namespace GameServer.Commands
             {
                 Printer.Warning($"{command.Prefix} - {command.Description}");
             }
+
             Printer.Title("----------------------------------------");
         }
 
@@ -229,7 +230,7 @@ namespace GameServer.Commands
 
         public static void ListCommandAction()
         {
-            var clients = ServerNetwork.Instance.GetConnectedClientsSafe();
+            var clients = ServerNetwork.GetConnectedClients();
 
             Printer.Title($"Connected players: [{clients.Length}]");
             Printer.Title("----------------------------------------");
@@ -284,7 +285,7 @@ namespace GameServer.Commands
 
             toFind.UpdateAdmin(true);
 
-            ServerClient client = ServerNetwork.Instance.GetConnectedClientFromUsername(toFind.Username);
+            ServerClient client = ServerNetwork.GetConnectedClientFromUsername(toFind.Username);
             if (client != null)
             {
                 CommandData commandData = new CommandData();
@@ -315,7 +316,7 @@ namespace GameServer.Commands
 
             toFind.UpdateAdmin(false);
 
-            ServerClient client = ServerNetwork.Instance.GetConnectedClientFromUsername(toFind.Username);
+            ServerClient client = ServerNetwork.GetConnectedClientFromUsername(toFind.Username);
             if (client != null)
             {
                 CommandData commandData = new CommandData();
@@ -334,7 +335,7 @@ namespace GameServer.Commands
 
             if (LooksLikeIP(target))
             {
-                bool kicked = ServerNetwork.Instance.KickByIP(target);
+                bool kicked = ServerNetwork.KickByIP(target);
                 if (!kicked)
                 {
                     Printer.Warning($"IP '{target}' was not found (they may have already disconnected).");
@@ -345,7 +346,7 @@ namespace GameServer.Commands
                 return;
             }
 
-            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(target);
+            ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(target);
 
             if (toFind == null)
             {
@@ -373,7 +374,7 @@ namespace GameServer.Commands
 
             if (LooksLikeIP(target))
             {
-                ServerNetwork.Instance.BanByIP(target);
+                ServerNetwork.BanByIP(target);
                 Printer.Warning($"IP '{target}' has been banned (runtime-only)");
                 return;
             }
@@ -381,9 +382,15 @@ namespace GameServer.Commands
             UserManager.BanPlayerFromName(target);
         }
 
-        public static void PardonCommandAction() { UserManager.PardonPlayerFromName(ConsoleManager.commandParameters[0]); }
+        public static void PardonCommandAction()
+        {
+            UserManager.PardonPlayerFromName(ConsoleManager.commandParameters[0]);
+        }
 
-        public static void ReloadCommandAction() { Main_.LoadResources(); }
+        public static void ReloadCommandAction()
+        {
+            Main_.LoadResources();
+        }
 
         public static void ModListCommandAction()
         {
@@ -414,7 +421,7 @@ namespace GameServer.Commands
 
         public static void EventCommandAction()
         {
-            ServerClient client = ServerNetwork.Instance.GetConnectedClientFromUsername(ConsoleManager.commandParameters[0]);
+            ServerClient client = ServerNetwork.GetConnectedClientFromUsername(ConsoleManager.commandParameters[0]);
 
             if (client == null) Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' was not found");
             else
@@ -441,7 +448,7 @@ namespace GameServer.Commands
             if (toFind == null) Printer.Warning($"Event '{ConsoleManager.commandParameters[0]}' was not found");
             else
             {
-                foreach (ServerClient client in ServerNetwork.Instance.GetConnectedClientsSafe())
+                foreach (ServerClient client in ServerNetwork.GetConnectedClients())
                 {
                     EventData eventData = new EventData();
                     eventData._stepMode = EventStepMode.Receive;
@@ -473,7 +480,7 @@ namespace GameServer.Commands
             commandData._commandMode = CommandMode.Broadcast;
             commandData._details = fullText;
 
-            ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.ConsoleManager, commandData);
+            ServerNetwork.SendPacketToAllClients(PacketHeader.ConsoleManager, commandData);
 
             Printer.Title($"Sent broadcast: '{fullText}'");
         }
@@ -535,7 +542,7 @@ namespace GameServer.Commands
         public static void ForceSaveCommandAction()
         {
             string target = ConsoleManager.commandParameters[0];
-            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(target);
+            ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(target);
 
             if (toFind == null)
             {
@@ -557,7 +564,7 @@ namespace GameServer.Commands
             if (userFile == null) ThrowUserNotFoundError();
             else
             {
-                ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(userFile.Username);
+                ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(userFile.Username);
                 SaveManager.ResetPlayerData(toFind, userFile.Username);
             }
         }

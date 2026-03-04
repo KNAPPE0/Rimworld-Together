@@ -2,49 +2,43 @@
 using GameServer.Integrations.Discord;
 using GameServer.Managers;
 using GameServer.Misc;
-using TCPNetwork;
 using Shared;
+using Shared.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using static Shared.CommonEnumerators;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
-using Shared.Misc;
 using TCPNetwork.Misc;
+using static Shared.CommonEnumerators;
 
 namespace GameServer.Hooks.TCPNetwork
 {
-    public class ServerNetwork : Network
+    public class ServerNetwork
     {
-        public static ServerNetwork Instance { get; private set; } = null;
+        private static readonly object ClientsLock = new object();
+        private static readonly HashSet<string> BannedIps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        private readonly object _clientsLock = new object();
-
-        private static readonly HashSet<string> _bannedIps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        public override Action<PacketHeader, byte[], ServerClient> OnReadPacket { get; set; } = delegate (PacketHeader header, byte[] buffer, ServerClient client)
+        private Action<PacketHeader, byte[], ServerClient> OnReadPacket { get; set; } = delegate (PacketHeader header, byte[] buffer, ServerClient client)
         {
             PacketCache.ServerMethodDictionary[header](client, buffer, header);
         };
 
-        public override Action<ServerClient> OnWritePacket { get; set; } = delegate (ServerClient client) { };
+        private Action<ServerClient> OnWritePacket { get; set; } = delegate (ServerClient client) { };
 
-        public override Action<ServerClient> OnConnect { get; set; } = delegate (ServerClient client) { };
+        private Action<ServerClient> OnConnect { get; set; } = delegate (ServerClient client) { };
 
-        public override Action<ServerClient> OnDisconnect { get; set; } = delegate (ServerClient client)
+        private Action<ServerClient> OnDisconnect { get; set; } = delegate (ServerClient client)
         {
             try
             {
-                if (Instance != null)
+                lock (ClientsLock)
                 {
-                    lock (Instance._clientsLock)
-                    {
-                        Instance.ServerClients.RemoveAll(c => c == null);
-                        Instance.ServerClients.Remove(client);
-                    }
+                    Network.ServerClients.RemoveAll(c => c == null);
+                    Network.ServerClients.Remove(client);
                 }
             }
             catch { }
@@ -59,18 +53,14 @@ namespace GameServer.Hooks.TCPNetwork
             try
             {
                 if (Master.ChatConfig.DisconnectNotifications && !string.IsNullOrWhiteSpace(username))
-                {
                     ChatManager.BroadcastServerNotification($"{username} has left the server!");
-                }
             }
             catch { }
 
             try
             {
                 if (!string.IsNullOrWhiteSpace(username))
-                {
                     DiscordPlayerAnnouncer.AnnounceLeft(username);
-                }
             }
             catch
             {
@@ -87,73 +77,69 @@ namespace GameServer.Hooks.TCPNetwork
 
         public ServerNetwork()
         {
-            Instance = this;
-            Ip = Master.ServerConfig.IP;
-            Port = Master.ServerConfig.Port;
+            Network.Ip = Master.ServerConfig.IP;
+            Network.Port = Master.ServerConfig.Port;
 
             Task.Run(Setup);
         }
 
-        public void Setup()
+        private void Setup()
         {
-            if (Master.ServerConfig.UseUPnP) { _ = new UPnP(); }
+            if (Master.ServerConfig.UseUPnP) _ = new UPnP();
 
             try
             {
-                ServerListener = new TcpListener(IPAddress.Parse(Ip), int.Parse(Port));
-                ServerListener.Start();
+                Network.ServerListener = new TcpListener(IPAddress.Parse(Network.Ip), Network.Port);
+                Network.ServerListener.Start();
             }
             catch (SocketException e)
             {
-                Printer.Error($"Failed to start server on {Ip}:{Port}, try setting the address to your local ip address or '0.0.0.0' on port 25555, {e}");
+                Printer.Error($"Failed to start server on {Network.Ip}:{Network.Port}, try setting the address to your local ip address or '0.0.0.0' on port 25555, {e}");
             }
             catch (Exception e)
             {
                 Printer.Error(e);
             }
 
-            Printer.Warning("Server launched");
-            Printer.Warning($"Listening for users at {Ip}:{Port}");
-            Printer.Warning("Type 'help' to get a list of available commands");
-
             Main_.ChangeTitle();
+            Printer.Warning("Server launched");
+            Printer.Warning($"Listening for users at {Network.Ip}:{Network.Port}");
+            Printer.Warning("Type 'help' to get a list of available commands");
 
             while (true) ListenForNewClients();
         }
 
         private void ListenForNewClients()
         {
-            TcpClient newTCP = ServerListener.AcceptTcpClient();
-            ServerClient client = new ServerClient(newTCP);
+            TcpClient newTcp = Network.ServerListener.AcceptTcpClient();
+            ServerClient client = new ServerClient(newTcp);
             NetworkRuleset ruleset = new NetworkRuleset(OnConnect, OnDisconnect, OnReadPacket, OnWritePacket);
-            client.Listener = new Listener(client, newTCP, ruleset, Listener.ListenerMode.Server);
+            client.Listener = new Listener(client, newTcp, ruleset, Listener.ListenerMode.Server);
 
             try
             {
                 string ip = client?.CurrentIP;
-                if (!string.IsNullOrWhiteSpace(ip) && _bannedIps.Contains(ip))
+                if (!string.IsNullOrWhiteSpace(ip) && BannedIps.Contains(ip))
                 {
                     try { Printer.Warning($"[Blocked] > {ip} (IP banned)"); } catch { }
-                    try { client.Listener?.DisconnectNow(); } catch { }
+                    try { client.Listener?.Disconnect(); } catch { }
                     return;
                 }
             }
             catch { }
 
             int connectedCount = 0;
-            try { connectedCount = GetConnectedClientsSafe().Length; } catch { connectedCount = 0; }
+            try { connectedCount = GetConnectedClients().Length; } catch { connectedCount = 0; }
 
             try
             {
-                if (connectedCount >= int.Parse(Master.ServerConfig.MaxPlayers))
+                if (connectedCount >= Master.ServerConfig.MaxPlayers)
                 {
                     LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Full);
                     return;
                 }
             }
-            catch
-            {
-            }
+            catch { }
 
             if (Master.WorldValues == null && connectedCount > 0)
             {
@@ -161,10 +147,10 @@ namespace GameServer.Hooks.TCPNetwork
                 return;
             }
 
-            lock (_clientsLock)
+            lock (ClientsLock)
             {
-                ServerClients.RemoveAll(c => c == null);
-                ServerClients.Add(client);
+                Network.ServerClients.RemoveAll(c => c == null);
+                Network.ServerClients.Add(client);
             }
 
             Main_.ChangeTitle();
@@ -174,20 +160,14 @@ namespace GameServer.Hooks.TCPNetwork
             VersionManager.AskForClientVersion(client);
         }
 
-            Main_.ChangeTitle();
-
-            try { InformationDisplayer.DisplayConnect(client); } catch { }
-
-            VersionManager.AskForClientVersion(client);
-        }
-
-        public ServerClient[] GetConnectedClientsSafe(ServerClient toExclude = null)
+        public static ServerClient[] GetConnectedClients(ServerClient toExclude = null)
         {
             ServerClient[] snapshot;
-            lock (_clientsLock)
+
+            lock (ClientsLock)
             {
-                ServerClients.RemoveAll(c => c == null);
-                snapshot = ServerClients.ToArray();
+                Network.ServerClients.RemoveAll(c => c == null);
+                snapshot = Network.ServerClients.ToArray();
             }
 
             if (toExclude == null)
@@ -196,12 +176,12 @@ namespace GameServer.Hooks.TCPNetwork
             return snapshot.Where(c => c != null && !ReferenceEquals(c, toExclude)).ToArray();
         }
 
-        public ServerClient GetConnectedClientFromUsername(string username)
+        public static ServerClient GetConnectedClientFromUsername(string username)
         {
             if (string.IsNullOrWhiteSpace(username))
                 return null;
 
-            var snapshot = GetConnectedClientsSafe();
+            var snapshot = GetConnectedClients();
             for (int i = 0; i < snapshot.Length; i++)
             {
                 var c = snapshot[i];
@@ -217,14 +197,14 @@ namespace GameServer.Hooks.TCPNetwork
             return null;
         }
 
-        public ServerClient GetConnectedClientFromIP(string ip)
+        public static ServerClient GetConnectedClientFromIP(string ip)
         {
             if (string.IsNullOrWhiteSpace(ip))
                 return null;
 
             ip = ip.Trim();
 
-            var snapshot = GetConnectedClientsSafe();
+            var snapshot = GetConnectedClients();
             for (int i = 0; i < snapshot.Length; i++)
             {
                 var c = snapshot[i];
@@ -237,48 +217,48 @@ namespace GameServer.Hooks.TCPNetwork
             return null;
         }
 
-        public bool KickByIP(string ip)
+        public static bool KickByIP(string ip)
         {
             var c = GetConnectedClientFromIP(ip);
             if (c == null) return false;
 
-            try { c.Listener?.DisconnectNow(); } catch { }
+            try { c.Listener?.Disconnect(); } catch { }
             return true;
         }
 
-        public bool BanByIP(string ip)
+        public static bool BanByIP(string ip)
         {
             if (string.IsNullOrWhiteSpace(ip)) return false;
             ip = ip.Trim();
 
-            try { _bannedIps.Add(ip); } catch { }
+            try { BannedIps.Add(ip); } catch { }
 
             try { KickByIP(ip); } catch { }
 
             return true;
         }
 
-        public bool UnbanByIP(string ip)
+        public static bool UnbanByIP(string ip)
         {
             if (string.IsNullOrWhiteSpace(ip)) return false;
             ip = ip.Trim();
 
-            try { return _bannedIps.Remove(ip); }
+            try { return BannedIps.Remove(ip); }
             catch { return false; }
         }
 
-        public bool IsIpBanned(string ip)
+        public static bool IsIpBanned(string ip)
         {
             if (string.IsNullOrWhiteSpace(ip)) return false;
             ip = ip.Trim();
 
-            try { return _bannedIps.Contains(ip); }
+            try { return BannedIps.Contains(ip); }
             catch { return false; }
         }
 
-        public void SendPacketToAllClients(PacketHeader header, object obj, ServerClient toExclude = null)
+        public static void SendPacketToAllClients(PacketHeader header, object obj, ServerClient toExclude = null)
         {
-            foreach (ServerClient client in GetConnectedClientsSafe(toExclude))
+            foreach (ServerClient client in GetConnectedClients(toExclude))
             {
                 try { client?.Listener?.EnqueuePacket(header, obj); }
                 catch { }

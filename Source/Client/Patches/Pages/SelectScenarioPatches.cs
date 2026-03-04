@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using TCPNetwork;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -26,7 +27,7 @@ namespace GameClient.Patches.Pages
             if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize, RT_Dialog_Base.RectLocation.BottomLeft), "") || KeyBindingDefOf.Cancel.KeyDownEvent)
             {
                 __instance.Close();
-                ClientNetwork.Instance.ClientListener.Disconnect();
+                Network.ServerEndpoint.Disconnect();
             }
 
             if (!SessionHandler.IsGeneratingFreshWorld && SessionHandler.CurrentScenario.IsEnforced)

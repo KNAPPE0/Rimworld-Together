@@ -122,7 +122,7 @@ namespace GameServer.Managers
         {
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
             SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(guildManifest._dataInt);
-            ServerClient toAdd = ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username);
+            ServerClient toAdd = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
             if (GuildManagerH.GetMemberRank(guild, client.UserFile.Username) == GuildRanks.Member) ResponseShortcutManager.SendNoPowerPacket(client);
             else
@@ -160,7 +160,7 @@ namespace GameServer.Managers
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
             SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(guildManifest._dataInt);
             UserFile toRemoveOffline = UserManagerH.GetUserFileFromName(settlement.Username);
-            ServerClient toRemoveOnline = ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username);
+            ServerClient toRemoveOnline = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
             GuildRanks userRank = GuildManagerH.GetMemberRank(guild, client.UserFile.Username);
 
@@ -217,7 +217,7 @@ namespace GameServer.Managers
                     GuildMember member = GuildManagerH.GetAllFactionMembers(guild).First(fetch => fetch.Username == toPromoteOffline.Username);
                     guild.PromoteMember(member);
 
-                    ServerClient toPromoteOnline = ServerNetwork.Instance.GetConnectedClientFromUsername(toPromoteOffline.Username);
+                    ServerClient toPromoteOnline = ServerNetwork.GetConnectedClientFromUsername(toPromoteOffline.Username);
                     if (toPromoteOnline != null) toPromoteOnline.Listener.EnqueuePacket(PacketHeader.GuildManager, factionManifest);
                 }
             }
@@ -239,7 +239,7 @@ namespace GameServer.Managers
                     GuildMember member = GuildManagerH.GetAllFactionMembers(guild).First(fetch => fetch.Username == toDemoteOffline.Username);
                     guild.DemoteMember(member);
 
-                    ServerClient toDemoteOnline = ServerNetwork.Instance.GetConnectedClientFromUsername(toDemoteOffline.Username);
+                    ServerClient toDemoteOnline = ServerNetwork.GetConnectedClientFromUsername(toDemoteOffline.Username);
                     if (toDemoteOnline != null) toDemoteOnline.Listener.EnqueuePacket(PacketHeader.GuildManager, factionManifest);
                 }
             }
@@ -284,7 +284,7 @@ namespace GameServer.Managers
 
         public static ServerClient[] GetConnectedFactionMembers(GuildFile factionFile)
         {
-            return ServerNetwork.Instance.GetConnectedClientsSafe().Where(fetch => fetch.UserFile.GuildName == factionFile.Name).ToArray();
+            return ServerNetwork.GetConnectedClients().Where(fetch => fetch.UserFile.GuildName == factionFile.Name).ToArray();
         }
 
         public static UserFile[] GetUsersFromFactionMembers(GuildFile factionFile)

@@ -1,24 +1,25 @@
-﻿using HarmonyLib;
+﻿using GameClient.Core;
+using GameClient.Dialogs;
+using GameClient.Hooks.TCPNetwork;
+using GameClient.Misc;
+using HarmonyLib;
 using RimWorld;
 using Shared;
+using Shared.Misc;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
-using Verse;
-using static Shared.CommonEnumerators;
-using static GameClient.Managers.DisconnectionManager;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.XPath;
-using System;
-using GameClient.Core;
-using GameClient.Misc;
-using System.Collections.Generic;
-using GameClient.Dialogs;
-using System.Linq;
+using TCPNetwork;
 using TCPNetwork.Packets;
-using System.Threading.Tasks;
-using System.Threading;
-using Shared.Misc;
-using GameClient.Hooks.TCPNetwork;
+using Verse;
+using static GameClient.Managers.DisconnectionManager;
+using static Shared.CommonEnumerators;
 
 namespace GameClient.Managers
 {
@@ -26,7 +27,7 @@ namespace GameClient.Managers
     {
         public static string LatestSavePath { get; set; } = string.Empty;
 
-        public static string CustomSaveName => $"MP - {ClientNetwork.Ip} - {ClientNetwork.Port} - {SessionHandler.Username}";
+        public static string CustomSaveName => $"MP - {Network.Ip} - {Network.Port} - {SessionHandler.Username}";
 
         public static string SaveFilePath => Path.Combine(Master.SavesFolderPath, CustomSaveName + ".rws");
 
@@ -68,7 +69,7 @@ namespace GameClient.Managers
             SaveData data = new SaveData();
             data._stepMode = SaveStepMode.Reset;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SaveManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SaveManager, data);
         }
 
         public static double GetRealPlayTimeInteractingFromSave(string filePath)
@@ -170,7 +171,7 @@ namespace GameClient.Managers
             data._forceDisconnect = SessionHandler.IsExiting;
             data._fileBytes = GZip.CompressBytes(saveBytes);
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SaveManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SaveManager, data);
         }
 
         private static void OnSaveReceived(SaveData data)

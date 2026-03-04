@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TCPNetwork;
 using TCPNetwork.Packets;
 using TCPNetwork.Packets.Goodwills;
 using UnityEngine.Tilemaps;
@@ -79,7 +80,7 @@ namespace GameClient.Managers
             siteData._file.Tile = SessionHandler.ChosenCaravan.Tile;
             siteData._file.Type.DefName = configFile.DefName;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SiteManager, siteData);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, siteData);
 
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait("Waiting for building"));
         }
@@ -92,7 +93,7 @@ namespace GameClient.Managers
                 siteData._file.Tile = SessionHandler.ChosenSite.Tile;
                 siteData._stepMode = SiteStepMode.Destroy;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SiteManager, siteData);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, siteData);
             };
 
             RT_Dialog_YesNo d1 = new RT_Dialog_YesNo("Are you sure you want to destroy this site?", r1, null);
@@ -109,7 +110,7 @@ namespace GameClient.Managers
             siteData._stepMode = SiteStepMode.Config;
             siteData._rewardConfig = rewardConfig;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SiteManager, siteData);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, siteData);
         }
 
         private static void OnReceiveRewards(SiteReward[] files)
@@ -229,7 +230,7 @@ namespace GameClient.Managers
                 Find.WorldPawns.RemovePawn(toSend);
                 toSend.Destroy();
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SiteManager, siteData);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, siteData);
 
                 SaveManager.ForceSave();
             };
@@ -243,7 +244,7 @@ namespace GameClient.Managers
                 siteData._stepMode = SiteStepMode.Worker;
                 siteData._file.Tile = SessionHandler.ChosenSite.Tile;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SiteManager, siteData);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, siteData);
 
                 SaveManager.ForceSave();
             };
@@ -296,7 +297,7 @@ namespace GameClient.Managers
             SiteData siteData = new SiteData();
             siteData._stepMode = SiteStepMode.Rewards;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SiteManager, siteData);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, siteData);
         }
 
         public static void AskForInformation()
@@ -305,7 +306,7 @@ namespace GameClient.Managers
             siteData._stepMode = SiteStepMode.Info;
             siteData._file.Tile = SessionHandler.ChosenSite.Tile;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SiteManager, siteData);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, siteData);
         }
     }
 }

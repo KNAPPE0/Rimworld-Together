@@ -54,9 +54,9 @@ namespace GameClient.Files
     {
         public string LatestIP { get; set; } = string.Empty;
 
-        public string LatestPort { get; set; } = string.Empty;
+        public int LatestPort { get; set; } = int.MaxValue;
 
-        public void Set (string ip, string port)
+        public void Set (string ip, int port)
         {
             LatestIP = ip;
             LatestPort = port;
@@ -65,7 +65,7 @@ namespace GameClient.Files
         public void Reset()
         {
             LatestIP = string.Empty;
-            LatestPort = string.Empty;
+            LatestPort = int.MaxValue;
         }
     }
 

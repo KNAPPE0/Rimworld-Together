@@ -17,10 +17,14 @@ namespace TCPNetwork.Files.Client
 
         public ServerClient SynchronousClient { get; set; } = null;
 
-        public ServerClient(TcpClient tcp)
+        public ServerClient(TcpClient tcp, NetworkRuleset ruleset)
         {
             if (tcp == null) return;
-            else CurrentIP = ((IPEndPoint)tcp.Client.RemoteEndPoint).Address.ToString();
+            else
+            {
+                CurrentIP = ((IPEndPoint)tcp.Client.RemoteEndPoint).Address.ToString();
+                Listener = new Listener(this, tcp, ruleset, Listener.ListenerMode.Server);
+            }
         }
 
         public void LoadUserFromFile(ServerClient client) 

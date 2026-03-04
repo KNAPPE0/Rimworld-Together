@@ -4,6 +4,7 @@ using Shared;
 using GameClient.Misc;
 using Shared.Files.Maps;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 namespace GameClient.Managers
 {
@@ -36,12 +37,24 @@ namespace GameClient.Managers
 
         public static void AskForInformation()
         {
-            StatisticalManager.AskForStats();
+            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait("Waiting for server"));
+
+            InformationData data = new InformationData();
+            data._stepMode = InformationData.InfoStepMode.Connection;
+            data._settlementTile = SessionHandler.ChosenSettlement.Tile;
+
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.InformationManager, data);
         }
 
         public static void AskForWealth()
         {
-            StatisticalManager.AskForStats();
+            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait("Waiting for server"));
+
+            InformationData data = new InformationData();
+            data._stepMode = InformationData.InfoStepMode.Wealth;
+            data._settlementTile = SessionHandler.ChosenSettlement.Tile;
+
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.InformationManager, data);
         }
 
         public static void ReceiveInformation(InformationData data)

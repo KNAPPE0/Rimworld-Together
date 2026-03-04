@@ -3,6 +3,7 @@ using GameClient.Dialogs;
 using GameClient.Hooks.TCPNetwork;
 using GameClient.Misc;
 using Shared;
+using TCPNetwork;
 
 namespace GameClient.Managers
 {
@@ -36,8 +37,8 @@ namespace GameClient.Managers
             if (isInvalid) RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "Server details are invalid! Please try again!" }));
             else
             {
-                ClientNetwork.Ip = RT_Dialog_Inputs.DialogInputResults[0];
-                ClientNetwork.Port = RT_Dialog_Inputs.DialogInputResults[1];
+                Network.Ip = RT_Dialog_Inputs.DialogInputResults[0];
+                Network.Port = int.Parse(RT_Dialog_Inputs.DialogInputResults[1]);
 
                 RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait("Trying to connect to server"));
                 ClientNetwork _ = new ClientNetwork();

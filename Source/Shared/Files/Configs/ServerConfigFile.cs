@@ -13,9 +13,9 @@ namespace Shared.Files.Configs
 
         public string IP { get; set; } = "0.0.0.0";
 
-        public string Port { get; set; } = "25555";
+        public int Port { get; set; } = 25555;
 
-        public string MaxPlayers { get; set; } = "100";
+        public int MaxPlayers { get; set; } = 100;
 
         public bool VerboseLogs { get; set; } = false;
 

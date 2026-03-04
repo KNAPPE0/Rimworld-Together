@@ -11,6 +11,7 @@ using Shared.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TCPNetwork;
 using TCPNetwork.Packets;
 using Verse;
 using static Shared.CommonEnumerators;
@@ -119,7 +120,7 @@ namespace GameClient.Managers
             data._caravanFile.Username = SessionHandler.Username;
             data._caravanFile.ID = caravan.ID;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.CaravanManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.CaravanManager, data);
         }
 
         public static void RequestCaravanRemove(Caravan caravan)
@@ -133,7 +134,7 @@ namespace GameClient.Managers
 
             PlayerCaravans.Remove(caravan);
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.CaravanManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.CaravanManager, data);
         }
 
         public static void RequestCaravanUpdate(Caravan caravan)
@@ -145,7 +146,7 @@ namespace GameClient.Managers
             data._caravanFile.Username = SessionHandler.Username;
             data._caravanFile.ID = caravan.ID;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.CaravanManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.CaravanManager, data);
         }
 
         public static void ClearAllCaravans()

@@ -14,6 +14,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TCPNetwork;
 using TCPNetwork.Packets;
 using Verse;
 using Verse.Noise;
@@ -59,7 +60,7 @@ namespace GameClient.Hooks.Synchronous
             data._toTile = tile;
             data._party = GetPawnParty(SynchronousSide.Guest);
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SynchronousManager, data);
         }
 
         private static void OnAsk(SynchronousData data)
@@ -82,7 +83,7 @@ namespace GameClient.Hooks.Synchronous
 
                 SpawnOtherPawns(SynchronousSide.Host, data._party.Pawns.ToArray());
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, _);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SynchronousManager, _);
             };
 
             Action actionNo = delegate
@@ -92,7 +93,7 @@ namespace GameClient.Hooks.Synchronous
                 _._fromTile = data._toTile;
                 _._toTile = data._fromTile;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, _);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SynchronousManager, _);
             };
 
             string description = $"Player '{data._username}' wants to interact, accept?";
@@ -136,7 +137,7 @@ namespace GameClient.Hooks.Synchronous
             {
                 SynchronousData data = new SynchronousData();
                 data._stepMode = SynchronousData.StepMode.Start;
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SynchronousManager, data);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SynchronousManager, data);
 
                 MainThreadHandler.Instance.DoOnSynchronousStartMethods();
 

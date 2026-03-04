@@ -10,6 +10,7 @@ using static Shared.CommonEnumerators;
 using Shared.Files;
 using TCPNetwork.Packets;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 namespace GameClient.Managers
 {
@@ -54,7 +55,7 @@ namespace GameClient.Managers
             eventData._stepMode = EventStepMode.Set;
             eventData._eventFiles = existingEvents.ToArray();
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.EventManager, eventData);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.EventManager, eventData);
         }
 
         public static void ShowEventMenu()
@@ -99,7 +100,7 @@ namespace GameClient.Managers
                 EventData data = new EventData();
                 data._stepMode = CommonEnumerators.EventStepMode.Customize;
                 data._eventFiles = EventManagerH.AvailableEvents;
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.EventManager, data);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.EventManager, data);
 
                 RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("SUCCESS",
                     new string[] { "Changes will apply to new connecting players" }));
@@ -131,7 +132,7 @@ namespace GameClient.Managers
                 eventData._toTile = SessionHandler.ChosenSettlement.Tile;
                 eventData._eventFile = EventManagerH.EnabledEvents[RT_Dialog_ScrollButtons.SelectedScrollButton];
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.EventManager, eventData);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.EventManager, eventData);
 
                 RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait("Waiting for event"));
             }

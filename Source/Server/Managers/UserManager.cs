@@ -18,16 +18,16 @@ namespace GameServer.Managers
         public static void SendPlayerRecount()
         {
             PlayerRecountData playerRecountData = new PlayerRecountData();
-            playerRecountData._currentPlayerCount = ServerNetwork.Instance.GetConnectedClientsSafe().Count();
-            foreach (ServerClient client in ServerNetwork.Instance.GetConnectedClientsSafe()) playerRecountData._currentPlayerNames.Add(client.UserFile.Username);
+            playerRecountData._currentPlayerCount = ServerNetwork.GetConnectedClients().Count();
+            foreach (ServerClient client in ServerNetwork.GetConnectedClients()) playerRecountData._currentPlayerNames.Add(client.UserFile.Username);
 
-            ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.RecountManager, playerRecountData);
+            ServerNetwork.SendPacketToAllClients(PacketHeader.RecountManager, playerRecountData);
         }
 
         public static void BanPlayerFromName(string username)
         {
             UserFile userFile = UserManagerH.GetUserFileFromName(username);
-            ServerClient client = ServerNetwork.Instance.GetConnectedClientFromUsername(username);
+            ServerClient client = ServerNetwork.GetConnectedClientFromUsername(username);
             if (userFile == null || client == null) ConsoleCommandActions.ThrowUserNotFoundError();
             else
             {
@@ -96,7 +96,7 @@ namespace GameServer.Managers
 
         public static bool CheckIfUserIsConnected(string username)
         {
-            ServerClient toGet = ServerNetwork.Instance.GetConnectedClientFromUsername(username);
+            ServerClient toGet = ServerNetwork.GetConnectedClientFromUsername(username);
             if (toGet != null) return true;
             else return false;
         }

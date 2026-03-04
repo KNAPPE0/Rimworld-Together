@@ -37,7 +37,7 @@ namespace GameServer.Managers
             data._stepMode = CaravanStepMode.Add;
             data._caravanFile = file;
 
-            ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.CaravanManager, data, client);
+            ServerNetwork.SendPacketToAllClients(PacketHeader.CaravanManager, data, client);
 
             InformationDisplayer.DisplayAddCaravan(client.UserFile.Username);
         }
@@ -48,7 +48,7 @@ namespace GameServer.Managers
             data._stepMode = CaravanStepMode.Remove;
             data._caravanFile = file;
 
-            ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.CaravanManager, data, client);
+            ServerNetwork.SendPacketToAllClients(PacketHeader.CaravanManager, data, client);
 
             InformationDisplayer.DisplayRemoveCaravan(client.UserFile.Username);
         }
@@ -59,7 +59,7 @@ namespace GameServer.Managers
             data._stepMode = CaravanStepMode.Move;
             data._caravanFile = file;
 
-            ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.CaravanManager, data, client);
+            ServerNetwork.SendPacketToAllClients(PacketHeader.CaravanManager, data, client);
 
             InformationDisplayer.DisplayMoveCaravan(client.UserFile.Username);
         }

@@ -49,7 +49,7 @@ namespace GameServer.Managers
                     Master.WorldValues.PollutedTiles = existingPollutedTiles.ToArray();
                 }
 
-                if (shouldBroadcast) ServerNetwork.Instance.SendPacketToAllClients(PacketHeader.PollutionManager, data, client);
+                if (shouldBroadcast) ServerNetwork.SendPacketToAllClients(PacketHeader.PollutionManager, data, client);
 
                 Master.WorldValues.Save();
             }

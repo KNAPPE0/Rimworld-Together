@@ -5,6 +5,7 @@ using GameClient.Misc;
 using Shared;
 using System;
 using System.Collections.Generic;
+using TCPNetwork;
 using TCPNetwork.Packets;
 using UnityEngine;
 using Verse;
@@ -77,7 +78,7 @@ namespace GameClient.Managers
 
                 SessionHandler.Username = data._username;
                 data._runningMods = ModManagerH.GetRunningModList();
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.LoginManager, data);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.LoginManager, data);
             }
         }
 
@@ -121,7 +122,7 @@ namespace GameClient.Managers
             TCPNetwork.Network.Ip = settings.ServerSettings.LatestIP;
             TCPNetwork.Network.Port = settings.ServerSettings.LatestPort;
 
-            if (StringChecker.CheckIfStringValid(TCPNetwork.Network.Ip) && StringChecker.CheckIfStringValid(TCPNetwork.Network.Port))
+            if (StringChecker.CheckIfStringValid(TCPNetwork.Network.Ip) && StringChecker.CheckIfStringValid(TCPNetwork.Network.Port.ToString()))
             {
                 LoginManagerH.ShowQuickConnectFloatMenu();
             }

@@ -11,6 +11,7 @@ using TCPNetwork.Packets;
 using Shared.Details.Planet;
 using GameClient.Misc;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 namespace GameClient.Patches
 {
@@ -60,7 +61,7 @@ namespace GameClient.Patches
                 PollutionData data = new PollutionData();
                 data._pollutionData = pollution;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.PollutionManager, data);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.PollutionManager, data);
             }
         }
     }

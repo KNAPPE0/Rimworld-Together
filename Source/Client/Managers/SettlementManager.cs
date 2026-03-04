@@ -9,6 +9,7 @@ using Shared.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TCPNetwork;
 using TCPNetwork.Packets;
 using Verse;
 using static Shared.CommonEnumerators;
@@ -144,7 +145,7 @@ namespace GameClient.Managers
 
             settlementData._stepMode = SettlementStepMode.Add;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
         }
 
         public static void AbandonSettlement(int settlementTile)
@@ -153,7 +154,7 @@ namespace GameClient.Managers
             settlementData._settlementFile.Tile = settlementTile;
             settlementData._stepMode = SettlementStepMode.Remove;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
 
             SaveManager.ForceSave();
         }

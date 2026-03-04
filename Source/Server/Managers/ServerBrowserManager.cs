@@ -1,17 +1,18 @@
-﻿using System.Buffers;
+﻿using GameServer.Core;
+using GameServer.Hooks.TCPNetwork;
+using Shared;
+using Shared.Files.Configs;
+using Shared.Misc;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Net;
 using System.Net.Mime;
 using System.Text;
-using GameServer.Core;
-using Shared;
-using static Shared.CommonEnumerators;
-using TCPNetwork.Packets;
-using Shared.Files.Configs;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
-using Shared.Misc;
-using GameServer.Hooks.TCPNetwork;
+using TCPNetwork.Packets;
 using TCPNetwork.Packets.ServerBrowser;
+using static Shared.CommonEnumerators;
 // ReSharper disable FunctionNeverReturns
 
 namespace GameServer.Managers
@@ -181,11 +182,11 @@ namespace GameServer.Managers
             ServerInfo server = new ServerInfo()
             {
                 _ip = Master.ServerBrowserConfig.PublicEndPoint,
-                _port = int.Parse(Master.ServerConfig.Port),
+                _port = Master.ServerConfig.Port,
                 _name = Master.ServerConfig.Name,
                 _description = Master.ServerConfig.Description,
-                _maximumPlayerCount = int.Parse(Master.ServerConfig.MaxPlayers),
-                _currentPlayerCount = ServerNetwork.Instance.ServerClients.Count,
+                _maximumPlayerCount = Master.ServerConfig.MaxPlayers,
+                _currentPlayerCount = Network.ServerClients.Count,
                 _version = CommonValues.ExecutableVersion,
                 _config = Master.ModConfig
             };
@@ -202,7 +203,7 @@ namespace GameServer.Managers
         private static async Task GetServerSecret()
         {
             var ip = Master.ServerBrowserConfig.PublicEndPoint;
-            var portStr = Master.ServerConfig.Port;
+            var portStr = Master.ServerConfig.Port.ToString();
             if (!ushort.TryParse(portStr, out var port))
             {
                 throw new Exception($"Non-numeric port for server: {portStr}");
@@ -261,7 +262,7 @@ namespace GameServer.Managers
         
         private static void PrepareTelemetryIntoBuffer()
         {
-            var playerCount = ServerNetwork.Instance.ServerClients.Count;
+            var playerCount = Network.ServerClients.Count;
             var destination = TelemetryBuffer.AsSpan().Slice(ServerAuth.PacketSize);
             BinaryPrimitives.WriteInt32LittleEndian(destination, playerCount); ;
         }

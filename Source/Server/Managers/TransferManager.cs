@@ -80,7 +80,7 @@ namespace GameServer.Managers
                     }
 
                     transferData._stepMode = TransferStepMode.TradeRequest;
-                    ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username).Listener.EnqueuePacket(PacketHeader.TransferManager, transferData);
+                    ServerNetwork.GetConnectedClientFromUsername(settlement.Username).Listener.EnqueuePacket(PacketHeader.TransferManager, transferData);
                 }
             }
         }
@@ -99,7 +99,7 @@ namespace GameServer.Managers
             else
             {
                 transferData._stepMode = TransferStepMode.TradeReject;
-                ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username).Listener.EnqueuePacket(PacketHeader.TransferManager, transferData);
+                ServerNetwork.GetConnectedClientFromUsername(settlement.Username).Listener.EnqueuePacket(PacketHeader.TransferManager, transferData);
             }
         }
 
@@ -117,7 +117,7 @@ namespace GameServer.Managers
             else
             {
                 transferData._stepMode = TransferStepMode.TradeReRequest;
-                ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username).Listener.EnqueuePacket(PacketHeader.TransferManager, transferData);
+                ServerNetwork.GetConnectedClientFromUsername(settlement.Username).Listener.EnqueuePacket(PacketHeader.TransferManager, transferData);
             }
         }
 
@@ -135,7 +135,7 @@ namespace GameServer.Managers
             else
             {
                 transferData._stepMode = TransferStepMode.TradeReAccept;
-                ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username).Listener.EnqueuePacket(PacketHeader.TransferManager, transferData);
+                ServerNetwork.GetConnectedClientFromUsername(settlement.Username).Listener.EnqueuePacket(PacketHeader.TransferManager, transferData);
             }
         }
 
@@ -153,7 +153,7 @@ namespace GameServer.Managers
             else
             {
                 transferData._stepMode = TransferStepMode.TradeReReject;
-                ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username).Listener.EnqueuePacket(PacketHeader.TransferManager, transferData);
+                ServerNetwork.GetConnectedClientFromUsername(settlement.Username).Listener.EnqueuePacket(PacketHeader.TransferManager, transferData);
             }
         }
     }

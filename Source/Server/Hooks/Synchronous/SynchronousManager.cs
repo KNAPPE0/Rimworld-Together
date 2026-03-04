@@ -47,7 +47,7 @@ namespace GameServer.Hooks.Synchronous
         private static void TryStartSynchronousSession(ServerClient client, SynchronousData data)
         {
             SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(data._toTile);
-            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username);
+            ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
             if (toFind == null) ResponseShortcutManager.SendUnavailablePacket(client);
             else
@@ -66,7 +66,7 @@ namespace GameServer.Hooks.Synchronous
         private static void AcceptSynchronousSession(ServerClient client, SynchronousData data)
         {
             SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(data._toTile);
-            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username);
+            ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
             SynchronousData _ = new SynchronousData();
             _._stepMode = SynchronousData.StepMode.Accept;
@@ -84,7 +84,7 @@ namespace GameServer.Hooks.Synchronous
         private static void RejectSynchronousSession(ServerClient client, SynchronousData data)
         {
             SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(data._toTile);
-            ServerClient toFind = ServerNetwork.Instance.GetConnectedClientFromUsername(settlement.Username);
+            ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
             SynchronousData _ = new SynchronousData();
             _._stepMode = SynchronousData.StepMode.Reject;

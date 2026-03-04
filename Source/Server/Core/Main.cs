@@ -130,7 +130,7 @@ namespace GameServer.Core
         public static void ChangeTitle()
         {
             Console.Title = $"RimWorld Together {CommonValues.ExecutableVersion} - " +
-                $"Players [{ServerNetwork.Instance.GetConnectedClientsSafe().Length}/{Master.ServerConfig.MaxPlayers}]";
+                $"Players [{ServerNetwork.GetConnectedClients().Length}/{Master.ServerConfig.MaxPlayers}]";
         }
     }
 }

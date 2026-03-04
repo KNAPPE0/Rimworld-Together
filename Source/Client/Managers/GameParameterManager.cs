@@ -11,6 +11,7 @@ using static Shared.CommonEnumerators;
 using TCPNetwork.Packets;
 using Shared.Files.Configs;
 using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
 namespace GameClient.Managers
 {
@@ -79,7 +80,7 @@ namespace GameClient.Managers
             data._stepMode = GenStepMode.Scenario;
             data._bytes = Serializer.ConvertObjectToBytes(file);
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GameParameterManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.GameParameterManager, data);
         }
 
         public static void SendCurrentStoryteller(bool isEnforced)
@@ -92,7 +93,7 @@ namespace GameClient.Managers
             data._stepMode = GenStepMode.Storyteller;
             data._bytes = Serializer.ConvertObjectToBytes(file);
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GameParameterManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.GameParameterManager, data);
         }
 
         public static void SendCurrentDifficulty(bool isEnforced)
@@ -106,7 +107,7 @@ namespace GameClient.Managers
             data._stepMode = GenStepMode.Difficulty;
             data._bytes = Serializer.ConvertObjectToBytes(file);
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.GameParameterManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.GameParameterManager, data);
         }
 
         public static void SendCurrentModConfigs(bool isEnforced)
@@ -117,7 +118,7 @@ namespace GameClient.Managers
             data._configFile = ModManagerH.SortModsIntoCategories(RT_Dialog_ListingWithTuple.DialogTupleListingResultString,
                 RT_Dialog_ListingWithTuple.DialogTupleListingResultInt);
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.ModManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.ModManager, data);
         }
 
         private static void SendFirstTimeSetup()

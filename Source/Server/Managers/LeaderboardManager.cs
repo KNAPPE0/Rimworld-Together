@@ -18,6 +18,7 @@ namespace GameServer.Managers
         private static readonly ReaderWriterLockSlim CacheLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         private static readonly Dictionary<int, LeaderboardEntryFile> EntriesByTile = new Dictionary<int, LeaderboardEntryFile>();
 
+
         private static volatile bool _cacheBuilt = false;
 
         private static int _lastFullRebuildTick = 0;

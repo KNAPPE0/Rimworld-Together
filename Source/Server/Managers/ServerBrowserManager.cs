@@ -41,7 +41,7 @@ namespace GameServer.Managers
                 ResponseShortcutManager.SendIllegalPacket(client, 
                     "Server did not have the server browser enabled, if you're seeing this then a bug occured", false);
             client.Listener.EnqueuePacket(PacketHeader.ServerBrowserReachability, new KeepAliveData());
-            client.Listener.DisconnectSmooth();
+            client.Listener.Disconnect();
         }
 
         public static void StartFeature()

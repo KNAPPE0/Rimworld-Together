@@ -50,7 +50,7 @@ namespace GameServer.Managers
                 return;
             }
 
-            client.Listener.DisconnectNow();
+            client.Listener.Disconnect();
             ResetPlayerData(client, client.UserFile.Username);
         }
 
@@ -58,7 +58,7 @@ namespace GameServer.Managers
         {
             BackupManager.BackupUser(username);
 
-            if (client != null) client.Listener.DisconnectNow();
+            if (client != null) client.Listener.Disconnect();
 
             // Delete save file
             try { File.Delete(Path.Combine(Master.SavesPath, username + CommonValues.DefaultSaveFormat)); }
@@ -100,7 +100,7 @@ namespace GameServer.Managers
             using (FileStream stream = new FileStream(savePath, FileMode.Create, FileAccess.Write)) stream.Write(data._fileBytes);
 
             InformationDisplayer.DisplaySaveGame(client);
-            if (data._forceDisconnect) client.Listener.DisconnectNow();
+            if (data._forceDisconnect) client.Listener.Disconnect();
         }
     }
 }

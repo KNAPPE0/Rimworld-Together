@@ -75,7 +75,7 @@ namespace GameClient.Patches.Pages
             SceneManager.LoadScene(0);
 
             if (ClientNetwork.Instance?.ClientListener != null)
-                ClientNetwork.Instance.ClientListener.DisconnectNow();
+                ClientNetwork.Instance.ClientListener.Disconnect();
         }
     }
 }

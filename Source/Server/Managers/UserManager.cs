@@ -35,7 +35,7 @@ namespace GameServer.Managers
                 else
                 {
                     userFile.UpdateBan(true);
-                    client.Listener.DisconnectNow();
+                    client.Listener.Disconnect();
                     Printer.Warning($"User '{userFile.Username}' has been banned from the server");
                 }
             }

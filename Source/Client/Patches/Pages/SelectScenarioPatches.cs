@@ -26,7 +26,7 @@ namespace GameClient.Patches.Pages
             if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize, RT_Dialog_Base.RectLocation.BottomLeft), "") || KeyBindingDefOf.Cancel.KeyDownEvent)
             {
                 __instance.Close();
-                ClientNetwork.Instance.ClientListener.DisconnectNow();
+                ClientNetwork.Instance.ClientListener.Disconnect();
             }
 
             if (!SessionHandler.IsGeneratingFreshWorld && SessionHandler.CurrentScenario.IsEnforced)

@@ -10,7 +10,6 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.Remoting.Messaging;
 using System.Threading;
-using System.Threading.Tasks;
 using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Misc;
@@ -28,7 +27,7 @@ namespace GameClient.Hooks.TCPNetwork
             Thread.Sleep(250 * (int)ModConfigGetter.CurrentSimulatedLag);
 
             bool bypassReady =
-                Listener.BypassReadyPackets.Contains(header) ||
+                Network.BypassReadyPackets.Contains(header) ||
                 header == PacketHeader.ModManager;
 
             if (!SessionHandler.IsReadyToPlay && !bypassReady) return;
@@ -39,7 +38,7 @@ namespace GameClient.Hooks.TCPNetwork
             });
         };
 
-        public override Action<bool> OnWritePacket { get; set; } = delegate (bool mode) { };
+        public override Action<ServerClient> OnWritePacket { get; set; } = delegate (ServerClient client) { };
 
         public override Action<ServerClient> OnConnect { get; set; } = delegate
         {
@@ -58,7 +57,8 @@ namespace GameClient.Hooks.TCPNetwork
 
                 DisconnectionManager.HandleDisconnect();
                 MainThreadHandler.Instance.DoOnEndMethods();
-                Printer.Warning($"Disconnecting from server", LogImportanceMode.Verbose);
+                SessionHandler.CurrentNetworkState = ClientNetworkState.Disconnected;
+                Printer.Warning("Disconnecting from server", LogImportanceMode.Verbose);
             });
         };
 
@@ -78,7 +78,7 @@ namespace GameClient.Hooks.TCPNetwork
                 settings.ServerSettings.Set(Ip, Port);
                 settings.Save();
 
-                Printer.Message($"Connected to server");
+                Printer.Message("Connected to server");
             }
             else
             {
@@ -96,15 +96,8 @@ namespace GameClient.Hooks.TCPNetwork
             try
             {
                 TcpClient tcpClient = new TcpClient(Ip, int.Parse(Port));
-
-                ClientListener = new Listener(
-                    null,
-                    tcpClient,
-                    OnReadPacket,
-                    OnWritePacket,
-                    OnConnect,
-                    OnDisconnect,
-                    Listener.ListenerMode.Client);
+                NetworkRuleset ruleset = new NetworkRuleset(OnConnect, OnDisconnect, OnReadPacket, OnWritePacket);
+                ClientListener = new Listener(null, tcpClient, ruleset, Listener.ListenerMode.Client);
             }
             catch
             {

@@ -70,5 +70,6 @@ namespace Shared
         SPlayerHediff,
         SPlayerPosition,
         SPlayerDestroy,
+        LeaderboardManager,
     }
 }

@@ -9,6 +9,8 @@ namespace Shared.Files.Actions
 
         public bool EnableFactions { get; set; } = true;
 
+        public bool EnableLeaderboard { get; set; } = true;
+
         public bool EnableTrading { get; set; } = true;
 
         public bool EnableCustomScenarios { get; set; } = true;

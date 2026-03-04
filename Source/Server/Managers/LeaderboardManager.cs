@@ -1,4 +1,4 @@
-﻿using GameServer.Core;
+using GameServer.Core;
 using Shared;
 using Shared.Files;
 using Shared.Files.Maps;
@@ -72,10 +72,8 @@ namespace GameServer.Managers
                     WealthExact = stats.WealthExact,
                     ColonistCount = stats.ColonistCount,
                     GameTicks = stats.GameTicks,
-
                     RealPlayTimeSeconds = stats.RealPlayTimeSeconds,
                     RealPlayTimeInteractingSeconds = stats.RealPlayTimeInteractingSeconds,
-
                     LastSavedUtcTicks = stats.LastSavedUtcTicks
                 };
             }
@@ -434,10 +432,8 @@ namespace GameServer.Managers
                 WealthExact = stats.WealthExact,
                 ColonistCount = stats.ColonistCount,
                 GameTicks = stats.GameTicks,
-
                 RealPlayTimeSeconds = stats.RealPlayTimeSeconds,
                 RealPlayTimeInteractingSeconds = stats.RealPlayTimeInteractingSeconds,
-
                 LastSavedUtcTicks = stats.LastSavedUtcTicks
             };
 

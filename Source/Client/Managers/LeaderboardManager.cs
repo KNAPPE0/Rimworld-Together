@@ -182,7 +182,7 @@ namespace GameClient.Managers
             data._leaderboardLimit = limit;
             data._leaderboardOffset = offset;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.InformationManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.InformationManager, data);
         }
 
         public static void ReceiveLeaderboard(InformationData data)

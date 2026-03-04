@@ -39,6 +39,18 @@ namespace GameClient.Patches
                 }
             };
 
+            Command_Action command_Leaderboard = new Command_Action
+            {
+                defaultLabel = "Leaderboard",
+                defaultDesc = "Access the server leaderboard",
+                icon = ContentFinder<Texture2D>.Get("Commands/Leaderboard"),
+                action = delegate
+                {
+                    if (SessionHandler.CurrentActionValues.EnableLeaderboard) LeaderboardManager.Ask();
+                    else RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                }
+            };
+
             Command_Action command_SiteConfigMenu = new Command_Action
             {
                 defaultLabel = "Site settings",
@@ -53,7 +65,7 @@ namespace GameClient.Patches
 
             if (__instance.Faction == Find.FactionManager.OfPlayer) gizmoList.Add(command_PersonalFactionMenu);
             gizmoList.Add(command_SiteConfigMenu);
-
+            gizmoList.Add(command_Leaderboard);
             __result = gizmoList;
         }
     }

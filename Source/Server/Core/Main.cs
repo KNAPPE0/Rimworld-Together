@@ -12,6 +12,7 @@ using TCPNetwork.Misc;
 using static Shared.CommonEnumerators;
 using GameServer.Hooks.TCPNetwork;
 using GameServer.Hooks.Shared;
+using Shared.Files;
 
 namespace GameServer.Core
 {
@@ -59,6 +60,7 @@ namespace GameServer.Core
             WhitelistConfigFile.SavePath = Path.Combine(Master.ConfigsPath, "WhitelistConfig.json");
             BackupsConfigFile.SavePath = Path.Combine(Master.ConfigsPath, "BackupConfig.json");
             ChatConfigFile.SavePath = Path.Combine(Master.ConfigsPath, "ChatConfig.json");
+            LeaderboardFile.SavePath = Path.Combine(Master.AssetsPath, "Leaderboard.json");
 
             CommonValues.ServerUsersPath = Master.UsersPath;
             CommonValues.ServerSitesPath = Master.SitesPath;
@@ -125,6 +127,7 @@ namespace GameServer.Core
             Master.ChatConfig = (ChatConfigFile)ChatConfigFile.Load<ChatConfigFile>();
             Master.WorldValues = (PlanetConfigFile)PlanetConfigFile.Load<PlanetConfigFile>();
             Master.ServerBrowserConfig = (ServerBrowserConfigFile)ServerBrowserConfigFile.Load<ServerBrowserConfigFile>();
+            Master.LeaderboardFile = (LeaderboardFile)LeaderboardFile.Load<LeaderboardFile>();
         }
 
         public static void ChangeTitle()

@@ -42,8 +42,6 @@ namespace GameServer.Core
 
         public static string EventsPath { get; set; } = Path.Combine(Master.AssetsPath, "Events");
 
-        public static string WorldPath { get; set; } = Path.Combine(Master.AssetsPath, "World");
-
         public static string CompatibilityPatchesPath { get; set; } = Path.Combine(Master.AssetsPath, "Patches");
 
         //References

@@ -51,7 +51,7 @@ namespace GameServer.Core
         {
             ServerConfigFile.SavePath = Path.Combine(Master.ConfigsPath, "ServerConfig.json");
             ActionsConfigFile.SavePath = Path.Combine(Master.ConfigsPath, "ActionConfig.json");
-            PlanetConfigFile.SavePath = Path.Combine(Master.WorldPath, "WorldValuesFile.json");
+            PlanetConfigFile.SavePath = Path.Combine(Master.AssetsPath, "WorldValuesFile.json");
             StorytellerConfigFile.SavePath = Path.Combine(Master.ConfigsPath, "StorytellerConfig.json");
             ScenarioConfigFile.SavePath = Path.Combine(Master.ConfigsPath, "ScenarioConfig.json");
             ModsConfigFile.SavePath = Path.Combine(Master.ConfigsPath, "ModConfig.json");
@@ -85,7 +85,6 @@ namespace GameServer.Core
             if (!Directory.Exists(Master.GuildsPath)) Directory.CreateDirectory(Master.GuildsPath);
             if (!Directory.Exists(Master.SettlementsPath)) Directory.CreateDirectory(Master.SettlementsPath);
             if (!Directory.Exists(Master.EventsPath)) Directory.CreateDirectory(Master.EventsPath);
-            if (!Directory.Exists(Master.WorldPath)) Directory.CreateDirectory(Master.WorldPath);
             if (!Directory.Exists(Master.CompatibilityPatchesPath)) Directory.CreateDirectory(Master.CompatibilityPatchesPath);
         }
 

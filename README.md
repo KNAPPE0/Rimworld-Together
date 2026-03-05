@@ -6,10 +6,10 @@
 [![](https://img.shields.io/badge/Wiki-Read-blue?logo=mdbook)](https://github.com/Byte-Nova/Rimworld-Together/wiki) 
 [![](https://img.shields.io/badge/Incompatibility_List-View-blue?logo=markdown)](https://github.com/RimWorld-Together/Incompatibilities)
 [![](https://img.shields.io/badge/Expansion_List-View-blue?logo=markdown)](https://github.com/RimWorld-Together/Expansions)
-[![](https://img.shields.io/badge/Donate-Go-blue?logo=kofi)](https://ko-fi.com/rimworldtogether)
+[![](https://img.shields.io/badge/Donate-Go-blue?logo=kofi)](https://ko-fi.com/rimworldtogetherproject)
 
 > [!NOTE]
-> The mod is currently a work in progress! Please report any broken stuff you find!
+> PULL REQUEST REVIEWS ARE PAUSED WHILE THE MOD UNDERGOES HEAVY CHANGES! THANK YOU FOR YOUR UNDERSTANDING
 
 ## Server Prerequisites:
 Thanks to the way the server is built, there aren't any heavy hardware related dependencies, meaning that your hosting machine will only need to have an excellent network bandwith and a bit of everything else. Really, modern e-toasters could run it.

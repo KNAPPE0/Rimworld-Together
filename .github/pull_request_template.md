@@ -1,3 +1,6 @@
+> [!NOTE]
+> PULL REQUEST REVIEWS ARE PAUSED WHILE THE MOD UNDERGOES HEAVY CHANGES! THANK YOU FOR YOUR UNDERSTANDING
+
 ### Short and concise description about my pull request:
 
 - *(Your short description goes here)*.

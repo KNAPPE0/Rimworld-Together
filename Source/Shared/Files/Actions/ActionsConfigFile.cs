@@ -28,22 +28,5 @@ namespace Shared.Files.Actions
         public RoadsAction RoadsAction { get; set; } = new RoadsAction();
 
         public SiteAction SiteAction { get; set; } = new SiteAction();
-
-        public override void Save()
-        {
-            try { Serializer.SerializeToFile(SavePath, this); }
-            catch (Exception e) { throw new Exception(e.ToString()); }
-        }
-
-        public static object Load<T>()
-        {
-            if (File.Exists(SavePath)) return Serializer.SerializeFromFile<T>(SavePath);
-            else
-            {
-                ActionsConfigFile file = new ActionsConfigFile();
-                Serializer.SerializeToFile(SavePath, file);
-                return file;
-            }
-        }
     }
 }

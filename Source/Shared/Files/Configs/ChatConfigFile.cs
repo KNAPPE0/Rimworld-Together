@@ -14,22 +14,5 @@ namespace Shared.Files.Configs
         public bool LoginNotifications { get; set; } = false;
 
         public bool DisconnectNotifications { get; set; } = false;
-
-        public override void Save()
-        {
-            try { Serializer.SerializeToFile(SavePath, this); }
-            catch (Exception e) { throw new Exception(e.ToString()); }
-        }
-
-        public static object Load<T>()
-        {
-            if (File.Exists(SavePath)) return Serializer.SerializeFromFile<T>(SavePath);
-            else
-            {
-                ChatConfigFile file = new ChatConfigFile();
-                Serializer.SerializeToFile(SavePath, file);
-                return file;
-            }
-        }
     }
 }

@@ -7,6 +7,7 @@ using TCPNetwork.Files.Client;
 using Shared.Details.Planet;
 using Shared.Misc;
 using GameServer.Hooks.TCPNetwork;
+using Shared.Files.Configs;
 
 namespace GameServer.Managers
 {
@@ -51,7 +52,7 @@ namespace GameServer.Managers
 
                 if (shouldBroadcast) ServerNetwork.SendPacketToAllClients(PacketHeader.PollutionManager, data, client);
 
-                Master.WorldValues.Save();
+                PlanetConfigFile.Save(PlanetConfigFile.SavePath, Master.WorldValues, true);
             }
             catch { Printer.Warning($"Could not add pollution to tile {data}. Coming from {client.UserFile.Username}"); }
         }

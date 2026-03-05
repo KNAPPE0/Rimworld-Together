@@ -1,5 +1,6 @@
 using GameServer.Core;
 using GameServer.Misc;
+using Shared.Files.Configs;
 using Shared.Misc;
 
 namespace GameServer.Managers
@@ -10,7 +11,7 @@ namespace GameServer.Managers
         {
             Master.Whitelist.WhitelistedUsers.Add(username);
 
-            Master.Whitelist.Save();
+            WhitelistConfigFile.Save(WhitelistConfigFile.SavePath, Master.Whitelist);
 
             Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' has been whitelisted");
         }
@@ -19,7 +20,7 @@ namespace GameServer.Managers
         {
             Master.Whitelist.WhitelistedUsers.Remove(username);
 
-            Master.Whitelist.Save();
+            WhitelistConfigFile.Save(WhitelistConfigFile.SavePath, Master.Whitelist);
 
             Printer.Warning($"User '{ConsoleManager.commandParameters[0]}' is no longer whitelisted");
         }

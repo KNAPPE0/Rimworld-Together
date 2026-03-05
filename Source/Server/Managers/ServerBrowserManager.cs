@@ -110,7 +110,7 @@ namespace GameServer.Managers
             {
                 Printer.Error($"Public endpoint \"{serverBrowserInfo.PublicEndPoint}\" is not a valid ip address. Server browser features have been turned off and faulty entry has been removed.");
                 serverBrowserInfo.PublicEndPoint = "";
-                serverBrowserInfo.Save();
+                ServerBrowserConfigFile.Save(ServerBrowserConfigFile.SavePath, serverBrowserInfo);
             }
             
             if (string.IsNullOrEmpty(serverBrowserInfo.PublicEndPoint))
@@ -152,7 +152,7 @@ namespace GameServer.Managers
                     return false;
 
                 Master.ServerBrowserConfig.PublicEndPoint = ip;
-                Master.ServerBrowserConfig.Save();
+                ServerBrowserConfigFile.Save(ServerBrowserConfigFile.SavePath, Master.ServerBrowserConfig);
                 Printer.Warning($"Public endpoint was empty for the server browser, but the server managed to automatically fetch the ip {ip}. If this is not the correct ip, make sure to change it in the config file!");
                 return true;
             }

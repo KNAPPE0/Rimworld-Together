@@ -12,22 +12,5 @@ namespace Shared.Files.Configs
         public bool EnableServerTelemetry { get; set; } = true;
 
         public string PublicEndPoint { get; set; } = string.Empty;
-
-        public override void Save()
-        {
-            try { Serializer.SerializeToFile(SavePath, this); }
-            catch (Exception e) { throw new Exception(e.ToString()); }
-        }
-
-        public static object Load<T>()
-        {
-            if (File.Exists(SavePath)) return Serializer.SerializeFromFile<T>(SavePath);
-            else
-            {
-                ServerBrowserConfigFile file = new ServerBrowserConfigFile();
-                Serializer.SerializeToFile(SavePath, file);
-                return file;
-            }
-        }
     }
 }

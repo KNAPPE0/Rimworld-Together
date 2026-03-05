@@ -33,17 +33,5 @@ namespace Shared.Files.Configs
         public NPCFactionDetail[] NPCFactions { get; set; } = null;
 
         public NPCSettlementDetail[] NPCSettlements { get; set; } = null;
-
-        public override void Save()
-        {
-            try { Serializer.ObjectBytesToFile(SavePath, this); }
-            catch (Exception e) { throw new Exception(e.ToString()); }
-        }
-
-        public static object Load<T>()
-        {
-            if (File.Exists(SavePath)) return Serializer.FileBytesToObject<T>(SavePath);
-            else return null;
-        }
     }
 }

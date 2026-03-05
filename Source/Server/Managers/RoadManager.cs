@@ -7,6 +7,7 @@ using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
 using Shared.Details.Planet;
 using GameServer.Hooks.TCPNetwork;
+using Shared.Files.Configs;
 
 namespace GameServer.Managers
 {
@@ -87,7 +88,7 @@ namespace GameServer.Managers
             currentRoads.Add(details);
 
             Master.WorldValues.Roads = currentRoads.ToArray();
-            Master.WorldValues.Save();
+            PlanetConfigFile.Save(PlanetConfigFile.SavePath, Master.WorldValues, true);
 
             InformationDisplayer.DisplayAddRoad(details.FromTile.ToString(), details.ToTile.ToString());
         }
@@ -98,7 +99,7 @@ namespace GameServer.Managers
             currentRoads.Remove(details);
 
             Master.WorldValues.Roads = currentRoads.ToArray();
-            Master.WorldValues.Save();
+            PlanetConfigFile.Save(PlanetConfigFile.SavePath, Master.WorldValues, true);
 
             InformationDisplayer.DisplayRemoveRoad(details.FromTile.ToString(), details.ToTile.ToString());
         }

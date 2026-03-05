@@ -20,39 +20,29 @@ namespace Shared.Files.Guilds
         public void AddMember(GuildMember member)
         {
             if (!GuildMembers.Contains(member)) GuildMembers.Add(member);
-            Save();
+            Save(Path.Combine(SavePath, Name + CommonValues.DefaultSaveFormat), this);
         }
 
         public void RemoveMember(GuildMember member)
         {
             if (GuildMembers.Contains(member)) GuildMembers.Remove(member);
-            Save();
+            Save(Path.Combine(SavePath, Name + CommonValues.DefaultSaveFormat), this);
         }
 
         public void PromoteMember(GuildMember member)
         {
             GuildMember toFind = GuildMembers.First(fetch => fetch.Username == member.Username);
             toFind.Rank = GuildMember.GuildRanks.Moderator;
-            Save();
+            Save(Path.Combine(SavePath, Name + CommonValues.DefaultSaveFormat), this);
         }
 
         public void DemoteMember(GuildMember member)
         {
             GuildMember toFind = GuildMembers.First(fetch => fetch.Username == member.Username);
             toFind.Rank = GuildMember.GuildRanks.Member;
-            Save();
+            Save(Path.Combine(SavePath, Name + CommonValues.DefaultSaveFormat), this);
         }
 
         public void Delete() { File.Delete(Path.Combine(SavePath, Name + CommonValues.DefaultSaveFormat)); }
-
-        public override void Save()
-        {
-            SavingSemaphore.WaitOne();
-
-            string savePath = Path.Combine(SavePath, Name + CommonValues.DefaultSaveFormat);
-            Serializer.SerializeToFile(savePath, this);
-
-            SavingSemaphore.Release();
-        }
     }
 }

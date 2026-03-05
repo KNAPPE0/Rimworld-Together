@@ -13,22 +13,5 @@ namespace Shared.Files.Configs.Mods
         public bool IsEnforced { get; set; } = false;
 
         public List<ModConfig> ModConfigs { get; set; } = new List<ModConfig>();
-
-        public override void Save()
-        {
-            try { Serializer.SerializeToFile(SavePath, this); }
-            catch (Exception e) { throw new Exception(e.ToString()); }
-        }
-
-        public static object Load<T>()
-        {
-            if (File.Exists(SavePath)) return Serializer.SerializeFromFile<T>(SavePath);
-            else
-            {
-                ModsConfigFile file = new ModsConfigFile();
-                Serializer.SerializeToFile(SavePath, file);
-                return file;
-            }
-        }
     }
 }

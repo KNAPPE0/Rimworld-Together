@@ -8,6 +8,7 @@ using TCPNetwork.Files.Client;
 using Shared.Details.Planet;
 using Shared.Misc;
 using GameServer.Hooks.TCPNetwork;
+using Shared.Files.Configs;
 
 namespace GameServer.Managers
 {
@@ -59,7 +60,7 @@ namespace GameServer.Managers
             List<NPCSettlementDetail> finalSettlements = Master.WorldValues.NPCSettlements.ToList();
             finalSettlements.Remove(NPCSettlementManagerHelper.GetSettlementFromTile(settlement.Tile));
             Master.WorldValues.NPCSettlements = finalSettlements.ToArray();
-            Master.WorldValues.Save();
+            PlanetConfigFile.Save(PlanetConfigFile.SavePath, Master.WorldValues, true);
         }
 
         private static void BroadcastSettlementDeletion(NPCSettlementDetail settlement)

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TCPNetwork;
 using Verse;
 
 namespace Synchronous.Managers
@@ -19,7 +20,7 @@ namespace Synchronous.Managers
             PlayerDestroy destroy = new PlayerDestroy();
             destroy.ThingID = thing.ThingID;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerDestroy, destroy);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SPlayerDestroy, destroy);
         }
 
         [HandlesPacket(PacketHeader.SPlayerDestroy)]

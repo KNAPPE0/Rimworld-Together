@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TCPNetwork;
 using Verse;
 using Verse.AI;
 
@@ -28,7 +29,7 @@ namespace Synchronous.Managers
             playerMentalState.MentalStateByte = value;
             playerMentalState.Mode = mode;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerMentalState, playerMentalState);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SPlayerMentalState, playerMentalState);
         }
 
         [HandlesPacket(PacketHeader.SPlayerMentalState)]

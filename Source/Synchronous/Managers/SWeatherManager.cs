@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TCPNetwork;
 using Verse;
 
 namespace Synchronous.Managers
@@ -22,7 +23,7 @@ namespace Synchronous.Managers
             weather.MapTile = Find.CurrentMap.Tile;
             weather.WeatherByte = value;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerWeather, weather);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SPlayerWeather, weather);
         }
 
         [HandlesPacket(PacketHeader.SPlayerWeather)]

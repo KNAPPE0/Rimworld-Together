@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TCPNetwork;
 using Verse;
 
 namespace Synchronous.Managers
@@ -28,7 +29,7 @@ namespace Synchronous.Managers
         {
             if (PlayerDrafts.Count > 0)
             {
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerDraft, Serializer.ConvertObjectToBytes(PlayerDrafts));
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SPlayerDraft, Serializer.ConvertObjectToBytes(PlayerDrafts));
 
                 PlayerDrafts.Clear();
             }

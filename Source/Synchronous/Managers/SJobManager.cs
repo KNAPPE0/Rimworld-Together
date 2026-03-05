@@ -14,6 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TCPNetwork;
 using UnityEngine;
 using UnityEngine.XR;
 using Verse;
@@ -42,7 +43,7 @@ namespace Synchronous.Managers
             {
                 if (PlayerJobs.Count > 0)
                 {
-                    ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerJob, Serializer.ConvertObjectToBytes(PlayerJobs));
+                    Network.ServerEndpoint.EnqueuePacket(PacketHeader.SPlayerJob, Serializer.ConvertObjectToBytes(PlayerJobs));
                     PlayerJobs.Clear();
                 }
 

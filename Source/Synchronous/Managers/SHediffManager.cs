@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TCPNetwork;
 using Verse;
 
 namespace Synchronous.Managers
@@ -27,7 +28,7 @@ namespace Synchronous.Managers
             playerHediff.IsPermanent = hediff.IsPermanent();
             playerHediff.TendQuality = tendQuality;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerHediff, Serializer.ConvertObjectToBytes(playerHediff));
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SPlayerHediff, Serializer.ConvertObjectToBytes(playerHediff));
         }
 
         [HandlesPacket(PacketHeader.SPlayerHediff)]

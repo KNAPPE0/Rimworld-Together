@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TCPNetwork;
 using Verse;
 
 namespace Synchronous.Managers
@@ -27,7 +28,7 @@ namespace Synchronous.Managers
                 PlayerGameSpeed data = new PlayerGameSpeed();
                 data.CurrentGameSpeed = (int)TimeSpeed.Paused;
                 data.TimeTicks = Find.TickManager.TicksSinceSettle;
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerGameSpeed, data);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SPlayerGameSpeed, data);
             }
         }
 
@@ -40,7 +41,7 @@ namespace Synchronous.Managers
                 data.CurrentGameSpeed = (int)speed;
                 data.TimeTicks = Find.TickManager.TicksSinceSettle;
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.SPlayerGameSpeed, data);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SPlayerGameSpeed, data);
             }
         }
 

@@ -11,11 +11,11 @@ namespace Shared.Files
 {
     public abstract class BaseFile
     {
-        private static Semaphore SavingSemaphore { get; set; } = new Semaphore(1, 1);
+        private static Semaphore Semaphore { get; set; } = new Semaphore(1, 1);
 
         public static void Save(string savePath, object obj, bool inBytes = false)
         {
-            SavingSemaphore.WaitOne();
+            Semaphore.WaitOne();
 
             try 
             { 
@@ -24,7 +24,7 @@ namespace Shared.Files
             }
             catch (Exception e) { throw new Exception(e.ToString()); }
 
-            SavingSemaphore.Release();
+            Semaphore.Release();
         }
 
         public static object Load<T>(string savePath, bool inBytes = false, bool generateIfNull = true)

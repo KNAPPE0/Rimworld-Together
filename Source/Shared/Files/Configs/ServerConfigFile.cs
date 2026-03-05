@@ -17,9 +17,7 @@ namespace Shared.Files.Configs
 
         public int MaxPlayers { get; set; } = 100;
 
-        public bool VerboseLogs { get; set; } = false;
-
-        public bool ExtremeVerboseLogs { get; set; } = false;
+        public int Verbosity { get; set; } = 0;
 
         public bool DisplayChatInConsole { get; set; } = false;
 

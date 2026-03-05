@@ -86,8 +86,8 @@ namespace GameServer.Hooks.Shared
         private static bool CheckIfShouldPrint(LogImportanceMode importance)
         {
             if (importance == LogImportanceMode.Normal) return true;
-            else if (importance == LogImportanceMode.Verbose && Master.ServerConfig.VerboseLogs) return true;
-            else if (importance == LogImportanceMode.Extreme && Master.ServerConfig.ExtremeVerboseLogs) return true;
+            else if (importance == LogImportanceMode.Verbose && Master.ServerConfig.Verbosity >= 1) return true;
+            else if (importance == LogImportanceMode.Extreme && Master.ServerConfig.Verbosity == 2) return true;
             else return false;
         }
     }

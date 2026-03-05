@@ -46,7 +46,7 @@ namespace GameServer.Managers
                 ScenarioConfigFile file = Serializer.ConvertBytesToObject<ScenarioConfigFile>(bytes);
 
                 Master.ScenarioValues = file;
-                Master.ScenarioValues.Save();
+                ScenarioConfigFile.Save(ScenarioConfigFile.SavePath, file);
                 InformationDisplayer.DisplaySetScenario(client.UserFile.Username);
             }
         }
@@ -64,7 +64,7 @@ namespace GameServer.Managers
                 StorytellerConfigFile file = Serializer.ConvertBytesToObject<StorytellerConfigFile>(bytes);
 
                 Master.StorytellerValues = file;
-                Master.StorytellerValues.Save();
+                StorytellerConfigFile.Save(StorytellerConfigFile.SavePath, file);
                 InformationDisplayer.DisplaySetStoryteller(client.UserFile.Username);
             }
         }
@@ -82,8 +82,7 @@ namespace GameServer.Managers
                 DifficultyConfigFile file = Serializer.ConvertBytesToObject<DifficultyConfigFile>(bytes);
 
                 Master.DifficultyValues = file;
-                Master.DifficultyValues.Save();
-
+                DifficultyConfigFile.Save(DifficultyConfigFile.SavePath, file);
                 InformationDisplayer.DisplaySetDifficulty(client.UserFile.Username);
             }
         }

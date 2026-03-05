@@ -11,7 +11,7 @@ namespace Shared.Files
 {
     public abstract class BaseFile
     {
-        private static Semaphore SavingSemaphore = new Semaphore(1, 1);
+        private static Semaphore SavingSemaphore { get; set; } = new Semaphore(1, 1);
 
         public static void Save(string savePath, object obj, bool inBytes = false)
         {

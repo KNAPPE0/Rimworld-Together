@@ -51,20 +51,14 @@ namespace GameClient.Hooks.Synchronous
             }
         }
 
-        public static void ShowUnavailable()
-        {
-            string title = "Feature Unavailable";
-            string[] description = new string[] { "This feature is only available in preview versions of the mod!" };
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message(title, description));
-        }
-
-        public static void Ask(int tile)
+        public static void Ask(int tile, SynchronousData.Type type)
         {
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait());
 
             SynchronousData data = new SynchronousData();
             data._stepMode = SynchronousData.StepMode.Ask;
             data._toTile = tile;
+            data._type = type;
             data._party = GetPawnParty(SynchronousSide.Guest);
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.SynchronousManager, data);
@@ -84,11 +78,12 @@ namespace GameClient.Hooks.Synchronous
 
                 SynchronousData _ = new SynchronousData();
                 _._stepMode = SynchronousData.StepMode.Accept;
+                _._type = data._type;
                 _._fromTile = data._toTile;
                 _._toTile = data._fromTile;
                 _._party = GetPawnParty(SynchronousSide.Host);
 
-                SpawnOtherPawns(SynchronousSide.Host, data._party.Pawns.ToArray());
+                SpawnOtherPawns(SynchronousSide.Host, data);
 
                 Network.ServerEndpoint.EnqueuePacket(PacketHeader.SynchronousManager, _);
             };
@@ -115,7 +110,7 @@ namespace GameClient.Hooks.Synchronous
 
             EnterMap(SynchronousSide.Guest);
 
-            SpawnOtherPawns(SynchronousSide.Guest, data._party.Pawns.ToArray());
+            SpawnOtherPawns(SynchronousSide.Guest, data);
 
             StartSession(SynchronousSide.Guest);
         }
@@ -185,16 +180,17 @@ namespace GameClient.Hooks.Synchronous
             }
         }
 
-        private static void SpawnOtherPawns(SynchronousSide side, string[] pawnData)
+        private static void SpawnOtherPawns(SynchronousSide side, SynchronousData data)
         {
-            foreach (string str in pawnData)
+            foreach (string str in data._party.Pawns)
             {
                 Pawn pawn = ScribeManager.SerializeFromString<Pawn>(str, ScribeManager.SerializableType.Pawn, true);
 
                 RimworldManager.PlaceThingIntoMap(pawn, SessionHandler.SynchronousMap, 
                     side == SynchronousSide.Host ? SessionHandler.SynchronousMap.Center : pawn.PositionHeld);
 
-                pawn.SetFactionDirect(SessionHandler.NeutralFaction);
+                if (data._type == SynchronousData.Type.Visit) pawn.SetFactionDirect(SessionHandler.NeutralFaction);
+                else pawn.SetFactionDirect(SessionHandler.EnemyFaction);
             }
         }
 

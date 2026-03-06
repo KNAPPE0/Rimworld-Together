@@ -58,6 +58,7 @@ namespace GameServer.Hooks.Synchronous
                 _._username = client.UserFile.Username;
                 _._toTile = data._toTile;
                 _._party = data._party;
+                _._type = data._type;
 
                 toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
             }
@@ -74,6 +75,7 @@ namespace GameServer.Hooks.Synchronous
             _._toTile = data._toTile;
             _._contents = MapManager.GetMapFromTile(data._fromTile);
             _._party = data._party;
+            _._type = data._type;
 
             client.SynchronousClient = toFind;
             toFind.SynchronousClient = client;

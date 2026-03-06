@@ -10,9 +10,13 @@ namespace TCPNetwork.Packets
 {
     public class SynchronousData
     {
+        public enum Type { Visit, Raid }
+
         public enum StepMode { Ask, Accept, Reject, Start }
 
         public StepMode _stepMode { get; set; } = StepMode.Ask;
+
+        public Type _type { get; set; } = Type.Visit;
 
         public int _fromTile { get; set; } = -1;
 

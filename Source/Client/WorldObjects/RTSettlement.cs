@@ -220,7 +220,7 @@ namespace GameClient.WorldObjects
                     SessionHandler.ChosenSettlement = this;
                     SessionHandler.ChosenCaravan = caravan;
 
-                    SynchronousManager.ShowUnavailable();
+                    SynchronousManager.Ask(SessionHandler.ChosenSettlement.Tile, TCPNetwork.Packets.SynchronousData.Type.Visit);
                 }
             };
 
@@ -234,7 +234,7 @@ namespace GameClient.WorldObjects
                     SessionHandler.ChosenSettlement = this;
                     SessionHandler.ChosenCaravan = caravan;
 
-                    SynchronousManager.ShowUnavailable();
+                    SynchronousManager.Ask(SessionHandler.ChosenSettlement.Tile, TCPNetwork.Packets.SynchronousData.Type.Raid);
                 }
             };
 

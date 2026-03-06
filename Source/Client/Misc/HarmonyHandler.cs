@@ -55,7 +55,7 @@ namespace GameClient.Misc
 
                 foreach (HarmonyLib.Patch patch in patchInfo.Prefixes)
                 {
-                    if (patch.owner != HarmonyMainID)
+                    if (patch.owner != HarmonyMainID && patch.owner != HarmonyStartID)
                     {
                         if (!CollidingMods.Contains(patch.owner)) CollidingMods.Add(patch.owner);
                     }
@@ -63,18 +63,22 @@ namespace GameClient.Misc
 
                 foreach (HarmonyLib.Patch patch in patchInfo.Transpilers)
                 {
-                    if (patch.owner != HarmonyMainID)
+                    if (patch.owner != HarmonyMainID && patch.owner != HarmonyStartID)
                     {
                         if (!CollidingMods.Contains(patch.owner)) CollidingMods.Add(patch.owner);
                     }
                 }
             }
 
-            Printer.Warning("Checking for mod collision, if there's no other message than this then everything is good!");
-            foreach (string str in CollidingMods)
+            if (CollidingMods.Count == 0) Printer.Warning("No colliding mods were found");
+            else
             {
-                if (str == HarmonyStartID) continue;
-                else Printer.Warning($"Mod '{str}' is colliding with RimWorld Together! This may cause issues!");
+                Printer.Warning($"{CollidingMods.Count} colliding mods were found!");
+                foreach (string str in CollidingMods)
+                {
+                    if (str == HarmonyStartID) continue;
+                    else Printer.Warning($"Mod '{str}' is colliding with RimWorld Together! This may cause issues!");
+                }
             }
         }
     }

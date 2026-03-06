@@ -25,7 +25,7 @@ namespace TCPNetwork
 
         public static List<ServerClient> ServerClients { get; private set; } = new List<ServerClient>();
 
-        public static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(1);
+        public static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(3);
 
         public static readonly TimeSpan KeepAliveMaxTime = TimeSpan.FromSeconds(60);
 

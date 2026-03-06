@@ -51,6 +51,13 @@ namespace GameClient.Hooks.Synchronous
             }
         }
 
+        public static void ShowUnavailable()
+        {
+            string title = "Feature Unavailable";
+            string[] description = new string[] { "This feature is only available in preview versions of the mod!" };
+            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message(title, description));
+        }
+
         public static void Ask(int tile)
         {
             RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait());

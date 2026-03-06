@@ -210,17 +210,31 @@ namespace GameClient.WorldObjects
         {
             List<Gizmo> gizmos = new List<Gizmo>();
 
-            Command_Action command_Synchronous = new Command_Action
+            Command_Action command_OnlineVisit = new Command_Action
             {
-                defaultLabel = "Invade",
-                defaultDesc = "Invade this location",
-                icon = ContentFinder<Texture2D>.Get("Commands/Synchronous"),
+                defaultLabel = "Online Visit",
+                defaultDesc = "Visit this player in real time",
+                icon = ContentFinder<Texture2D>.Get("Commands/OnlineVisit"),
                 action = delegate
                 {
                     SessionHandler.ChosenSettlement = this;
                     SessionHandler.ChosenCaravan = caravan;
 
-                    SynchronousManager.Ask(SessionHandler.ChosenSettlement.Tile);
+                    SynchronousManager.ShowUnavailable();
+                }
+            };
+
+            Command_Action command_OnlineRaid = new Command_Action
+            {
+                defaultLabel = "Online Raid",
+                defaultDesc = "Raid this player in real time",
+                icon = ContentFinder<Texture2D>.Get("Commands/OnlineRaid"),
+                action = delegate
+                {
+                    SessionHandler.ChosenSettlement = this;
+                    SessionHandler.ChosenCaravan = caravan;
+
+                    SynchronousManager.ShowUnavailable();
                 }
             };
 
@@ -276,7 +290,8 @@ namespace GameClient.WorldObjects
 
             gizmos.Add(command_Raid);
             gizmos.Add(command_Transfer);
-            //gizmos.Add(command_Synchronous);
+            gizmos.Add(command_OnlineVisit);
+            gizmos.Add(command_OnlineRaid);
 
             return gizmos;
         }

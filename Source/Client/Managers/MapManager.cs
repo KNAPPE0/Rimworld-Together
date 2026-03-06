@@ -34,7 +34,6 @@ namespace GameClient.Managers
             if (mapFile == null) return;
 
             MapData mapData = new MapData();
-            mapData._mapFile = mapFile;
             mapData._mapTile = mapFile.Tile;
             mapData._mapFile = mapFile;
             mapData._rawData = Serializer.ConvertObjectToBytes(mapFile);

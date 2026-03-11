@@ -31,7 +31,7 @@ namespace GameServer.PacketManager
                     break;
 
                 case InformationData.InfoStepMode.Leaderboard:
-                    LeaderboardManager.SendLeaderboard(client, data);
+                    PM_Leaderboard.SendLeaderboard(client, data);
                     break;
             }
         }

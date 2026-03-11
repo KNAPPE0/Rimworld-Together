@@ -100,7 +100,7 @@ namespace GameClient.PacketManagers
         {
             foreach (SettlementGoodwill _ in factionGoodwillData._settlements)
             {
-                RTSettlement settlement = (RTSettlement)Find.WorldObjects.AllWorldObjects.First(fetch => fetch.Tile == _.Tile && fetch is RTSettlement);
+                WO_Settlement settlement = (WO_Settlement)Find.WorldObjects.AllWorldObjects.First(fetch => fetch.Tile == _.Tile && fetch is WO_Settlement);
                 if (settlement.Faction == Faction.OfPlayer) continue;
                 else
                 {
@@ -108,7 +108,7 @@ namespace GameClient.PacketManagers
                     Find.WorldObjects.Remove(settlement);
 
                     WorldObjectDef def = DefDatabase<WorldObjectDef>.AllDefs.First(fetch => fetch.defName == "RTSettlement");
-                    RTSettlement newSettlement = (RTSettlement)WorldObjectMaker.MakeWorldObject(def);
+                    WO_Settlement newSettlement = (WO_Settlement)WorldObjectMaker.MakeWorldObject(def);
                     newSettlement.Tile = settlement.Tile;
                     newSettlement.Name = settlement.Name;
                     newSettlement.SetFaction(PlanetManagerHelper.GetPlayerFactionFromGoodwill(_.Goodwill));
@@ -123,7 +123,7 @@ namespace GameClient.PacketManagers
         {
             foreach (SiteGoodwill _ in factionGoodwillData._sites) 
             {
-                RTSite site = (RTSite)Find.WorldObjects.AllWorldObjects.First(fetch => fetch.Tile == _.Tile && fetch is RTSite);
+                WO_Site site = (WO_Site)Find.WorldObjects.AllWorldObjects.First(fetch => fetch.Tile == _.Tile && fetch is WO_Site);
 
                 PM_Sites.RecalculateSiteGoodwill(site, _.Goodwill);
             }

@@ -19,7 +19,7 @@ namespace GameClient.PacketManagers
 {
     public static class PM_Settlements
     {
-        public static List<RTSettlement> PlayerSettlements { get; set; } = new List<RTSettlement>();
+        public static List<WO_Settlement> PlayerSettlements { get; set; } = new List<WO_Settlement>();
 
         [HandlesPacket(PacketHeader.SettlementManager)]
         private static void ParsePacket(byte[] bytes)
@@ -73,7 +73,7 @@ namespace GameClient.PacketManagers
             try
             {
                 WorldObjectDef def = DefDatabase<WorldObjectDef>.AllDefs.First(fetch => fetch.defName == "RTSettlement");
-                RTSettlement settlement = (RTSettlement)WorldObjectMaker.MakeWorldObject(def);
+                WO_Settlement settlement = (WO_Settlement)WorldObjectMaker.MakeWorldObject(def);
                 settlement.Tile = toAdd.Tile;
 
                 if (!string.IsNullOrWhiteSpace(toAdd.Name))
@@ -98,11 +98,10 @@ namespace GameClient.PacketManagers
 
             try
             {
-                RTSettlement toGet = Finder.GetRTSettlementFromTile(toRemove.Tile);
+                WO_Settlement toGet = Finder.GetRTSettlementFromTile(toRemove.Tile);
                 if (toGet == null) return;
 
                 PlayerSettlements.Remove(toGet);
-
                 Find.WorldObjects.Remove(toGet);
                 toGet.Destroy();
             }
@@ -112,14 +111,14 @@ namespace GameClient.PacketManagers
             }
         }
 
-        public static void RegenSettlement(RTSettlement _)
+        public static void RegenSettlement(WO_Settlement settlement)
         {
-            if (_ == null) return;
+            if (settlement == null) return;
 
             SettlementFile file = new SettlementFile();
-            file.Tile = _.Tile;
+            file.Tile = settlement.Tile;
 
-            string label = _.Label ?? string.Empty;
+            string label = settlement.Label ?? string.Empty;
 
             if (label.EndsWith("'s settlement"))
                 file.Username = label.Replace("'s settlement", "").Trim();
@@ -128,9 +127,9 @@ namespace GameClient.PacketManagers
 
             file.Name = label;
 
-            if (_.Faction == SessionHandler.EnemyFaction) file.Goodwill = Goodwill.Enemy;
-            else if (_.Faction == SessionHandler.AllyFaction) file.Goodwill = Goodwill.Ally;
-            else if (_.Faction == SessionHandler.GuildFaction) file.Goodwill = Goodwill.Guild;
+            if (settlement.Faction == SessionHandler.EnemyFaction) file.Goodwill = Goodwill.Enemy;
+            else if (settlement.Faction == SessionHandler.AllyFaction) file.Goodwill = Goodwill.Ally;
+            else if (settlement.Faction == SessionHandler.GuildFaction) file.Goodwill = Goodwill.Guild;
             else file.Goodwill = Goodwill.Neutral;
 
             RemoveSingleSettlement(file);
@@ -141,9 +140,7 @@ namespace GameClient.PacketManagers
         {
             PlayerSettlementData settlementData = new PlayerSettlementData();
             settlementData._settlementFile.Tile = settlementTile;
-
             settlementData._settlementFile.Name = TryGetLocalColonyName(settlementTile);
-
             settlementData._stepMode = SettlementStepMode.Add;
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
@@ -172,7 +169,9 @@ namespace GameClient.PacketManagers
                 if (obj != null && !string.IsNullOrWhiteSpace(obj.Label))
                     return obj.Label;
             }
-            catch { }
+            catch
+            {
+            }
 
             return string.Empty;
         }

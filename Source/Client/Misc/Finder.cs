@@ -31,24 +31,24 @@ namespace GameClient.Misc
             return DefDatabase<WeatherDef>.AllDefs.ToList()[value];
         }
 
-        public static RTSettlement GetRTSettlementFromTile(int tile) 
+        public static WO_Settlement GetRTSettlementFromTile(int tile) 
         { 
-            return (RTSettlement)Find.World.worldObjects.AllWorldObjects.First(fetch => fetch.Tile == tile && fetch is RTSettlement); 
+            return (WO_Settlement)Find.World.worldObjects.AllWorldObjects.First(fetch => fetch.Tile == tile && fetch is WO_Settlement); 
         }
 
-        public static RTSite GetRTSiteFromTile(int tile)
+        public static WO_Site GetRTSiteFromTile(int tile)
         {
-            return (RTSite)Find.World.worldObjects.AllWorldObjects.First(fetch => fetch.Tile == tile && fetch is RTSite);
+            return (WO_Site)Find.World.worldObjects.AllWorldObjects.First(fetch => fetch.Tile == tile && fetch is WO_Site);
         }
 
         public static WorldObject[] GetAllRTSettlements()
         {
-            return (WorldObject[])Find.World.worldObjects.AllWorldObjects.FindAll(fetch => fetch is RTSettlement).ToArray();
+            return (WorldObject[])Find.World.worldObjects.AllWorldObjects.FindAll(fetch => fetch is WO_Settlement).ToArray();
         }
 
         public static WorldObject[] GetAllRTSites()
         {
-            return (WorldObject[])Find.World.worldObjects.AllWorldObjects.FindAll(fetch => fetch is RTSite).ToArray();
+            return (WorldObject[])Find.World.worldObjects.AllWorldObjects.FindAll(fetch => fetch is WO_Site).ToArray();
         }
 
         public static Hediff GetHediffFromPart(Pawn pawn, BodyPartRecord part, string hediffDefname, bool forceUntended)

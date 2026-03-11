@@ -2,7 +2,7 @@
 
 namespace GameClient.WorldObjects
 {
-    public class RTCaravan : WorldObject
+    public class WO_Caravan : WorldObject
     {
 
     }

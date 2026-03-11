@@ -7,9 +7,9 @@ using Shared;
 using UnityEngine;
 using Verse;
 
-namespace GameClient.Patches.Tabs
+namespace GameClient.Tabs
 {
-    public class ChatTab : MainTabWindow
+    public class TAB_Chat : MainTabWindow
     {
         public override Vector2 RequestedTabSize => new Vector2(800f, 600f);
 
@@ -37,7 +37,7 @@ namespace GameClient.Patches.Tabs
 
         private const float SendBtnW = 84f;
 
-        public ChatTab()
+        public TAB_Chat()
         {
             layer = WindowLayer.GameUI;
 

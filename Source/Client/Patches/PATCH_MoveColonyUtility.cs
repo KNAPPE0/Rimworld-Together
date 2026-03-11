@@ -15,7 +15,7 @@ using GameClient.PacketManagers;
 
 namespace GameClient.Patches
 {
-    public static class MoveColonyUtilityPatches
+    public static class PATCH_MoveColonyUtility
     {
         [HarmonyPatch(typeof(MoveColonyUtility), nameof(MoveColonyUtility.MoveColonyAndReset))]
         public static class MoveColonyAndResetPatch

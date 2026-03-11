@@ -358,7 +358,7 @@ namespace GameServer.PacketManager
         {
             try
             {
-                SettlementFile sf = SettlementManager.GetSettlementFileFromTile(tile);
+                SettlementFile sf = PM_Settlements.GetSettlementFileFromTile(tile);
                 if (sf == null) return;
 
                 if (string.IsNullOrWhiteSpace(stats.Username))

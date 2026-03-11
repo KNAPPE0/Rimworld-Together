@@ -101,7 +101,7 @@ namespace GameServer.PacketManager
 
             try
             {
-                LeaderboardManager.RemoveTile(tile);
+                PM_Leaderboard.RemoveTile(tile);
             }
             catch { }
 
@@ -213,7 +213,7 @@ namespace GameServer.PacketManager
                 string statsPath = GetStatsPathForTile(stats.Tile);
                 Serializer.ObjectBytesToFile(statsPath, stats);
 
-                LeaderboardManager.UpsertFromStats(stats);
+                PM_Leaderboard.UpsertFromStats(stats);
             }
             catch { }
         }

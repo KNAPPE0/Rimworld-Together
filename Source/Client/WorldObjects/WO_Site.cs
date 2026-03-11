@@ -17,7 +17,7 @@ using static Shared.CommonEnumerators;
 
 namespace GameClient.WorldObjects
 {
-    public class RTSite : MapParent
+    public class WO_Site : MapParent
     {
         private Material cachedMat;
 

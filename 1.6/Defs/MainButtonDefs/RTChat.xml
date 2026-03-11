@@ -4,7 +4,7 @@
     <defName>Chat</defName>
     <label>chat</label>
     <description>Chat together!</description>
-    <tabWindowClass>GameClient.Patches.Tabs.ChatTab</tabWindowClass>
+    <tabWindowClass>GameClient.Tabs.TAB_Chat</tabWindowClass>
     <order>100</order>
     <defaultHotKey>Backspace</defaultHotKey>
     <validWithoutMap>true</validWithoutMap>

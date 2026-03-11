@@ -5,9 +5,9 @@ using GameClient.Managers;
 using UnityEngine;
 using Verse;
 
-namespace GameClient.Patches.Tabs
+namespace GameClient.Tabs
 {
-    public class PlayersUI : WITab
+    public class TAB_Players : WITab
     {
         private Vector2 _scroll = Vector2.zero;
 
@@ -19,7 +19,7 @@ namespace GameClient.Patches.Tabs
         private const float Pad = 10f;
         private const float RowH = 28f;
 
-        public PlayersUI()
+        public TAB_Players()
         {
             size = WinSize;
             labelKey = "Players";

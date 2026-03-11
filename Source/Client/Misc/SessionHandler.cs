@@ -25,9 +25,9 @@ namespace GameClient.Misc
 
         public static ActivityType latestActivity { get; set; } = ActivityType.None;
 
-        public static RTSettlement ChosenSettlement { get; set; } = null;
+        public static WO_Settlement ChosenSettlement { get; set; } = null;
 
-        public static RTSite ChosenSite { get; set; } = null;
+        public static WO_Site ChosenSite { get; set; } = null;
 
         public static Caravan ChosenCaravan { get; set; } = null;
 

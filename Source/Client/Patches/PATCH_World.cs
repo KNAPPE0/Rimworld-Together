@@ -2,12 +2,11 @@
 using GameClient.Managers;
 using GameClient.Misc;
 using GameClient.PacketManagers;
-using GameClient.Patches.Tabs;
+using GameClient.Tabs;
 using GameClient.WorldObjects;
 using HarmonyLib;
 using RimWorld;
 using RimWorld.Planet;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -67,6 +66,7 @@ namespace GameClient.Patches
             if (__instance.Faction == Find.FactionManager.OfPlayer) gizmoList.Add(command_PersonalFactionMenu);
             gizmoList.Add(command_SiteConfigMenu);
             gizmoList.Add(command_Leaderboard);
+
             __result = gizmoList;
         }
     }
@@ -84,7 +84,7 @@ namespace GameClient.Patches
 
                 List<Gizmo> gizmoList = __result.ToList();
 
-                Command_Action Command_BuildSite = new Command_Action
+                Command_Action command_BuildSite = new Command_Action
                 {
                     defaultLabel = "Build a Site",
                     defaultDesc = "Build an utility site for your faction",
@@ -98,7 +98,7 @@ namespace GameClient.Patches
                     }
                 };
 
-                Command_Action Command_BuildRoad = new Command_Action
+                Command_Action command_BuildRoad = new Command_Action
                 {
                     defaultLabel = "Road Builder",
                     defaultDesc = "Build and destroy roads",
@@ -119,8 +119,8 @@ namespace GameClient.Patches
                     }
                 };
 
-                if (!hasSomethingOnTop) gizmoList.Add(Command_BuildSite);
-                gizmoList.Add(Command_BuildRoad);
+                if (!hasSomethingOnTop) gizmoList.Add(command_BuildSite);
+                gizmoList.Add(command_BuildRoad);
                 __result = gizmoList;
             }
         }
@@ -164,15 +164,15 @@ namespace GameClient.Patches
     [HarmonyPatch(typeof(WorldInspectPane), "CurTabs", MethodType.Getter)]
     public static class Patch_WorldInspectPane_CurTabs
     {
-        private static PlayersUI _playersTab;
-        private static BasesUI _basesTab;
-        private static SitesUI _sitesTab;
+        private static TAB_Players _playersTab;
+        private static TAB_Bases _basesTab;
+        private static TAB_Sites _sitesTab;
 
         private static void EnsureTabs()
         {
-            _playersTab ??= new PlayersUI();
-            _basesTab ??= new BasesUI();
-            _sitesTab ??= new SitesUI();
+            _playersTab ??= new TAB_Players();
+            _basesTab ??= new TAB_Bases();
+            _sitesTab ??= new TAB_Sites();
         }
 
         [HarmonyPrefix]
@@ -193,8 +193,12 @@ namespace GameClient.Patches
 
                 IEnumerable<InspectTabBase> baseTabs = PlanetLayer.Selected?.Def?.Tabs ?? Enumerable.Empty<InspectTabBase>();
 
-                __result = baseTabs
-                    .Concat(new InspectTabBase[] { _playersTab, _basesTab, _sitesTab });
+                __result = baseTabs.Concat(new InspectTabBase[]
+                {
+                    _playersTab,
+                    _basesTab,
+                    _sitesTab
+                });
 
                 return false;
             }

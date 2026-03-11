@@ -12,11 +12,11 @@ namespace GameClient.Defs
 {
     public class RTSitePart : IExposable
     {
-        public RTSite site;
+        public WO_Site site;
 
         public SitePartDef def;
 
-        public RTSitePart(RTSite site, SitePartDef def)
+        public RTSitePart(WO_Site site, SitePartDef def)
         {
             this.site = site;
             this.def = def;

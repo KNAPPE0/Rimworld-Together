@@ -59,7 +59,7 @@ namespace GameClient.PacketManagers
                 {
                     GuestCaravans.Add(file);
 
-                    RTCaravan onlineCaravan = (RTCaravan)WorldObjectMaker.MakeWorldObject(RTWorldObjectDefOf.RTCaravan);
+                    WO_Caravan onlineCaravan = (WO_Caravan)WorldObjectMaker.MakeWorldObject(RTWorldObjectDefOf.RTCaravan);
                     onlineCaravan.Tile = file.Tile;
                     onlineCaravan.SetFaction(SessionHandler.NeutralFaction);
                     Find.World.worldObjects.AllWorldObjects.Add(onlineCaravan);
@@ -76,7 +76,7 @@ namespace GameClient.PacketManagers
                 if (toFind == null) Printer.Warning("Caravan to remove wasn't found", LogImportanceMode.Verbose);
                 else
                 {
-                    RTCaravan toRemove = CaravanManagerH.GetAllExistingOnlineCaravans()
+                    WO_Caravan toRemove = CaravanManagerH.GetAllExistingOnlineCaravans()
                         .FirstOrDefault(fetch => fetch.Tile == toFind.Tile);
 
                     if (toRemove != null)
@@ -97,7 +97,7 @@ namespace GameClient.PacketManagers
                 if (toFind == null) AddCaravan(file);
                 else
                 {
-                    RTCaravan onlineCaravan = CaravanManagerH.GetAllExistingOnlineCaravans()
+                    WO_Caravan onlineCaravan = CaravanManagerH.GetAllExistingOnlineCaravans()
                         .FirstOrDefault(fetch => fetch.Tile == toFind.Tile);
 
                     if (onlineCaravan != null)
@@ -165,12 +165,12 @@ namespace GameClient.PacketManagers
 
 public static class CaravanManagerH
 {
-    public static RTCaravan[] GetAllExistingOnlineCaravans()
+    public static WO_Caravan[] GetAllExistingOnlineCaravans()
     {
-        List<RTCaravan> onlineCaravans = new List<RTCaravan>();
+        List<WO_Caravan> onlineCaravans = new List<WO_Caravan>();
         foreach (WorldObject wo in Find.World.worldObjects.AllWorldObjects)
         {
-            if (wo.def == RTWorldObjectDefOf.RTCaravan) onlineCaravans.Add((RTCaravan)wo);
+            if (wo.def == RTWorldObjectDefOf.RTCaravan) onlineCaravans.Add((WO_Caravan)wo);
         }
 
         return onlineCaravans.ToArray();

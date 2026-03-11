@@ -30,7 +30,7 @@ namespace GameClient.PacketManagers
     {
         public static SiteType[] SiteValues { get; set; }
 
-        public static List<RTSite> PlayerSites { get; set; } = new List<RTSite>();
+        public static List<WO_Site> PlayerSites { get; set; } = new List<WO_Site>();
 
         private static CancellationTokenSource Token { get; set; } = new CancellationTokenSource();
 
@@ -168,7 +168,7 @@ namespace GameClient.PacketManagers
                 try
                 {
                     SitePartDef siteDef = RTSitePartDefs.Defs.First(fetch => fetch.defName == toAdd.Type.DefName);
-                    RTSite site = (RTSite)WorldObjectMaker.MakeWorldObject(DefDatabase<WorldObjectDef>.AllDefs.First(fetch => fetch.defName == "RTSite"));
+                    WO_Site site = (WO_Site)WorldObjectMaker.MakeWorldObject(DefDatabase<WorldObjectDef>.AllDefs.First(fetch => fetch.defName == "RTSite"));
                     site.Tile = toAdd.Tile;
                     site.SetFaction(PlanetManagerHelper.GetPlayerFactionFromGoodwill(toAdd.Goodwill));
                     site.AddPart(new RTSitePart(site, siteDef));
@@ -184,7 +184,7 @@ namespace GameClient.PacketManagers
         {
             try
             {
-                RTSite toGet = Finder.GetRTSiteFromTile(toRemove.Tile);
+                WO_Site toGet = Finder.GetRTSiteFromTile(toRemove.Tile);
                 if (!RimworldManager.CheckIfMapHasPlayerPawns(toGet.Map))
                 {
                     if (PlayerSites.Contains(toGet)) PlayerSites.Remove(toGet);
@@ -195,7 +195,7 @@ namespace GameClient.PacketManagers
             catch (Exception e) { Printer.Error($"Failed to remove site at {toRemove.Tile}. Reason: {e}"); }
         }
 
-        public static void RecalculateSiteGoodwill(RTSite site, Goodwill goodwill)
+        public static void RecalculateSiteGoodwill(WO_Site site, Goodwill goodwill)
         {
             SiteFile file = new SiteFile();
             file.Tile = site.Tile;

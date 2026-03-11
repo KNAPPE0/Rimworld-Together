@@ -2,7 +2,7 @@ using Shared.Details.Planet;
 
 namespace TCPNetwork.Packets
 {
-    public class PollutionData 
+    public class PKT_Pollution 
     {
         public PollutionDetail _pollutionData { get; set; } = new PollutionDetail();
 

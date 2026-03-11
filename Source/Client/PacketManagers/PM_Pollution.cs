@@ -17,7 +17,7 @@ namespace GameClient.PacketManagers
         {
             if (ModsConfig.BiotechActive)
             {
-                PollutionData data = Serializer.ConvertBytesToObject<PollutionData>(bytes);
+                PKT_Pollution data = Serializer.ConvertBytesToObject<PKT_Pollution>(bytes);
 
                 AddPollutedTileOrganic(data._pollutionData);
             }
@@ -67,7 +67,7 @@ namespace GameClient.PacketManagers
     {
         public static PollutionDetail[] tempPollutionDetails;
 
-        public static void SetValues(ServerGlobalData serverGlobalData)
+        public static void SetValues(PKT_ServerGlobalData serverGlobalData)
         {
             tempPollutionDetails = serverGlobalData._pollutedTiles;
         }

@@ -14,7 +14,7 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.CaravanManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            CaravanData data = Serializer.ConvertBytesToObject<CaravanData>(bytes);
+            PKT_Caravan data = Serializer.ConvertBytesToObject<PKT_Caravan>(bytes);
 
             switch (data._stepMode)
             {
@@ -34,7 +34,7 @@ namespace GameServer.PacketManager
 
         private static void AddCaravan(ServerClient client, CaravanFile file)
         {
-            CaravanData data = new CaravanData();
+            PKT_Caravan data = new PKT_Caravan();
             data._stepMode = CaravanStepMode.Add;
             data._caravanFile = file;
 
@@ -45,7 +45,7 @@ namespace GameServer.PacketManager
 
         public static void RemoveCaravan(ServerClient client, CaravanFile file)
         {
-            CaravanData data = new CaravanData();
+            PKT_Caravan data = new PKT_Caravan();
             data._stepMode = CaravanStepMode.Remove;
             data._caravanFile = file;
 
@@ -56,7 +56,7 @@ namespace GameServer.PacketManager
 
         private static void MoveCaravan(ServerClient client, CaravanFile file)
         {
-            CaravanData data = new CaravanData();
+            PKT_Caravan data = new PKT_Caravan();
             data._stepMode = CaravanStepMode.Move;
             data._caravanFile = file;
 

@@ -3,7 +3,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets
 {
-    public class CaravanData
+    public class PKT_Caravan
     {
         public CaravanStepMode _stepMode { get; set; } = CaravanStepMode.Add;
 

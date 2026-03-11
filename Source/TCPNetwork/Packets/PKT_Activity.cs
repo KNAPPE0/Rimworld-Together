@@ -3,7 +3,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets
 {
-    public class ActivityData
+    public class PKT_Activity
     {
         public ActivityStepMode _stepMode { get; set; } = ActivityStepMode.Request;
 

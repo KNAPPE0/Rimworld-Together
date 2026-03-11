@@ -12,7 +12,7 @@ using System.Linq;
 using System.Threading;
 using Verse;
 using Verse.Sound;
-using static TCPNetwork.Packets.TransferData;
+using static TCPNetwork.Packets.PKT_Transfer;
 using static Shared.CommonEnumerators;
 using Shared.Misc;
 using GameClient.Hooks.TCPNetwork;
@@ -29,7 +29,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.TransferManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            TransferData data = Serializer.ConvertBytesToObject<TransferData>(bytes);
+            PKT_Transfer data = Serializer.ConvertBytesToObject<PKT_Transfer>(bytes);
 
             switch (data._stepMode)
             {
@@ -224,15 +224,15 @@ namespace GameClient.PacketManagers
 
             if (success) PM_Saves.ForceSave();
 
-            SessionHandler.IncomingManifest = new TransferData();
-            SessionHandler.OutgoingManifest = new TransferData();
+            SessionHandler.IncomingManifest = new PKT_Transfer();
+            SessionHandler.OutgoingManifest = new PKT_Transfer();
 
             SessionHandler.IsInTransfer = false;
         }
 
         //Executes when receiving a transfer request
 
-        public static void ReceiveTransferRequest(TransferData transferData)
+        public static void ReceiveTransferRequest(PKT_Transfer transferData)
         {
             try
             {
@@ -269,7 +269,7 @@ namespace GameClient.PacketManagers
 
         //Executes after receiving a rebound transfer request
 
-        public static void ReceiveReboundRequest(TransferData transferData)
+        public static void ReceiveReboundRequest(PKT_Transfer transferData)
         {
             try
             {
@@ -380,7 +380,7 @@ namespace GameClient.PacketManagers
 
         //Gets all the transfered items from the transfer into usable objects
 
-        public static Thing[] GetAllTransferedItems(TransferData transferData)
+        public static Thing[] GetAllTransferedItems(PKT_Transfer transferData)
         {
             List<Thing> allTransferedItems = new List<Thing>();
 

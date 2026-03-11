@@ -18,7 +18,7 @@ namespace GameServer.Managers
     {
         public static void SendPlayerRecount()
         {
-            PlayerRecountData playerRecountData = new PlayerRecountData();
+            PKT_PlayerRecount playerRecountData = new PKT_PlayerRecount();
             playerRecountData._currentPlayerCount = ServerNetwork.GetConnectedClients().Count();
             foreach (ServerClient client in ServerNetwork.GetConnectedClients()) playerRecountData._currentPlayerNames.Add(client.UserFile.Username);
 
@@ -102,14 +102,14 @@ namespace GameServer.Managers
             else return false;
         }
 
-        public static bool CheckIfUserExists(ServerClient client, LoginData data)
+        public static bool CheckIfUserExists(ServerClient client, PKT_Login data)
         {
             UserFile toFind = GetAllUserFiles().FirstOrDefault(fetch => fetch.Username.ToLower() == data._username.ToLower());
             if (toFind != null) return true;
             else return false;
         }
 
-        public static bool CheckIfUserAuthCorrect(ServerClient client, LoginData data)
+        public static bool CheckIfUserAuthCorrect(ServerClient client, PKT_Login data)
         {
             UserFile toFind = GetAllUserFiles().FirstOrDefault(fetch => fetch.Username == data._username && fetch.Password == data._password);
             if (toFind != null) return true;

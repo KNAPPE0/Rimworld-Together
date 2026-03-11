@@ -97,7 +97,7 @@ namespace GameServer.Commands
                     if (toFind == null) PM_Chat.SendConsoleMessage(TargetClient, "User was not found.");
                     else
                     {
-                        ChatData chatData = new ChatData();
+                        PKT_Chat chatData = new PKT_Chat();
                         chatData._message = message;
                         chatData._usernameColor = ChatColor.Private;
                         chatData._messageColor = ChatColor.Private;

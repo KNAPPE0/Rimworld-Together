@@ -41,7 +41,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.ChatManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            ChatData data = Serializer.ConvertBytesToObject<ChatData>(bytes);
+            PKT_Chat data = Serializer.ConvertBytesToObject<PKT_Chat>(bytes);
 
             AddMessageToChat(data._username, data._message, data._usernameColor, data._messageColor);
         }
@@ -53,7 +53,7 @@ namespace GameClient.PacketManagers
 
             RTChatDefSounds.ChatSend.PlayOneShotOnCamera();
 
-            ChatData chatData = new ChatData();
+            PKT_Chat chatData = new PKT_Chat();
             chatData._username = SessionHandler.Username;
             chatData._message = messageToSend;
 

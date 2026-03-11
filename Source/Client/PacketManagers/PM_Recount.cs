@@ -20,7 +20,7 @@ namespace GameClient.PacketManagers
 
         public static void SetServerPlayers(byte[] bytes)
         {
-            PlayerRecountData data = Serializer.ConvertBytesToObject<PlayerRecountData>(bytes);
+            PKT_PlayerRecount data = Serializer.ConvertBytesToObject<PKT_PlayerRecount>(bytes);
 
             CurrentPlayers = data._currentPlayerCount;
             CurrentPlayerNames = data._currentPlayerNames;

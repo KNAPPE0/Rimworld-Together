@@ -24,11 +24,11 @@ namespace GameServer.PacketManager
                 return;
             }
 
-            PollutionData data = Serializer.ConvertBytesToObject<PollutionData>(bytes);
+            PKT_Pollution data = Serializer.ConvertBytesToObject<PKT_Pollution>(bytes);
             AddPollutionToTile(data, client, true);
         }
 
-        public static void AddPollutionToTile(PollutionData data, ServerClient client, bool shouldBroadcast)
+        public static void AddPollutionToTile(PKT_Pollution data, ServerClient client, bool shouldBroadcast)
         {
             try
             {

@@ -20,7 +20,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.LoginManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            LoginData data = Serializer.ConvertBytesToObject<LoginData>(bytes);
+            PKT_Login data = Serializer.ConvertBytesToObject<PKT_Login>(bytes);
 
             switch (data._tryResponse)
             {
@@ -63,7 +63,7 @@ namespace GameClient.PacketManagers
             if (SessionHandler.CurrentNetworkState != CommonEnumerators.ClientNetworkState.Connected) return;
             else
             {
-                LoginData data = new LoginData();
+                PKT_Login data = new PKT_Login();
 
                 if (Input.GetKey(KeyCode.LeftShift))
                 {

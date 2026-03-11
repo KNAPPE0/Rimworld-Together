@@ -22,7 +22,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.ActivityManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            ActivityData data = Serializer.ConvertBytesToObject<ActivityData>(bytes);
+            PKT_Activity data = Serializer.ConvertBytesToObject<PKT_Activity>(bytes);
 
             switch (data._stepMode)
             {
@@ -53,14 +53,14 @@ namespace GameClient.PacketManagers
         {
             DLG_Base.PushNewDialog(new DLG_Wait("Waiting for map"));
 
-            ActivityData data = new ActivityData();
+            PKT_Activity data = new PKT_Activity();
             data._stepMode = ActivityStepMode.Request;
             data._targetTile = targetTile;
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.ActivityManager, data);
         }
 
-        private static void OnAccept(ActivityData data) 
+        private static void OnAccept(PKT_Activity data) 
         {
             DLG_Wait.Instance.Close();
 

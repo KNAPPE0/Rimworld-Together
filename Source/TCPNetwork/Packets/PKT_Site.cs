@@ -4,13 +4,13 @@ using static Shared.CommonEnumerators;
 namespace TCPNetwork.Packets
 {
 
-    public class SiteData
+    public class PKT_Site
     {
         public SiteStepMode _stepMode { get; set; } = SiteStepMode.Accept;
 
         public SiteFile _file { get; set; } = new SiteFile();
 
-        public SiteRewardConfigData _rewardConfig { get; set; } = null;
+        public PKT_SiteRewardConfig _rewardConfig { get; set; } = null;
 
         public SiteReward[] _rewardFiles { get; set; } = null;
     }

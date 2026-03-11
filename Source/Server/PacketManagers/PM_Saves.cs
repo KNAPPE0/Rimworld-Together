@@ -19,7 +19,7 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.SaveManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            SaveData data = Serializer.ConvertBytesToObject<SaveData>(bytes);
+            PKT_Save data = Serializer.ConvertBytesToObject<PKT_Save>(bytes);
 
             switch (data._stepMode)
             {
@@ -74,7 +74,7 @@ namespace GameServer.PacketManager
             SettlementFile[] playerSettlements = PM_Settlements.GetAllSettlementsFromUsername(username);
             foreach (SettlementFile settlement in playerSettlements)
             {
-                PlayerSettlementData settlementData = new PlayerSettlementData();
+                PKT_PlayerSettlement settlementData = new PKT_PlayerSettlement();
                 settlementData._settlementFile.Tile = settlement.Tile;
                 settlementData._settlementFile.Username = settlement.Username;
 
@@ -88,7 +88,7 @@ namespace GameServer.PacketManager
         {
             string savePath = Path.Combine(Master.SavesPath, client.UserFile.Username + CommonValues.DefaultSaveFormat);
 
-            SaveData data = new SaveData();
+            PKT_Save data = new PKT_Save();
             data._stepMode = SaveStepMode.Receive;
             data._fileBytes = File.ReadAllBytes(savePath);
             if (!Master.ServerConfig.SyncLocalSave) data._forceUseSave = true;
@@ -96,7 +96,7 @@ namespace GameServer.PacketManager
             client.Listener.EnqueuePacket(PacketHeader.SaveManager, data);
         }
         
-        public static void ReceiveSaveFromClient(ServerClient client, SaveData data)
+        public static void ReceiveSaveFromClient(ServerClient client, PKT_Save data)
         {
             string savePath = Path.Combine(Master.SavesPath, client.UserFile.Username + CommonValues.DefaultSaveFormat);
             using (FileStream stream = new FileStream(savePath, FileMode.Create, FileAccess.Write)) stream.Write(data._fileBytes);

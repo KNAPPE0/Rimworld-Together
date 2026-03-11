@@ -158,7 +158,7 @@ namespace TCPNetwork
                 while (!IsDisconnecting)
                 {
                     Thread.Sleep(Network.KeepAliveInterval);
-                    KeepAliveData keepAliveData = new KeepAliveData();
+                    PKT_KeepAlive keepAliveData = new PKT_KeepAlive();
                     EnqueuePacket(PacketHeader.KeepAliveManager, keepAliveData);
                 }
             }

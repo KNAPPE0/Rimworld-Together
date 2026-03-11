@@ -14,15 +14,15 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.InformationManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            InformationData data = Serializer.ConvertBytesToObject<InformationData>(bytes);
+            PKT_Information data = Serializer.ConvertBytesToObject<PKT_Information>(bytes);
 
             switch (data._stepMode)
             {
-                case InformationData.InfoStepMode.Connection:
+                case PKT_Information.InfoStepMode.Connection:
                     ReceiveInformation(data);
                     break;
 
-                case InformationData.InfoStepMode.Wealth:
+                case PKT_Information.InfoStepMode.Wealth:
                     ReceiveWealth(data);
                     break;
 
@@ -40,8 +40,8 @@ namespace GameClient.PacketManagers
         {
             DLG_Base.PushNewDialog(new DLG_Wait("Waiting for server"));
 
-            InformationData data = new InformationData();
-            data._stepMode = InformationData.InfoStepMode.Connection;
+            PKT_Information data = new PKT_Information();
+            data._stepMode = PKT_Information.InfoStepMode.Connection;
             data._settlementTile = SessionHandler.ChosenSettlement.Tile;
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.InformationManager, data);
@@ -51,14 +51,14 @@ namespace GameClient.PacketManagers
         {
             DLG_Base.PushNewDialog(new DLG_Wait("Waiting for server"));
 
-            InformationData data = new InformationData();
-            data._stepMode = InformationData.InfoStepMode.Wealth;
+            PKT_Information data = new PKT_Information();
+            data._stepMode = PKT_Information.InfoStepMode.Wealth;
             data._settlementTile = SessionHandler.ChosenSettlement.Tile;
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.InformationManager, data);
         }
 
-        public static void ReceiveInformation(InformationData data)
+        public static void ReceiveInformation(PKT_Information data)
         {
             DLG_Wait.Instance.Close();
 
@@ -69,7 +69,7 @@ namespace GameClient.PacketManagers
             DLG_Base.PushNewDialog(new DLG_Message(title, messages));
         }
 
-        public static void ReceiveWealth(InformationData data)
+        public static void ReceiveWealth(PKT_Information data)
         {
             DLG_Wait.Instance.Close();
 

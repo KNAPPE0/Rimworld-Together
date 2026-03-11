@@ -58,7 +58,7 @@ namespace GameClient.Patches
                 pollution.Tile = lastPollutedTile;
                 pollution.Quantity = pollutionAmount;
 
-                PollutionData data = new PollutionData();
+                PKT_Pollution data = new PKT_Pollution();
                 data._pollutionData = pollution;
 
                 Network.ServerEndpoint.EnqueuePacket(PacketHeader.PollutionManager, data);

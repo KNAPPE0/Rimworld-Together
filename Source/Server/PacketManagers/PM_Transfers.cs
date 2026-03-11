@@ -8,7 +8,7 @@ using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
-using static TCPNetwork.Packets.TransferData;
+using static TCPNetwork.Packets.PKT_Transfer;
 
 namespace GameServer.PacketManager
 {
@@ -23,7 +23,7 @@ namespace GameServer.PacketManager
                 return;
             }
 
-            TransferData data = Serializer.ConvertBytesToObject<TransferData>(bytes);
+            PKT_Transfer data = Serializer.ConvertBytesToObject<PKT_Transfer>(bytes);
 
             switch (data._stepMode)
             {
@@ -49,7 +49,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        public static void TransferThings(ServerClient client, TransferData transferData)
+        public static void TransferThings(ServerClient client, PKT_Transfer transferData)
         {
             if (!PM_Settlements.CheckIfTileIsInUse(transferData._toTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send items to a settlement at tile {transferData._toTile}, but no settlement could be found");
             else
@@ -88,7 +88,7 @@ namespace GameServer.PacketManager
 
         public static void RejectTransfer(ServerClient client, byte[] bytes)
         {
-            TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(bytes);
+            PKT_Transfer transferData = Serializer.ConvertBytesToObject<PKT_Transfer>(bytes);
 
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData._fromTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
@@ -106,7 +106,7 @@ namespace GameServer.PacketManager
 
         public static void TransferThingsRebound(ServerClient client, byte[] bytes)
         {
-            TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(bytes);
+            PKT_Transfer transferData = Serializer.ConvertBytesToObject<PKT_Transfer>(bytes);
 
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData._toTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
@@ -124,7 +124,7 @@ namespace GameServer.PacketManager
 
         public static void AcceptReboundTransfer(ServerClient client, byte[] bytes)
         {
-            TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(bytes);
+            PKT_Transfer transferData = Serializer.ConvertBytesToObject<PKT_Transfer>(bytes);
 
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData._fromTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
@@ -142,7 +142,7 @@ namespace GameServer.PacketManager
 
         public static void RejectReboundTransfer(ServerClient client, byte[] bytes)
         {
-            TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(bytes);
+            PKT_Transfer transferData = Serializer.ConvertBytesToObject<PKT_Transfer>(bytes);
 
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData._fromTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))

@@ -4,7 +4,7 @@ using static Shared.CommonEnumerators;
 namespace TCPNetwork.Packets
 {
 
-    public class PlayerSettlementData
+    public class PKT_PlayerSettlement
     {
         public SettlementStepMode _stepMode { get; set; } = SettlementStepMode.Add;
 

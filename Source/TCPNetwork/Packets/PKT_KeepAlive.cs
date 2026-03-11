@@ -1,6 +1,6 @@
 namespace TCPNetwork.Packets
 {
-    public class KeepAliveData
+    public class PKT_KeepAlive
     {
 
     }

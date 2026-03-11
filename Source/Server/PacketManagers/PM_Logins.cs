@@ -16,11 +16,11 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.LoginManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            LoginData data = Serializer.ConvertBytesToObject<LoginData>(bytes);
+            PKT_Login data = Serializer.ConvertBytesToObject<PKT_Login>(bytes);
             HandleUser(client, data);
         }
 
-        public static void HandleUser(ServerClient client, LoginData data)
+        public static void HandleUser(ServerClient client, PKT_Login data)
         {
             client.UserFile = new UserFile();
             client.UserFile.UpdateLoginDetails(data);
@@ -37,7 +37,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        public static string TryLoginUser(ServerClient client, LoginData data)
+        public static string TryLoginUser(ServerClient client, PKT_Login data)
         {
             if (!UserManagerH.CheckIfUserAuthCorrect(client, data))
                 return $"Login details to not match, either the password or username is wrong for {data._username}";
@@ -55,7 +55,7 @@ namespace GameServer.PacketManager
             return "";
         }
 
-        public static void RegisterUser(ServerClient client, LoginData data)
+        public static void RegisterUser(ServerClient client, PKT_Login data)
         {
             client.UserFile.UpdateHash();
 
@@ -96,7 +96,7 @@ namespace GameServer.PacketManager
                 Printer.Warning($"Giving first join admin permission to {client.UserFile.Username}");
 
                 client.UserFile.UpdateAdmin(true);
-                CommandData commandData = new CommandData();
+                PKT_Command commandData = new PKT_Command();
                 commandData._commandMode = CommandMode.Op;
                 client.Listener.EnqueuePacket(PacketHeader.ConsoleManager, commandData);
 
@@ -120,7 +120,7 @@ namespace GameServer.PacketManager
 
         public static void DenyConnectionWithReason(ServerClient client, LoginResponse response, object extraDetails = null)
         {
-            LoginData loginData = new LoginData();
+            PKT_Login loginData = new PKT_Login();
             loginData._tryResponse = response;
 
             if (response == LoginResponse.Mods)

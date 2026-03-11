@@ -12,7 +12,7 @@ namespace GameServer.Managers
     {
         public static void SendIllegalPacket(ServerClient client, string message, bool shouldBroadcast = true)
         {
-            ResponseShortcutData data = new ResponseShortcutData();
+            PKT_ResponseShortcut data = new PKT_ResponseShortcut();
             data._stepMode = ResponseStepMode.IllegalAction;
 
             client.Listener.EnqueuePacket(PacketHeader.ResponseShortcutManager, data);
@@ -27,7 +27,7 @@ namespace GameServer.Managers
 
         public static void SendUnavailablePacket(ServerClient client)
         {
-            ResponseShortcutData data = new ResponseShortcutData();
+            PKT_ResponseShortcut data = new PKT_ResponseShortcut();
             data._stepMode = ResponseStepMode.UserUnavailable;
 
             client.Listener.EnqueuePacket(PacketHeader.ResponseShortcutManager, data);
@@ -35,7 +35,7 @@ namespace GameServer.Managers
 
         public static void SendBreakPacket(ServerClient client)
         {
-            ResponseShortcutData data = new ResponseShortcutData();
+            PKT_ResponseShortcut data = new PKT_ResponseShortcut();
             data._stepMode = ResponseStepMode.Pop;
 
             client.Listener.EnqueuePacket(PacketHeader.ResponseShortcutManager, data);
@@ -43,7 +43,7 @@ namespace GameServer.Managers
 
         public static void SendNoPowerPacket(ServerClient client)
         {
-            ResponseShortcutData data = new ResponseShortcutData();
+            PKT_ResponseShortcut data = new PKT_ResponseShortcut();
             data._stepMode = ResponseStepMode.NoPower;
 
             client.Listener.EnqueuePacket(PacketHeader.ResponseShortcutManager, data);

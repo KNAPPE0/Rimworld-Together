@@ -109,7 +109,7 @@ namespace GameServer.PacketManager
             SchedulePersist();
         }
 
-        public static void SendLeaderboard(ServerClient client, InformationData data)
+        public static void SendLeaderboard(ServerClient client, PKT_Information data)
         {
             if (client == null || data == null) return;
 
@@ -123,8 +123,8 @@ namespace GameServer.PacketManager
             int offset = data._leaderboardOffset;
             if (offset < 0) offset = 0;
 
-            InformationData.LeaderboardSortMode sort = data._leaderboardSort;
-            InformationData.LeaderboardOrder order = data._leaderboardOrder;
+            PKT_Information.LeaderboardSortMode sort = data._leaderboardSort;
+            PKT_Information.LeaderboardOrder order = data._leaderboardOrder;
 
             List<LeaderboardEntryFile> snapshot;
 
@@ -218,7 +218,6 @@ namespace GameServer.PacketManager
             EntriesByTile.Clear();
 
             LoadTombstonesUnsafe();
-
             TryLoadLeaderboardCacheUnsafe();
 
             string mapsPath = Master.MapsPath;
@@ -236,7 +235,7 @@ namespace GameServer.PacketManager
                         continue;
 
                     if (name.IndexOf(".stats", StringComparison.OrdinalIgnoreCase) >= 0)
-                        TryUpsertFromStatsLikeFileUnsafe(file, preferNewer: true);
+                        TryUpsertFromStatsLikeFileUnsafe(file, true);
                 }
             }
             catch { }
@@ -249,7 +248,7 @@ namespace GameServer.PacketManager
                     foreach (string file in Directory.GetFiles(statsCachePath, "*", SearchOption.TopDirectoryOnly))
                     {
                         if (file.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase)) continue;
-                        TryUpsertFromStatsLikeFileUnsafe(file, preferNewer: true);
+                        TryUpsertFromStatsLikeFileUnsafe(file, true);
                     }
                 }
                 catch { }
@@ -264,10 +263,8 @@ namespace GameServer.PacketManager
 
                     if (name.Equals(LeaderboardCacheFileName, StringComparison.OrdinalIgnoreCase))
                         continue;
-
                     if (name.IndexOf(".stats", StringComparison.OrdinalIgnoreCase) >= 0)
                         continue;
-
                     if (name.Equals(StatsCacheFolderName, StringComparison.OrdinalIgnoreCase))
                         continue;
 
@@ -292,22 +289,20 @@ namespace GameServer.PacketManager
             if (string.IsNullOrWhiteSpace(file) || !File.Exists(file)) return;
 
             long fileTicks = 0;
-            try { fileTicks = File.GetLastWriteTimeUtc(file).Ticks; } catch { fileTicks = 0; }
+            try { fileTicks = File.GetLastWriteTimeUtc(file).Ticks; } catch { }
 
             if (IsTombstonedAndNotNewerUnsafe(tileFromName, fileTicks))
                 return;
 
             MapFile map = null;
-            try { map = Serializer.FileBytesToObject<MapFile>(file); }
-            catch { map = null; }
+            try { map = Serializer.FileBytesToObject<MapFile>(file); } catch { }
 
             if (map == null)
                 return;
 
             MapStatsFile stats = BuildStatsFromMapFile(map, tileFromName, file);
             TryWriteStatsCacheFileIfMissing(stats);
-
-            UpsertEntryUnsafe(stats, preferNewer: true);
+            UpsertEntryUnsafe(stats, true);
         }
 
         private static MapStatsFile BuildStatsFromMapFile(MapFile mapFile, int tileFromName, string sourcePath)
@@ -338,10 +333,8 @@ namespace GameServer.PacketManager
 
             stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Count : -1;
             stats.NonFactionThingCount = mapFile.NonFactionThings != null ? mapFile.NonFactionThings.Count : -1;
-
             stats.FactionHumanCount = mapFile.FactionHumans != null ? mapFile.FactionHumans.Count : -1;
             stats.NonFactionHumanCount = mapFile.NonFactionHumans != null ? mapFile.NonFactionHumans.Count : -1;
-
             stats.FactionAnimalCount = mapFile.FactionAnimals != null ? mapFile.FactionAnimals.Count : -1;
             stats.NonFactionAnimalCount = mapFile.NonFactionAnimals != null ? mapFile.NonFactionAnimals.Count : -1;
 
@@ -375,7 +368,7 @@ namespace GameServer.PacketManager
             if (string.IsNullOrWhiteSpace(file) || !File.Exists(file)) return;
 
             long fileTicks = 0;
-            try { fileTicks = File.GetLastWriteTimeUtc(file).Ticks; } catch { fileTicks = 0; }
+            try { fileTicks = File.GetLastWriteTimeUtc(file).Ticks; } catch { }
 
             try
             {
@@ -733,43 +726,43 @@ namespace GameServer.PacketManager
                 TombstonesByTile.Remove(tile);
         }
 
-        private static int CompareEntries(LeaderboardEntryFile a, LeaderboardEntryFile b, InformationData.LeaderboardSortMode sort, InformationData.LeaderboardOrder order)
+        private static int CompareEntries(LeaderboardEntryFile a, LeaderboardEntryFile b, PKT_Information.LeaderboardSortMode sort, PKT_Information.LeaderboardOrder order)
         {
             int result;
 
             switch (sort)
             {
-                case InformationData.LeaderboardSortMode.Wealth:
+                case PKT_Information.LeaderboardSortMode.Wealth:
                     result = CompareInt(a.Wealth, b.Wealth);
                     break;
 
-                case InformationData.LeaderboardSortMode.WealthExact:
+                case PKT_Information.LeaderboardSortMode.WealthExact:
                     result = CompareDouble(GetWealthExactOrRounded(a), GetWealthExactOrRounded(b));
                     break;
 
-                case InformationData.LeaderboardSortMode.Colonists:
+                case PKT_Information.LeaderboardSortMode.Colonists:
                     result = CompareInt(a.ColonistCount, b.ColonistCount);
                     break;
 
-                case InformationData.LeaderboardSortMode.PlaytimeTicks:
+                case PKT_Information.LeaderboardSortMode.PlaytimeTicks:
                     result = CompareDouble(GetPlaytimeSeconds(a), GetPlaytimeSeconds(b));
                     if (result == 0) result = CompareDouble(a.RealPlayTimeInteractingSeconds, b.RealPlayTimeInteractingSeconds);
                     if (result == 0) result = CompareInt(a.GameTicks, b.GameTicks);
                     break;
 
-                case InformationData.LeaderboardSortMode.Days:
+                case PKT_Information.LeaderboardSortMode.Days:
                     result = CompareInt(GetDays(a.GameTicks), GetDays(b.GameTicks));
                     break;
 
-                case InformationData.LeaderboardSortMode.SettlementName:
+                case PKT_Information.LeaderboardSortMode.SettlementName:
                     result = CompareString(a.SettlementName, b.SettlementName);
                     break;
 
-                case InformationData.LeaderboardSortMode.FactionName:
+                case PKT_Information.LeaderboardSortMode.FactionName:
                     result = CompareString(a.FactionName, b.FactionName);
                     break;
 
-                case InformationData.LeaderboardSortMode.LastSavedUtcTicks:
+                case PKT_Information.LeaderboardSortMode.LastSavedUtcTicks:
                     result = CompareLong(a.LastSavedUtcTicks, b.LastSavedUtcTicks);
                     break;
 
@@ -781,7 +774,7 @@ namespace GameServer.PacketManager
             if (result == 0) result = CompareString(a.Username, b.Username);
             if (result == 0) result = CompareInt(a.Tile, b.Tile);
 
-            if (order == InformationData.LeaderboardOrder.Desc)
+            if (order == PKT_Information.LeaderboardOrder.Desc)
                 result = -result;
 
             return result;

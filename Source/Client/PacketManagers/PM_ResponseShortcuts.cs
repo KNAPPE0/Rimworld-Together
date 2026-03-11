@@ -13,7 +13,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.ResponseShortcutManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            ResponseShortcutData data = Serializer.ConvertBytesToObject<ResponseShortcutData>(bytes);
+            PKT_ResponseShortcut data = Serializer.ConvertBytesToObject<PKT_ResponseShortcut>(bytes);
 
             switch (data._stepMode)
             {

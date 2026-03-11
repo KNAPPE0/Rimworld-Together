@@ -4,7 +4,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets.Goodwills
 {
-    public class FactionGoodwillData
+    public class PKT_FactionGoodwill
     {
         public int _tile { get; set; } = -1;
 
@@ -12,8 +12,8 @@ namespace TCPNetwork.Packets.Goodwills
 
         public Goodwill _goodwill { get; set; } = Goodwill.Neutral;
 
-        public List<SettlementGoodwill> _settlements { get; set; } = new List<SettlementGoodwill>();
+        public List<PKT_SettlementGoodwill> _settlements { get; set; } = new List<PKT_SettlementGoodwill>();
 
-        public List<SiteGoodwill> _sites { get; set; } = new List<SiteGoodwill>();
+        public List<PKT_SiteGoodwill> _sites { get; set; } = new List<PKT_SiteGoodwill>();
     }
 }

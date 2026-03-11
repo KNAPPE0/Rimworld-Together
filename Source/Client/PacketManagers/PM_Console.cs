@@ -18,7 +18,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.ConsoleManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            CommandData data = Serializer.ConvertBytesToObject<CommandData>(bytes);
+            PKT_Command data = Serializer.ConvertBytesToObject<PKT_Command>(bytes);
 
             switch (data._commandMode)
             {
@@ -54,7 +54,7 @@ namespace GameClient.PacketManagers
             DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", new string[] { "You are no longer an admin!" }));
         }
 
-        private static void OnBroadcastCommand(CommandData commandData)
+        private static void OnBroadcastCommand(PKT_Command commandData)
         {
             RimworldManager.GenerateLetter("Server Broadcast", ChatManagerH.ParseMessage(commandData._details, true), LetterDefOf.PositiveEvent);
         }

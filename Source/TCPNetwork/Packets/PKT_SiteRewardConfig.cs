@@ -1,6 +1,6 @@
 namespace TCPNetwork.Packets 
 {
-    public class SiteRewardConfigData 
+    public class PKT_SiteRewardConfig 
     {
         public string _siteDef { get; set; } = string.Empty;
 

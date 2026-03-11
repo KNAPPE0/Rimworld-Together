@@ -16,13 +16,13 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.MapManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            MapData data = Serializer.ConvertBytesToObject<MapData>(bytes);
+            PKT_Map data = Serializer.ConvertBytesToObject<PKT_Map>(bytes);
             if (data == null) return;
 
             SaveUserMap(client, data);
         }
 
-        public static void SaveUserMap(ServerClient client, MapData data)
+        public static void SaveUserMap(ServerClient client, PKT_Map data)
         {
             if (client == null || data == null) return;
 

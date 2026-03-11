@@ -13,7 +13,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.GlobalDataManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            ServerGlobalData serverGlobalData = Serializer.ConvertBytesToObject<ServerGlobalData>(bytes);
+            PKT_ServerGlobalData serverGlobalData = Serializer.ConvertBytesToObject<PKT_ServerGlobalData>(bytes);
 
             SessionHandler.SetValues(serverGlobalData);
             EventManagerH.SetValues(serverGlobalData);

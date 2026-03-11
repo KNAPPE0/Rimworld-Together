@@ -29,7 +29,7 @@ namespace GameClient.Managers
                 GameParameterManager.SendFirstTimeSetup));
         }
 
-        public static void SetValues(ServerGlobalData data)
+        public static void SetValues(PKT_ServerGlobalData data)
         {
             SessionHandler.CurrentScenario = data._scenarioValues;
             SessionHandler.CurrentStoryteller = data._storytellerValues;
@@ -112,7 +112,7 @@ namespace GameClient.Managers
 
         public static void SendCurrentModConfigs(bool isEnforced)
         {
-            ModConfigData data = new ModConfigData();
+            PKT_ModConfig data = new PKT_ModConfig();
             data._stepMode = ModConfigStepMode.Send;
             data._configFile.IsEnforced = isEnforced;
             data._configFile = ModManagerH.SortModsIntoCategories(DLG_ListingWithTuple.DialogTupleListingResultString,

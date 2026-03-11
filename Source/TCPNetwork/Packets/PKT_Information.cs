@@ -2,7 +2,7 @@ using Shared.Files;
 
 namespace TCPNetwork.Packets
 {
-    public class InformationData
+    public class PKT_Information
     {
         public enum InfoStepMode { Connection, Wealth, Stats, Leaderboard }
 

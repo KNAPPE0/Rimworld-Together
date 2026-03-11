@@ -22,7 +22,7 @@ namespace GameServer.PacketManager
                 return;
             }
 
-            AidData data = Serializer.ConvertBytesToObject<AidData>(bytes);
+            PKT_Aid data = Serializer.ConvertBytesToObject<PKT_Aid>(bytes);
 
             switch (data._stepMode)
             {
@@ -44,7 +44,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void SendAidRequest(ServerClient client, AidData data)
+        private static void SendAidRequest(ServerClient client, PKT_Aid data)
         {
             if (!PM_Settlements.CheckIfTileIsInUse(data._toTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an aid packet to settlement at tile {data._toTile}, but it has no settlement");
             else
@@ -75,7 +75,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void SendAidAccept(ServerClient client, AidData data)
+        private static void SendAidAccept(ServerClient client, PKT_Aid data)
         {
             if (!PM_Settlements.CheckIfTileIsInUse(data._fromTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an aid packet to settlement at tile {data._fromTile}, but it has no settlement");
             else
@@ -99,7 +99,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void SendAidReject(ServerClient client, AidData data)
+        private static void SendAidReject(ServerClient client, PKT_Aid data)
         {
             if (!PM_Settlements.CheckIfTileIsInUse(data._fromTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an aid packet to settlement at tile {data._fromTile}, but it has no settlement");
             else

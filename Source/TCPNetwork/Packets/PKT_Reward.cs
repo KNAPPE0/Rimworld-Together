@@ -3,7 +3,7 @@ using Shared.Files.Sites;
 namespace TCPNetwork.Packets 
 {
 
-    public class RewardData 
+    public class PKT_Reward 
     {
         public SiteReward[] _rewardData { get; set; } = null;
 

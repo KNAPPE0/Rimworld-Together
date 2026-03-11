@@ -19,12 +19,12 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.GoodWillManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            FactionGoodwillData data = Serializer.ConvertBytesToObject<FactionGoodwillData>(bytes);
+            PKT_FactionGoodwill data = Serializer.ConvertBytesToObject<PKT_FactionGoodwill>(bytes);
 
             ChangeUserGoodwills(client, data);
         }
 
-        public static void ChangeUserGoodwills(ServerClient client, FactionGoodwillData data)
+        public static void ChangeUserGoodwills(ServerClient client, PKT_FactionGoodwill data)
         {
             SettlementFile settlementFile = PM_Settlements.GetSettlementFileFromTile(data._tile);
             SiteFile siteFile = SiteManagerHelper.GetSiteFileFromTile(data._tile);
@@ -48,10 +48,10 @@ namespace GameServer.PacketManager
             SettlementFile[] settlements = PM_Settlements.GetAllSettlements().Where(fetch => fetch.Username != client.UserFile.Username).ToArray();
             SiteFile[] sites = SiteManagerHelper.GetAllSites().Where(fetch => fetch.Username != client.UserFile.Username).ToArray();
 
-            FactionGoodwillData factionGoodwillData = new FactionGoodwillData();
+            PKT_FactionGoodwill factionGoodwillData = new PKT_FactionGoodwill();
             foreach (SettlementFile settlement in settlements)
             {
-                SettlementGoodwill goodwill = new SettlementGoodwill();
+                PKT_SettlementGoodwill goodwill = new PKT_SettlementGoodwill();
                 goodwill.Tile = settlement.Tile;
                 goodwill.Goodwill = GetSettlementGoodwill(client, settlement);
 
@@ -60,7 +60,7 @@ namespace GameServer.PacketManager
 
             foreach (SiteFile site in sites)
             {
-                SiteGoodwill goodwill = new SiteGoodwill();
+                PKT_SiteGoodwill goodwill = new PKT_SiteGoodwill();
                 goodwill.Tile = site.Tile;
                 goodwill.Goodwill = GetSiteGoodwill(client, site);
 

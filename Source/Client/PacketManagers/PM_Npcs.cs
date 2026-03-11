@@ -23,7 +23,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.NPCManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            NPCSettlementData data = Serializer.ConvertBytesToObject<NPCSettlementData>(bytes);
+            PKT_NPCSettlement data = Serializer.ConvertBytesToObject<PKT_NPCSettlement>(bytes);
 
             switch (data._stepMode)
             {
@@ -141,7 +141,7 @@ namespace GameClient.PacketManagers
 
         public static void RequestSettlementRemoval(Settlement settlement)
         {
-            NPCSettlementData data = new NPCSettlementData();
+            PKT_NPCSettlement data = new PKT_NPCSettlement();
             data._stepMode = SettlementStepMode.Remove;
             data._settlementData.Tile = settlement.Tile;
 
@@ -157,7 +157,7 @@ namespace GameClient.PacketManagers
 
         private static Dictionary<int, List<QuestPart>> questToFixTemp = new Dictionary<int, List<QuestPart>>();
 
-        public static void SetValues(ServerGlobalData serverGlobalData)
+        public static void SetValues(PKT_ServerGlobalData serverGlobalData)
         {
             tempNPCSettlements = serverGlobalData._npcSettlements;
         }

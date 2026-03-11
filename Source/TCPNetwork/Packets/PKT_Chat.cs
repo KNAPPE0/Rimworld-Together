@@ -2,7 +2,7 @@
 
 namespace TCPNetwork.Packets
 {
-    public class ChatData
+    public class PKT_Chat
     {
         public ChatColor _usernameColor { get; set; } = ChatColor.Normal;
 

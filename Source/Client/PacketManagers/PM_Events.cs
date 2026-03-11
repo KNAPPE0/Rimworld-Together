@@ -21,7 +21,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.EventManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            EventData data = Serializer.ConvertBytesToObject<EventData>(bytes);
+            PKT_Event data = Serializer.ConvertBytesToObject<PKT_Event>(bytes);
 
             switch (data._stepMode)
             {
@@ -53,7 +53,7 @@ namespace GameClient.PacketManagers
                 existingEvents.Add(file);
             }
 
-            EventData eventData = new EventData();
+            PKT_Event eventData = new PKT_Event();
             eventData._stepMode = EventStepMode.Set;
             eventData._eventFiles = existingEvents.ToArray();
 
@@ -99,7 +99,7 @@ namespace GameClient.PacketManagers
                     file.IsEnabled = DLG_ListingWithTuple.DialogTupleListingResultInt[i] == 1 ? true : false;
                 }
 
-                EventData data = new EventData();
+                PKT_Event data = new PKT_Event();
                 data._stepMode = CommonEnumerators.EventStepMode.Customize;
                 data._eventFiles = EventManagerH.AvailableEvents;
                 Network.ServerEndpoint.EnqueuePacket(PacketHeader.EventManager, data);
@@ -128,7 +128,7 @@ namespace GameClient.PacketManagers
             {
                 RimworldManager.RemoveThingFromSettlement(toGetSilverFrom, ThingDefOf.Silver, EventManagerH.EnabledEvents[DLG_ScrollButtons.SelectedScrollButton].Cost);
 
-                EventData eventData = new EventData();
+                PKT_Event eventData = new PKT_Event();
                 eventData._stepMode = EventStepMode.Send;
                 eventData._fromTile = toGetSilverFrom.Tile;
                 eventData._toTile = SessionHandler.ChosenSettlement.Tile;
@@ -152,7 +152,7 @@ namespace GameClient.PacketManagers
             PM_Saves.ForceSave();
         }
 
-        public static void OnEventReceived(EventData eventData)
+        public static void OnEventReceived(PKT_Event eventData)
         {
             Map targetMap;
             if (eventData._toTile != -1) targetMap = Find.WorldObjects.Settlements.FirstOrDefault(fetch => fetch.Tile == eventData._toTile).Map;
@@ -195,7 +195,7 @@ namespace GameClient.PacketManagers
 
         public static EventFile[] EnabledEvents { get; private set; } = null;
 
-        public static void SetValues(ServerGlobalData serverGlobalData) 
+        public static void SetValues(PKT_ServerGlobalData serverGlobalData) 
         { 
             AvailableEvents = serverGlobalData._eventValues;
             EnabledEvents = AvailableEvents.Where(fetch => fetch.IsEnabled).ToArray();

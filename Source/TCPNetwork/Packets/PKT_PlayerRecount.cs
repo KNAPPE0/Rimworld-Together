@@ -3,7 +3,7 @@
 namespace TCPNetwork.Packets
 {
 
-    public class PlayerRecountData
+    public class PKT_PlayerRecount
     {
         public int _currentPlayerCount { get; set; } = -1;
 

@@ -26,7 +26,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.GoodWillManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            FactionGoodwillData data = Serializer.ConvertBytesToObject<FactionGoodwillData>(bytes);
+            PKT_FactionGoodwill data = Serializer.ConvertBytesToObject<PKT_FactionGoodwill>(bytes);
 
             ChangeStructureGoodwill(data);
             DLG_Wait.Instance.Close();
@@ -79,7 +79,7 @@ namespace GameClient.PacketManagers
 
         public static void RequestChangeStructureGoodwill(int structureTile, Goodwill goodwill)
         {
-            FactionGoodwillData factionGoodwillData = new FactionGoodwillData();
+            PKT_FactionGoodwill factionGoodwillData = new PKT_FactionGoodwill();
             factionGoodwillData._tile = structureTile;
             factionGoodwillData._goodwill = goodwill;
 
@@ -91,15 +91,15 @@ namespace GameClient.PacketManagers
 
         //Changes a structure goodwill from a packet
 
-        public static void ChangeStructureGoodwill(FactionGoodwillData data)
+        public static void ChangeStructureGoodwill(PKT_FactionGoodwill data)
         {
             ChangeSettlementGoodwills(data);
             ChangeSiteGoodwills(data);
         }
 
-        private static void ChangeSettlementGoodwills(FactionGoodwillData factionGoodwillData)
+        private static void ChangeSettlementGoodwills(PKT_FactionGoodwill factionGoodwillData)
         {
-            foreach (SettlementGoodwill _ in factionGoodwillData._settlements)
+            foreach (PKT_SettlementGoodwill _ in factionGoodwillData._settlements)
             {
                 WO_Settlement settlement = (WO_Settlement)Find.WorldObjects.AllWorldObjects.First(fetch => fetch.Tile == _.Tile && fetch is WO_Settlement);
                 if (settlement.Faction == Faction.OfPlayer) continue;
@@ -120,9 +120,9 @@ namespace GameClient.PacketManagers
             }
         }
 
-        private static void ChangeSiteGoodwills(FactionGoodwillData factionGoodwillData)
+        private static void ChangeSiteGoodwills(PKT_FactionGoodwill factionGoodwillData)
         {
-            foreach (SiteGoodwill _ in factionGoodwillData._sites) 
+            foreach (PKT_SiteGoodwill _ in factionGoodwillData._sites) 
             {
                 WO_Site site = (WO_Site)Find.WorldObjects.AllWorldObjects.First(fetch => fetch.Tile == _.Tile && fetch is WO_Site);
 

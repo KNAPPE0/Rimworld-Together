@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Shared;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +8,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets.Goodwills
 {
-    public class SiteGoodwill
+    public class PKT_SettlementGoodwill
     {
         public int Tile { get; set; } = -1;
 

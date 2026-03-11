@@ -23,15 +23,15 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.VersionManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            VersionData data = Serializer.ConvertBytesToObject<VersionData>(bytes);
+            PKT_Version data = Serializer.ConvertBytesToObject<PKT_Version>(bytes);
 
             switch (data._step)
             {
-                case VersionData.VersionStep.Ask:
+                case PKT_Version.VersionStep.Ask:
                     SendClientVersion();
                     break;
 
-                case VersionData.VersionStep.Pass:
+                case PKT_Version.VersionStep.Pass:
                     PM_Login.UseLoginData();
                     break;
             }
@@ -39,7 +39,7 @@ namespace GameClient.PacketManagers
 
         public static void SendClientVersion()
         {
-            VersionData data = new VersionData();
+            PKT_Version data = new PKT_Version();
             data._version = CommonValues.ExecutableVersion;
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.VersionManager, data);

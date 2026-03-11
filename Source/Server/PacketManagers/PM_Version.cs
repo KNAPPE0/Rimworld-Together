@@ -12,11 +12,11 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.VersionManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            VersionData data = Serializer.ConvertBytesToObject<VersionData>(bytes);
+            PKT_Version data = Serializer.ConvertBytesToObject<PKT_Version>(bytes);
 
             if (data._version == CommonValues.ExecutableVersion)
             {
-                data._step = VersionData.VersionStep.Pass;
+                data._step = PKT_Version.VersionStep.Pass;
                 client.Listener.EnqueuePacket(PacketHeader.VersionManager, data);
             }
 
@@ -29,8 +29,8 @@ namespace GameServer.PacketManager
 
         public static void AskForClientVersion(ServerClient client)
         {
-            VersionData data = new VersionData();
-            data._step = VersionData.VersionStep.Ask;
+            PKT_Version data = new PKT_Version();
+            data._step = PKT_Version.VersionStep.Ask;
 
             client.Listener.EnqueuePacket(PacketHeader.VersionManager, data);
         }

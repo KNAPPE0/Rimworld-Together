@@ -61,7 +61,7 @@ namespace GameClient.Patches
             {
                 foreach (int settlement in settlementsToRemove)
                 {
-                    PlayerSettlementData settlementData = new PlayerSettlementData();
+                    PKT_PlayerSettlement settlementData = new PKT_PlayerSettlement();
                     settlementData._settlementFile.Tile = settlement;
                     settlementData._stepMode = CommonEnumerators.SettlementStepMode.Remove;
 

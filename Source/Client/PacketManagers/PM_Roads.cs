@@ -24,7 +24,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.RoadManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            RoadData data = Serializer.ConvertBytesToObject<RoadData>(bytes);
+            PKT_Road data = Serializer.ConvertBytesToObject<PKT_Road>(bytes);
 
             switch (data._stepMode)
             {
@@ -40,7 +40,7 @@ namespace GameClient.PacketManagers
 
         public static void SendRoadAddRequest(int tileAID, int tileBID, RoadDef roadDef)
         {
-            RoadData data = new RoadData();
+            PKT_Road data = new PKT_Road();
             data._stepMode = RoadStepMode.Add;
 
             data._details = new RoadDetail();
@@ -53,7 +53,7 @@ namespace GameClient.PacketManagers
 
         public static void SendRoadRemoveRequest(int tileAID, int tileBID)
         {
-            RoadData data = new RoadData();
+            PKT_Road data = new PKT_Road();
             data._stepMode = RoadStepMode.Remove;
 
             data._details = new RoadDetail();
@@ -177,7 +177,7 @@ namespace GameClient.PacketManagers
 
         public static RoadDef AncientAsphaltHighwayDef => DefDatabase<RoadDef>.AllDefs.First(fetch => fetch.defName == "AncientAsphaltHighway");
 
-        public static void SetValues(ServerGlobalData serverGlobalData)
+        public static void SetValues(PKT_ServerGlobalData serverGlobalData)
         {
             tempRoadDetails = serverGlobalData._roads;
 

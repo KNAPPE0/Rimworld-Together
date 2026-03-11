@@ -17,7 +17,7 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.SettlementManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            PlayerSettlementData data = Serializer.ConvertBytesToObject<PlayerSettlementData>(bytes);
+            PKT_PlayerSettlement data = Serializer.ConvertBytesToObject<PKT_PlayerSettlement>(bytes);
 
             switch (data._stepMode)
             {
@@ -31,7 +31,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        public static void AddSettlement(ServerClient client, PlayerSettlementData settlementData)
+        public static void AddSettlement(ServerClient client, PKT_PlayerSettlement settlementData)
         {
             if (client == null || settlementData == null) return;
 
@@ -70,7 +70,7 @@ namespace GameServer.PacketManager
             InformationDisplayer.DisplayAddSettlement(settlementFile.Tile.ToString());
         }
 
-        public static void RemoveSettlement(ServerClient client, PlayerSettlementData settlementData)
+        public static void RemoveSettlement(ServerClient client, PKT_PlayerSettlement settlementData)
         {
             if (settlementData == null) return;
 

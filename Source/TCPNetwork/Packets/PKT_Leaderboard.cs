@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TCPNetwork.Packets
 {
-    public class LeaderboardData
+    public class PKT_Leaderboard
     {
         public LeaderboardFile _file { get; set; } = null;
     }

@@ -13,7 +13,7 @@ namespace GameServer.Managers
     {
         public static void SendServerGlobalData(ServerClient client)
         {
-            ServerGlobalData globalData = new ServerGlobalData();
+            PKT_ServerGlobalData globalData = new PKT_ServerGlobalData();
 
             globalData._serverName = Master.ServerConfig.Name;
             globalData._isClientAdmin = client.UserFile.IsAdmin;

@@ -25,7 +25,7 @@ namespace GameServer.PacketManager
                 return;
             }
 
-            NPCSettlementData data = Serializer.ConvertBytesToObject<NPCSettlementData>(bytes);
+            PKT_NPCSettlement data = Serializer.ConvertBytesToObject<PKT_NPCSettlement>(bytes);
 
             switch (data._stepMode)
             {
@@ -66,7 +66,7 @@ namespace GameServer.PacketManager
 
         private static void BroadcastSettlementDeletion(NPCSettlementDetail settlement)
         {
-            NPCSettlementData data = new NPCSettlementData();
+            PKT_NPCSettlement data = new PKT_NPCSettlement();
             data._stepMode = SettlementStepMode.Remove;
             data._settlementData = settlement;
 

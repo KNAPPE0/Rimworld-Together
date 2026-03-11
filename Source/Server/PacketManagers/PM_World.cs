@@ -14,7 +14,7 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.WorldManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            WorldData data = Serializer.ConvertBytesToObject<WorldData>(bytes);
+            PKT_World data = Serializer.ConvertBytesToObject<PKT_World>(bytes);
 
             switch (data._stepMode)
             {
@@ -28,7 +28,7 @@ namespace GameServer.PacketManager
 
         public static void RequireWorldFile(ServerClient client)
         {
-            WorldData worldData = new WorldData();
+            PKT_World worldData = new PKT_World();
             worldData._stepMode = WorldStepMode.AskFor;
 
             client.Listener.EnqueuePacket(PacketHeader.WorldManager, worldData);
@@ -36,7 +36,7 @@ namespace GameServer.PacketManager
 
         public static void SendWorld(ServerClient client)
         {
-            WorldData data = new WorldData();
+            PKT_World data = new PKT_World();
             PlanetConfigFile file = Serializer.FileBytesToObject<PlanetConfigFile>(PlanetConfigFile.SavePath);
 
             data._fileBytes = Serializer.ConvertObjectToBytes(file);
@@ -45,7 +45,7 @@ namespace GameServer.PacketManager
             client.Listener.EnqueuePacket(PacketHeader.WorldManager, data);
         }
 
-        public static void ReceiveWorld(ServerClient client, WorldData data)
+        public static void ReceiveWorld(ServerClient client, PKT_World data)
         {
             PlanetConfigFile file = Serializer.ConvertBytesToObject<PlanetConfigFile>(data._fileBytes);
             Serializer.ObjectBytesToFile(PlanetConfigFile.SavePath, file);

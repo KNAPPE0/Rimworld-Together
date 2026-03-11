@@ -13,30 +13,30 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.InformationManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            InformationData data = Serializer.ConvertBytesToObject<InformationData>(bytes);
+            PKT_Information data = Serializer.ConvertBytesToObject<PKT_Information>(bytes);
             if (data == null) return;
 
             switch (data._stepMode)
             {
-                case InformationData.InfoStepMode.Connection:
+                case PKT_Information.InfoStepMode.Connection:
                     SendInformation(client, data);
                     break;
 
-                case InformationData.InfoStepMode.Wealth:
+                case PKT_Information.InfoStepMode.Wealth:
                     SendWealth(client, data);
                     break;
 
-                case InformationData.InfoStepMode.Stats:
+                case PKT_Information.InfoStepMode.Stats:
                     StatisticalManager.SendStats(client, data);
                     break;
 
-                case InformationData.InfoStepMode.Leaderboard:
+                case PKT_Information.InfoStepMode.Leaderboard:
                     PM_Leaderboard.SendLeaderboard(client, data);
                     break;
             }
         }
 
-        private static void SendInformation(ServerClient client, InformationData data)
+        private static void SendInformation(ServerClient client, PKT_Information data)
         {
             SettlementFile settlementToFind = PM_Settlements.GetSettlementFileFromTile(data._settlementTile);
             if (settlementToFind == null)
@@ -52,7 +52,7 @@ namespace GameServer.PacketManager
             client.Listener.EnqueuePacket(PacketHeader.InformationManager, data);
         }
 
-        private static void SendWealth(ServerClient client, InformationData data)
+        private static void SendWealth(ServerClient client, PKT_Information data)
         {
             data._settlementRawData = PM_Maps.GetMapBytesFromTile(data._settlementTile);
 

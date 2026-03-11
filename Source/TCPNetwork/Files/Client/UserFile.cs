@@ -41,7 +41,7 @@ namespace TCPNetwork.Files.Client
 
         private Semaphore SavingSemaphore { get; set; } = new Semaphore(1, 1);
 
-        public void UpdateLoginDetails(LoginData data)
+        public void UpdateLoginDetails(PKT_Login data)
         {
             Username = data._username;
             Password = data._password;

@@ -33,9 +33,9 @@ namespace GameClient.Misc
 
         public static IEnumerable<IThingHolder> ChosenPods { get; set; } = null;
 
-        public static TransferData OutgoingManifest { get; set; } = new TransferData();
+        public static PKT_Transfer OutgoingManifest { get; set; } = new PKT_Transfer();
 
-        public static TransferData IncomingManifest { get; set; } = new TransferData();
+        public static PKT_Transfer IncomingManifest { get; set; } = new PKT_Transfer();
 
         public static ActionsConfigFile CurrentActionValues { get; set; } = null;
 
@@ -83,7 +83,7 @@ namespace GameClient.Misc
 
         public static Map SynchronousMap { get; set; } = null;
 
-        public static void SetValues(ServerGlobalData serverGlobalData)
+        public static void SetValues(PKT_ServerGlobalData serverGlobalData)
         {
             IsAdmin = serverGlobalData._isClientAdmin;
             HasFaction = serverGlobalData._isClientFactionMember;
@@ -136,8 +136,8 @@ namespace GameClient.Misc
             ChosenCaravan = null;
             ChosenSite = null;
 
-            OutgoingManifest = new TransferData();
-            IncomingManifest = new TransferData();
+            OutgoingManifest = new PKT_Transfer();
+            IncomingManifest = new PKT_Transfer();
 
             IsGeneratingFreshWorld = false;
             IsReadyToPlay = false;

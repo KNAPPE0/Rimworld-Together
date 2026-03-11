@@ -18,7 +18,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.AidManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            AidData data = Serializer.ConvertBytesToObject<AidData>(bytes);
+            PKT_Aid data = Serializer.ConvertBytesToObject<PKT_Aid>(bytes);
 
             switch (data._stepMode)
             {
@@ -40,7 +40,7 @@ namespace GameClient.PacketManagers
             }
         }
 
-        private static void ReceiveAidRequest(AidData data)
+        private static void ReceiveAidRequest(PKT_Aid data)
         {
             Action toDoYes = delegate { AcceptAid(data); };
             Action toDoNo = delegate { RejectAid(data); };
@@ -50,7 +50,7 @@ namespace GameClient.PacketManagers
 
         public static void SendAidRequest()
         {
-            AidData aidData = new AidData();
+            PKT_Aid aidData = new PKT_Aid();
             aidData._stepMode = AidStepMode.Send;
             aidData._fromTile = Find.AnyPlayerHomeMap.Tile;
             aidData._toTile = SessionHandler.ChosenSettlement.Tile;
@@ -75,7 +75,7 @@ namespace GameClient.PacketManagers
             PM_Saves.ForceSave();
         }
 
-        private static void OnAidReject(AidData data)
+        private static void OnAidReject(PKT_Aid data)
         {
             DLG_Wait.Instance.Close();
 
@@ -89,7 +89,7 @@ namespace GameClient.PacketManagers
             DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "Player is not currently available!" }));
         }
 
-        private static void AcceptAid(AidData data)
+        private static void AcceptAid(PKT_Aid data)
         {
             Map map = Find.World.worldObjects.SettlementAt(data._toTile).Map;
 
@@ -108,7 +108,7 @@ namespace GameClient.PacketManagers
             PM_Saves.ForceSave();
         }
 
-        private static void RejectAid(AidData data)
+        private static void RejectAid(PKT_Aid data)
         {
             data._stepMode = AidStepMode.Reject;
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.AidManager, data);

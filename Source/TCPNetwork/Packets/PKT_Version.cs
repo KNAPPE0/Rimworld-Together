@@ -1,6 +1,6 @@
 namespace TCPNetwork.Packets
 {
-    public class VersionData
+    public class PKT_Version
     {
         public enum VersionStep { Ask, Pass }
 

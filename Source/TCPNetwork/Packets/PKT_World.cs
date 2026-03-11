@@ -3,7 +3,7 @@
 namespace TCPNetwork.Packets
 {
 
-    public class WorldData
+    public class PKT_World
     {
         public WorldStepMode _stepMode { get; set; } = WorldStepMode.AskFor;
 

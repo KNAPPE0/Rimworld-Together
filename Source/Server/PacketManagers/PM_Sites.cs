@@ -24,7 +24,7 @@ namespace GameServer.PacketManager
                 return;
             }
 
-            SiteData data = Serializer.ConvertBytesToObject<SiteData>(bytes);
+            PKT_Site data = Serializer.ConvertBytesToObject<PKT_Site>(bytes);
 
             switch (data._stepMode)
             {
@@ -58,7 +58,7 @@ namespace GameServer.PacketManager
         {
             siteFile.SaveSite();
 
-            SiteData siteData = new SiteData();
+            PKT_Site siteData = new PKT_Site();
             siteData._stepMode = SiteStepMode.Build;
             siteData._file = siteFile;
 
@@ -74,7 +74,7 @@ namespace GameServer.PacketManager
             InformationDisplayer.DisplayAddSite(siteFile.Tile.ToString());
         }
 
-        private static void AddNewSite(ServerClient client, SiteData siteData)
+        private static void AddNewSite(ServerClient client, PKT_Site siteData)
         {
             if (PM_Settlements.CheckIfTileIsInUse(siteData._file.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"A site tried to be added to tile {siteData._file.Tile}, but that tile already has a settlement");
             else if (SiteManagerHelper.CheckIfTileIsInUse(siteData._file.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"A site tried to be added to tile {siteData._file.Tile}, but that tile already has a site");
@@ -90,7 +90,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void DestroySite(ServerClient client, SiteData siteData)
+        private static void DestroySite(ServerClient client, PKT_Site siteData)
         {
             SiteFile siteFile = SiteManagerHelper.GetSiteFileFromTile(siteData._file.Tile);
             if (siteFile.Username == client.UserFile.Username) DestroySiteFromFile(siteFile);
@@ -99,7 +99,7 @@ namespace GameServer.PacketManager
 
         public static void DestroySiteFromFile(SiteFile siteFile)
         {
-            SiteData siteData = new SiteData();
+            PKT_Site siteData = new PKT_Site();
             siteData._stepMode = SiteStepMode.Destroy;
             siteData._file = siteFile;
 
@@ -110,7 +110,7 @@ namespace GameServer.PacketManager
             InformationDisplayer.DisplayRemoveSite(siteFile.Tile.ToString());
         }
 
-        private static void ManageWorker(ServerClient client, SiteData data)
+        private static void ManageWorker(ServerClient client, PKT_Site data)
         {
             SiteFile site = SiteManagerHelper.GetSiteFileFromTile(data._file.Tile);
             site.WorkerString = data._file.WorkerString;
@@ -135,16 +135,16 @@ namespace GameServer.PacketManager
                 List<SiteReward> toReward = new List<SiteReward>();
                 foreach (SiteFile site in availableSites) toReward.Add(client.UserFile.SiteConfigs.First(fetch => fetch.DefName == site.Type.DefName).Reward);
 
-                SiteData siteData = new SiteData();
+                PKT_Site siteData = new PKT_Site();
                 siteData._stepMode = SiteStepMode.Rewards;
                 siteData._rewardFiles = toReward.ToArray();
                 client.Listener.EnqueuePacket(PacketHeader.SiteManager, siteData);
             }
         }
 
-        public static void ChangeUserSiteConfig(ServerClient client, SiteData data)
+        public static void ChangeUserSiteConfig(ServerClient client, PKT_Site data)
         {
-            SiteRewardConfigData config = data._rewardConfig;
+            PKT_SiteRewardConfig config = data._rewardConfig;
 
             PlayerSiteConfig toFind = client.UserFile.SiteConfigs.First(fetch => fetch.DefName == config._siteDef);
             toFind.Reward.DefName = config._rewardDef;
@@ -190,7 +190,7 @@ namespace GameServer.PacketManager
             return null;
         }
 
-        public static void GetSiteInfo(ServerClient client, SiteData data)
+        public static void GetSiteInfo(ServerClient client, PKT_Site data)
         {
             SiteFile siteFile = GetSiteFileFromTile(data._file.Tile);
             data._stepMode = SiteStepMode.Info;

@@ -4,7 +4,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets
 {
-    public class TransferData
+    public class PKT_Transfer
     {
         public enum TransferMode { Gift, Trade, Rebound, Pod }
 

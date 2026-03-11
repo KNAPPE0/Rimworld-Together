@@ -40,7 +40,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.SiteManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            SiteData data = Serializer.ConvertBytesToObject<SiteData>(bytes);
+            PKT_Site data = Serializer.ConvertBytesToObject<PKT_Site>(bytes);
 
             switch (data._stepMode)
             {
@@ -77,7 +77,7 @@ namespace GameClient.PacketManagers
             RimworldManager.RemoveThingFromCaravan(SessionHandler.ChosenCaravan,
                 DefDatabase<ThingDef>.GetNamed(ThingDefOf.Silver.defName), configFile.Cost);
 
-            SiteData siteData = new SiteData();
+            PKT_Site siteData = new PKT_Site();
             siteData._stepMode = SiteStepMode.Build;
             siteData._file.Tile = SessionHandler.ChosenCaravan.Tile;
             siteData._file.Type.DefName = configFile.DefName;
@@ -91,7 +91,7 @@ namespace GameClient.PacketManagers
         {
             Action r1 = delegate
             {
-                SiteData siteData = new SiteData();
+                PKT_Site siteData = new PKT_Site();
                 siteData._file.Tile = SessionHandler.ChosenSite.Tile;
                 siteData._stepMode = SiteStepMode.Destroy;
 
@@ -104,11 +104,11 @@ namespace GameClient.PacketManagers
 
         public static void RequestSiteChangeConfig(SiteType config, string reward)
         {
-            SiteRewardConfigData rewardConfig = new SiteRewardConfigData();
+            PKT_SiteRewardConfig rewardConfig = new PKT_SiteRewardConfig();
             rewardConfig._siteDef = config.DefName;
             rewardConfig._rewardDef = reward;
 
-            SiteData siteData = new SiteData();
+            PKT_Site siteData = new PKT_Site();
             siteData._stepMode = SiteStepMode.Config;
             siteData._rewardConfig = rewardConfig;
 
@@ -223,7 +223,7 @@ namespace GameClient.PacketManagers
                 Pawn toSend = SessionHandler.ChosenCaravan.PawnsListForReading.Where(fetch => ScriberH.CheckIfThingIsHuman(fetch)).ToList()
                     [DLG_ListingWithButton.DialogButtonListingResultInt];
 
-                SiteData siteData = new SiteData();
+                PKT_Site siteData = new PKT_Site();
                 siteData._stepMode = SiteStepMode.Worker;
                 siteData._file.Tile = SessionHandler.ChosenSite.Tile;
                 siteData._file.WorkerString = ScribeManager.SerializeToString(toSend, ScribeManager.SerializableType.Thing);
@@ -242,7 +242,7 @@ namespace GameClient.PacketManagers
                 Pawn toRetrieve = ScribeManager.SerializeFromString<Pawn>(file.WorkerString, ScribeManager.SerializableType.Pawn);
                 RimworldManager.PlaceThingIntoCaravan(toRetrieve, SessionHandler.ChosenCaravan);
 
-                SiteData siteData = new SiteData();
+                PKT_Site siteData = new PKT_Site();
                 siteData._stepMode = SiteStepMode.Worker;
                 siteData._file.Tile = SessionHandler.ChosenSite.Tile;
 
@@ -296,7 +296,7 @@ namespace GameClient.PacketManagers
 
         public static void AskForSiteRewards()
         {
-            SiteData siteData = new SiteData();
+            PKT_Site siteData = new PKT_Site();
             siteData._stepMode = SiteStepMode.Rewards;
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, siteData);
@@ -304,7 +304,7 @@ namespace GameClient.PacketManagers
 
         public static void AskForInformation()
         {
-            SiteData siteData = new SiteData();
+            PKT_Site siteData = new PKT_Site();
             siteData._stepMode = SiteStepMode.Info;
             siteData._file.Tile = SessionHandler.ChosenSite.Tile;
 
@@ -317,7 +317,7 @@ public class SiteManagerH
 {
     public static SiteFile[] tempSites;
 
-    public static void SetValues(ServerGlobalData serverGlobalData)
+    public static void SetValues(PKT_ServerGlobalData serverGlobalData)
     {
         tempSites = serverGlobalData._playerSites;
         PM_Sites.SiteValues = serverGlobalData._siteValues;

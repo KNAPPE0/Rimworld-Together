@@ -2,7 +2,7 @@
 
 namespace TCPNetwork.Packets
 {
-    public class CommandData
+    public class PKT_Command
     {
         public CommandMode _commandMode { get; set; } = CommandMode.Op;
 

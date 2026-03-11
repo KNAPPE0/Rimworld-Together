@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Verse;
-using static TCPNetwork.Packets.TransferData;
+using static TCPNetwork.Packets.PKT_Transfer;
 using static Shared.CommonEnumerators;
 using Shared;
 using Shared.Misc;

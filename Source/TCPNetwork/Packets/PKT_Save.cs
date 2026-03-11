@@ -5,11 +5,11 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Messaging;
 using static Shared.CommonEnumerators;
-using static TCPNetwork.Packets.SynchronousData;
+using static TCPNetwork.Packets.PKT_Synchronous;
 
 namespace TCPNetwork.Packets
 {
-    public class SaveData
+    public class PKT_Save
     {
         public SaveStepMode _stepMode { get; set; } = SaveStepMode.Send;
 

@@ -24,7 +24,7 @@ namespace GameServer.PacketManager
                 return;
             }
 
-            RoadData data = Serializer.ConvertBytesToObject<RoadData>(bytes);
+            PKT_Road data = Serializer.ConvertBytesToObject<PKT_Road>(bytes);
 
             switch (data._stepMode)
             {
@@ -38,7 +38,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void AddRoad(ServerClient client, RoadData data)
+        private static void AddRoad(ServerClient client, PKT_Road data)
         {
             if (RoadManagerHelper.CheckIfRoadExists(data._details))
             {
@@ -51,7 +51,7 @@ namespace GameServer.PacketManager
             ServerNetwork.SendPacketToAllClients(PacketHeader.RoadManager, data);
         }
 
-        private static void RemoveRoad(ServerClient client, RoadData data)
+        private static void RemoveRoad(ServerClient client, PKT_Road data)
         {
             if (!RoadManagerHelper.CheckIfRoadExists(data._details))
             {

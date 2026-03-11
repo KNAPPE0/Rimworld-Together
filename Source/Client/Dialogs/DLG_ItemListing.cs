@@ -6,7 +6,7 @@ using System;
 using System.Linq;
 using UnityEngine;
 using Verse;
-using static TCPNetwork.Packets.TransferData;
+using static TCPNetwork.Packets.PKT_Transfer;
 using static Shared.CommonEnumerators;
 using GameClient.Misc;
 using GameClient.Hooks.TCPNetwork;

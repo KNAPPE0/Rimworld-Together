@@ -21,7 +21,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.GuildManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            PlayerGuildData data = Serializer.ConvertBytesToObject<PlayerGuildData>(bytes);
+            PKT_PlayerGuild data = Serializer.ConvertBytesToObject<PKT_PlayerGuild>(bytes);
 
             switch (data._stepMode)
             {
@@ -69,7 +69,7 @@ namespace GameClient.PacketManagers
             {
                 DLG_Base.PushNewDialog(new DLG_Wait("Waiting for member list"));
 
-                PlayerGuildData playerFactionData = new PlayerGuildData();
+                PKT_PlayerGuild playerFactionData = new PKT_PlayerGuild();
                 playerFactionData._stepMode = GuildStepMode.MemberList;
 
                 Network.ServerEndpoint.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
@@ -77,7 +77,7 @@ namespace GameClient.PacketManagers
 
             Action r2 = delegate
             {
-                PlayerGuildData playerFactionData = new PlayerGuildData();
+                PKT_PlayerGuild playerFactionData = new PKT_PlayerGuild();
                 playerFactionData._stepMode = GuildStepMode.RemoveMember;
                 playerFactionData._dataInt = Find.AnyPlayerHomeMap.Tile;
 
@@ -88,7 +88,7 @@ namespace GameClient.PacketManagers
             {
                 DLG_Base.PushNewDialog(new DLG_Wait("Waiting for guild deletion"));
 
-                PlayerGuildData playerFactionData = new PlayerGuildData();
+                PKT_PlayerGuild playerFactionData = new PKT_PlayerGuild();
                 playerFactionData._stepMode = GuildStepMode.Delete;
 
                 Network.ServerEndpoint.EnqueuePacket(PacketHeader.GuildManager, playerFactionData);
@@ -119,7 +119,7 @@ namespace GameClient.PacketManagers
                 {
                     DLG_Base.PushNewDialog(new DLG_Wait("Waiting for guild creation"));
 
-                    PlayerGuildData playerFactionData = new PlayerGuildData();
+                    PKT_PlayerGuild playerFactionData = new PKT_PlayerGuild();
                     playerFactionData._stepMode = GuildStepMode.Create;
                     playerFactionData._guild.Name = DLG_Inputs.DialogInputResults[0];
 
@@ -138,7 +138,7 @@ namespace GameClient.PacketManagers
         {
             Action r5 = delegate
             {
-                PlayerGuildData playerFactionData = new PlayerGuildData();
+                PKT_PlayerGuild playerFactionData = new PKT_PlayerGuild();
                 playerFactionData._stepMode = GuildStepMode.Demote;
                 playerFactionData._dataInt = SessionHandler.ChosenSettlement.Tile;
 
@@ -147,7 +147,7 @@ namespace GameClient.PacketManagers
 
             Action r4 = delegate
             {
-                PlayerGuildData playerFactionData = new PlayerGuildData();
+                PKT_PlayerGuild playerFactionData = new PKT_PlayerGuild();
                 playerFactionData._stepMode = GuildStepMode.Promote;
                 playerFactionData._dataInt = SessionHandler.ChosenSettlement.Tile;
 
@@ -156,7 +156,7 @@ namespace GameClient.PacketManagers
 
             Action r3 = delegate
             {
-                PlayerGuildData playerFactionData = new PlayerGuildData();
+                PKT_PlayerGuild playerFactionData = new PKT_PlayerGuild();
                 playerFactionData._stepMode = GuildStepMode.RemoveMember;
                 playerFactionData._dataInt = SessionHandler.ChosenSettlement.Tile;
 
@@ -185,7 +185,7 @@ namespace GameClient.PacketManagers
         {
             Action r1 = delegate
             {
-                PlayerGuildData playerFactionData = new PlayerGuildData();
+                PKT_PlayerGuild playerFactionData = new PKT_PlayerGuild();
                 playerFactionData._stepMode = GuildStepMode.Invite;
                 playerFactionData._dataInt = SessionHandler.ChosenSettlement.Tile;
 
@@ -225,7 +225,7 @@ namespace GameClient.PacketManagers
             DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "That guild name is already in use!" }));
         }
 
-        private static void OnFactionGetInvited(PlayerGuildData factionManifest)
+        private static void OnFactionGetInvited(PKT_PlayerGuild factionManifest)
         {
             Action r1 = delegate
             {
@@ -264,7 +264,7 @@ namespace GameClient.PacketManagers
             DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", new string[] { "You have been demoted in your guild!" }));
         }
 
-        private static void OnFactionMemberList(PlayerGuildData factionManifest)
+        private static void OnFactionMemberList(PKT_PlayerGuild factionManifest)
         {
             DLG_Wait.Instance.Close();
 

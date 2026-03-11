@@ -45,7 +45,7 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.WorldManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            WorldData data = Serializer.ConvertBytesToObject<WorldData>(bytes);
+            PKT_World data = Serializer.ConvertBytesToObject<PKT_World>(bytes);
 
             switch (data._stepMode)
             {
@@ -81,7 +81,7 @@ namespace GameClient.PacketManagers
         {
             WorldManagerH.PopulateWorldValues();
 
-            WorldData data = new WorldData();
+            PKT_World data = new PKT_World();
             data._stepMode = WorldStepMode.Sent;
             data._fileBytes = Serializer.ConvertObjectToBytes(SessionHandler.CurrentWorld);
 
@@ -97,7 +97,7 @@ namespace GameClient.PacketManagers
             SessionHandler.IsGeneratingFreshWorld = false;
         }
 
-        public static void OnReceiveWorld(WorldData data)
+        public static void OnReceiveWorld(PKT_World data)
         {
             SetValuesFromServer(data);
             PM_World.OnExistingWorld();
@@ -118,7 +118,7 @@ namespace GameClient.PacketManagers
             SessionHandler.CurrentWorld.NPCFactions = WorldManagerH.GetNPCFactionsFromDef(factions.ToArray());
         }
 
-        private static void SetValuesFromServer(WorldData data)
+        private static void SetValuesFromServer(PKT_World data)
         {
             SessionHandler.CurrentWorld = Serializer.ConvertBytesToObject<PlanetConfigFile>(data._fileBytes);
         }

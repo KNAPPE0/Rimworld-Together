@@ -22,7 +22,7 @@ namespace GameServer.PacketManager
                 return;
             }
 
-            EventData data = Serializer.ConvertBytesToObject<EventData>(bytes);
+            PKT_Event data = Serializer.ConvertBytesToObject<PKT_Event>(bytes);
 
             switch (data._stepMode)
             {
@@ -40,7 +40,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        public static void SendEvent(ServerClient client, EventData eventData)
+        public static void SendEvent(ServerClient client, PKT_Event eventData)
         {
             if (!PM_Settlements.CheckIfTileIsInUse(eventData._toTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an event to settlement at tile {eventData._toTile}, but it has no settlement");
             else
@@ -80,7 +80,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        public static void SetEvents(ServerClient client, EventData eventData)
+        public static void SetEvents(ServerClient client, PKT_Event eventData)
         {
             if (EventManagerH.LoadedEvents.Count() > 0) ResponseShortcutManager.SendIllegalPacket(client, "Illegal setting of events!");
             else
@@ -95,7 +95,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void ModifyEvents(ServerClient client, EventData data)
+        private static void ModifyEvents(ServerClient client, PKT_Event data)
         {
             if (!client.UserFile.IsAdmin) ResponseShortcutManager.SendIllegalPacket(client, "Tried to modify events without being admin!");
             else

@@ -4,7 +4,7 @@ using static Shared.CommonEnumerators;
 namespace TCPNetwork.Packets
 {
 
-    public class RoadData
+    public class PKT_Road
     {
         public RoadStepMode _stepMode { get; set; } = RoadStepMode.Add;
 

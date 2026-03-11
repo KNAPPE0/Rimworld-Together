@@ -26,7 +26,7 @@ namespace GameServer.PacketManager
                 return;
             }
 
-            PlayerGuildData data = Serializer.ConvertBytesToObject<PlayerGuildData>(bytes);
+            PKT_PlayerGuild data = Serializer.ConvertBytesToObject<PKT_PlayerGuild>(bytes);
 
             switch (data._stepMode)
             {
@@ -64,7 +64,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void CreateFaction(ServerClient client, PlayerGuildData factionManifest)
+        private static void CreateFaction(ServerClient client, PKT_PlayerGuild factionManifest)
         {
             if (GuildManagerH.CheckIfFactionExistsByName(factionManifest._guild.Name))
             {
@@ -94,7 +94,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void DeleteFaction(ServerClient client, PlayerGuildData factionManifest)
+        private static void DeleteFaction(ServerClient client, PKT_PlayerGuild factionManifest)
         {
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
 
@@ -119,7 +119,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void InviteMemberToFaction(ServerClient client, PlayerGuildData guildManifest)
+        private static void InviteMemberToFaction(ServerClient client, PKT_PlayerGuild guildManifest)
         {
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(guildManifest._dataInt);
@@ -137,7 +137,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void AddMemberToFaction(ServerClient client, PlayerGuildData factionManifest)
+        private static void AddMemberToFaction(ServerClient client, PKT_PlayerGuild factionManifest)
         {
             GuildFile guild = GuildManagerH.GetFactionFromName(factionManifest._guild.Name);
 
@@ -156,7 +156,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void RemoveMemberFromFaction(ServerClient client, PlayerGuildData guildManifest)
+        private static void RemoveMemberFromFaction(ServerClient client, PKT_PlayerGuild guildManifest)
         {
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(guildManifest._dataInt);
@@ -202,7 +202,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void PromoteMember(ServerClient client, PlayerGuildData factionManifest)
+        private static void PromoteMember(ServerClient client, PKT_PlayerGuild factionManifest)
         {
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(factionManifest._dataInt);
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
@@ -224,7 +224,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void DemoteMember(ServerClient client, PlayerGuildData factionManifest)
+        private static void DemoteMember(ServerClient client, PKT_PlayerGuild factionManifest)
         {
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(factionManifest._dataInt);
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
@@ -246,7 +246,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void SendMemberList(ServerClient client, PlayerGuildData factionManifest)
+        private static void SendMemberList(ServerClient client, PKT_PlayerGuild factionManifest)
         {
             factionManifest._guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
             client.Listener.EnqueuePacket(PacketHeader.GuildManager, factionManifest);

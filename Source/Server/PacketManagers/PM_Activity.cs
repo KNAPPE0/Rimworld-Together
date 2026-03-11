@@ -20,16 +20,7 @@ namespace GameServer.PacketManager
                 return;
             }
 
-            ActivityData data;
-            try
-            {
-                data = Serializer.ConvertBytesToObject<ActivityData>(bytes);
-            }
-            catch
-            {
-                return;
-            }
-
+            PKT_Activity data = Serializer.ConvertBytesToObject<PKT_Activity>(bytes);
             if (data == null) return;
 
             switch (data._stepMode)
@@ -40,7 +31,7 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void SendRequestedMap(ServerClient client, ActivityData data)
+        private static void SendRequestedMap(ServerClient client, PKT_Activity data)
         {
             if (client == null || data == null) return;
 

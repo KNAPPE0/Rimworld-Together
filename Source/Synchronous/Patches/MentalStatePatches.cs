@@ -28,7 +28,7 @@ namespace Synchronous.Patches
             else
             {
                 byte value = (byte)DefDatabase<MentalStateDef>.AllDefs.FirstIndexOf(fetch => fetch == stateDef);
-                SMentalStateManager.Ask(___pawn, value, PlayerMentalState.MentalMode.Add);
+                PM_SMentalState.Ask(___pawn, value, PlayerMentalState.MentalMode.Add);
                 return false;
             }
         }
@@ -44,12 +44,12 @@ namespace Synchronous.Patches
             if (PatchHandler.BypassFlag) return true;
             else if (!SessionHandler.IsSynchronousHost) return false;
             else if (!Main_.CheckIfShouldPatch(__instance.pawn.MapHeld)) return true;
-            else if (SMentalStateManager.LatestMentalState == __instance) return false;
+            else if (PM_SMentalState.LatestMentalState == __instance) return false;
             else
             {
                 byte value = (byte)DefDatabase<MentalStateDef>.AllDefs.FirstIndexOf(fetch => fetch == __instance.def);
-                SMentalStateManager.Ask(__instance.pawn, value, PlayerMentalState.MentalMode.Remove);
-                SMentalStateManager.LatestMentalState = __instance;
+                PM_SMentalState.Ask(__instance.pawn, value, PlayerMentalState.MentalMode.Remove);
+                PM_SMentalState.LatestMentalState = __instance;
                 return false;
             }
         }
@@ -62,7 +62,7 @@ namespace Synchronous.Patches
         [HarmonyPrefix]
         public static bool MentalStateHandlerTickInterval(MentalStateHandler __instance)
         {
-            if (__instance.CurState == SMentalStateManager.LatestMentalState) return false;
+            if (__instance.CurState == PM_SMentalState.LatestMentalState) return false;
             else return true;
         }
     }

@@ -14,7 +14,7 @@ using Verse;
 
 namespace Synchronous.Managers
 {
-    public static class SHediffManager
+    public static class PM_SHediff
     {
         public static void Ask(Hediff hediff, BodyPartRecord bodyPart, Pawn pawn, PlayerHediff.HediffMode mode, float tendQuality = -1)
         {

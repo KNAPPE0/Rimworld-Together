@@ -16,7 +16,7 @@ using Verse;
 
 namespace Synchronous.Managers
 {
-    public static class SGameSpeedManager
+    public static class PM_SGameSpeed
     {
         public static TimeSpeed LatestGameSpeed { get; private set; } = TimeSpeed.Paused;
 

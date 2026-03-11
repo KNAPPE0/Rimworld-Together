@@ -23,7 +23,7 @@ namespace Synchronous.Patches
             else if (value > TimeSpeed.Normal) return false;
             else
             {
-                SGameSpeedManager.Ask(value);
+                PM_SGameSpeed.Ask(value);
                 return false;
             }
         }
@@ -40,7 +40,7 @@ namespace Synchronous.Patches
             else if (!SessionHandler.IsSynchronousHost) return false;
             else
             {
-                SGameSpeedManager.Ask(TimeSpeed.Paused);
+                PM_SGameSpeed.Ask(TimeSpeed.Paused);
                 return false;
             }
         }

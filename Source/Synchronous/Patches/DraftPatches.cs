@@ -22,7 +22,7 @@ namespace Synchronous.Patches
             else if (!Main_.CheckIfShouldPatch(__instance.pawn.MapHeld)) return true;
             else
             {
-                SDraftManager.Ask(__instance.pawn, value);
+                PM_SDraft.Ask(__instance.pawn, value);
                 return false;
             }
         }

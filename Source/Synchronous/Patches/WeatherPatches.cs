@@ -29,7 +29,7 @@ namespace Synchronous.Patches
                 else
                 {
                     byte value = (byte)DefDatabase<WeatherDef>.AllDefs.FirstIndexOf(fetch => fetch == newWeather);
-                    SWeatherManager.Ask(value);
+                    PM_SWeather.Ask(value);
                     return false;
                 }
             }

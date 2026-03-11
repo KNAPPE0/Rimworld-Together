@@ -28,7 +28,7 @@ namespace Synchronous.Patches
             else
             {
                 BodyPartRecord bodyPart = part != null ? part : dinfo.HitPart;
-                SHediffManager.Ask(hediff, bodyPart, ___pawn, PlayerHediff.HediffMode.Add);
+                PM_SHediff.Ask(hediff, bodyPart, ___pawn, PlayerHediff.HediffMode.Add);
                 return false;
             }
         }
@@ -46,7 +46,7 @@ namespace Synchronous.Patches
             else if (!SessionHandler.IsSynchronousHost) return false;
             else
             {
-                SHediffManager.Ask(hediff, hediff.Part, ___pawn, PlayerHediff.HediffMode.Remove);
+                PM_SHediff.Ask(hediff, hediff.Part, ___pawn, PlayerHediff.HediffMode.Remove);
                 return false;
             }
         }
@@ -86,7 +86,7 @@ namespace Synchronous.Patches
                 else
                 {
                     float tendQuality = Mathf.Clamp(quality + Rand.Range(-0.25f, 0.25f), 0f, maxQuality);
-                    SHediffManager.Ask((Hediff)__instance.parent, __instance.parent.Part, __instance.Pawn, PlayerHediff.HediffMode.Tend, tendQuality);
+                    PM_SHediff.Ask((Hediff)__instance.parent, __instance.parent.Part, __instance.Pawn, PlayerHediff.HediffMode.Tend, tendQuality);
                     return false;
                 }
             }

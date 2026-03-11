@@ -22,7 +22,7 @@ using Verse.AI;
 
 namespace Synchronous.Managers
 {
-    public static class SJobManager
+    public static class PM_SJob
     {
         private static List<PlayerJob> PlayerJobs { get; set; } = new List<PlayerJob>();
 

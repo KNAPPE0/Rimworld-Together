@@ -15,7 +15,7 @@ using Verse;
 
 namespace Synchronous.Managers
 {
-    public static class SWeatherManager
+    public static class PM_SWeather
     {
         public static void Ask(byte value)
         {

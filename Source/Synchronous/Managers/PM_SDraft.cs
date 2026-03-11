@@ -17,7 +17,7 @@ using Verse;
 
 namespace Synchronous.Managers
 {
-    public static class SDraftManager
+    public static class PM_SDraft
     {
         private static List<PlayerDraft> PlayerDrafts { get; set; } = new List<PlayerDraft>();
 

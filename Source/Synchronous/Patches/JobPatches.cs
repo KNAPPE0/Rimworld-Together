@@ -25,7 +25,7 @@ namespace Synchronous.Patches
             else if (___pawn.Faction == SessionHandler.NeutralFaction) return false;
             else
             {
-                SJobManager.Ask(newJob, ___pawn);
+                PM_SJob.Ask(newJob, ___pawn);
                 return false;
             }
         }

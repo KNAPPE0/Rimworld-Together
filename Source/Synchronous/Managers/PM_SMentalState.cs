@@ -15,7 +15,7 @@ using Verse.AI;
 
 namespace Synchronous.Managers
 {
-    public static class SMentalStateManager
+    public static class PM_SMentalState
     {
         // We need a reference to the latest mental state so the game doesn't freak out while waiting for the server response
 

@@ -13,7 +13,7 @@ using Verse;
 
 namespace Synchronous.Managers
 {
-    public static class SDestroyManager
+    public static class PM_SDestroy
     {
         public static void Ask(Thing thing)
         {

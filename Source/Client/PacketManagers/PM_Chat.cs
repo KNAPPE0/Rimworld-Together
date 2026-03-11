@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using UnityEngine;
 using Verse;
@@ -21,7 +22,7 @@ using static Shared.CommonEnumerators;
 namespace GameClient.PacketManagers
 {
     [StaticConstructorOnStartup]
-    public static class PM_Chat
+    public class PM_Chat : PM_Base
     {
         private static MainButtonDef ChatButtonDef { get; set; } = DefDatabase<MainButtonDef>.GetNamed("Chat");
 
@@ -38,7 +39,7 @@ namespace GameClient.PacketManagers
         public static bool ChatAutoscroll = true;
 
         [HandlesPacket(PacketHeader.ChatManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             ChatData data = Serializer.ConvertBytesToObject<ChatData>(bytes);
 
@@ -93,7 +94,7 @@ namespace GameClient.PacketManagers
         }
     }
 
-    public static class ChatManagerH
+    public class ChatManagerH
     {
         public static Dictionary<ChatColor, string> messageColorDictionary = new Dictionary<ChatColor, string>()
         {

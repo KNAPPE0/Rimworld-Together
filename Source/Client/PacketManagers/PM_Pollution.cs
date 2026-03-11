@@ -1,17 +1,19 @@
 ﻿using GameClient.Patches;
-using TCPNetwork.Packets;
 using RimWorld;
 using RimWorld.Planet;
 using Shared;
-using System.Collections.Generic;
-using Verse;
 using Shared.Details.Planet;
+using System.Collections.Generic;
+using TCPNetwork;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using Verse;
 namespace GameClient.PacketManagers
 {
-    public static class PM_Pollution
+    public class PM_Pollution : PM_Base
     {
         [HandlesPacket(PacketHeader.PollutionManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if (ModsConfig.BiotechActive)
             {
@@ -61,7 +63,7 @@ namespace GameClient.PacketManagers
         }
     }
 
-    public static class PollutionManagerHelper
+    public class PollutionManagerHelper
     {
         public static PollutionDetail[] tempPollutionDetails;
 

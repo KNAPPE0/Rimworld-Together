@@ -1,20 +1,20 @@
 ﻿using GameServer.Core;
-using GameServer.Misc;
-using Shared;
-using static Shared.CommonEnumerators;
-using Shared.Files;
-using TCPNetwork.Packets;
-using TCPNetwork.Files.Client;
 using GameServer.Hooks.TCPNetwork;
 using GameServer.Managers;
+using GameServer.Misc;
+using Shared;
+using Shared.Files;
+using TCPNetwork;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
 namespace GameServer.PacketManager
 {
-
-    public static class PM_Event
+    public class PM_Event : PM_Base
     {
         [HandlesPacket(PacketHeader.EventManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if (!Master.ActionConfigs.EventAction.IsEnabled)
             {
@@ -111,7 +111,7 @@ namespace GameServer.PacketManager
         }
     }
 
-    public static class EventManagerH
+    public class EventManagerH
     {
         public static string FileExtension { get; private set; } = ".mpevent";
 

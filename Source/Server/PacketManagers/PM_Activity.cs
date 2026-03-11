@@ -4,14 +4,13 @@ using GameServer.Misc;
 using Shared;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
-using static Shared.CommonEnumerators;
 
 namespace GameServer.PacketManager
 {
-    public static class PM_Activity
+    public class PM_Activity : PM_Base
     {
         [HandlesPacket(PacketHeader.ActivityManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if (client == null || bytes == null || bytes.Length == 0) return;
 

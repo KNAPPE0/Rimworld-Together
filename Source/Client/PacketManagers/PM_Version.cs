@@ -10,6 +10,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using UnityEngine;
 using Verse;
@@ -17,10 +18,10 @@ using static Shared.CommonEnumerators;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_Version
+    public class PM_Version : PM_Base
     {
         [HandlesPacket(PacketHeader.VersionManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             VersionData data = Serializer.ConvertBytesToObject<VersionData>(bytes);
 

@@ -8,6 +8,7 @@ using Shared.Files.Guilds;
 using System;
 using System.Collections.Generic;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using Verse;
 using static Shared.CommonEnumerators;
@@ -15,11 +16,10 @@ using static Shared.Files.Guilds.GuildMember;
 
 namespace GameClient.PacketManagers
 {
-
-    public static class PM_Guilds
+    public class PM_Guilds : PM_Base
     {
         [HandlesPacket(PacketHeader.GuildManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             PlayerGuildData data = Serializer.ConvertBytesToObject<PlayerGuildData>(bytes);
 

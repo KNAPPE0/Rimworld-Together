@@ -13,6 +13,9 @@ namespace Shared
         public readonly PacketHeader header;
     }
 
+    [AttributeUsage(AttributeTargets.Class, Inherited = true)]
+    public class ManagesPacket() : Attribute { }
+
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public class OnSessionStart() : Attribute { }
 

@@ -1,4 +1,4 @@
-﻿using GameServer.Core;
+using GameServer.Core;
 using GameServer.Hooks.TCPNetwork;
 using GameServer.Integrations.Discord;
 using GameServer.Managers;
@@ -11,10 +11,10 @@ using static Shared.CommonEnumerators;
 
 namespace GameServer.PacketManager
 {
-    public static class PM_Logins
+    public class PM_Logins : PM_Base
     {
         [HandlesPacket(PacketHeader.LoginManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             LoginData data = Serializer.ConvertBytesToObject<LoginData>(bytes);
             HandleUser(client, data);
@@ -103,33 +103,33 @@ namespace GameServer.PacketManager
                 PM_World.RequireWorldFile(client);
             }
         }
+    }
 
-        public static class LoginManagerH
+    public static class LoginManagerH
+    {
+        public static void RemoveOldClientSessions(ServerClient client)
         {
-            public static void RemoveOldClientSessions(ServerClient client)
+            foreach (ServerClient toFind in ServerNetwork.GetConnectedClients())
             {
-                foreach (ServerClient toFind in ServerNetwork.GetConnectedClients())
-                {
-                    if (toFind == client) continue;
+                if (toFind == client) continue;
 
-                    if (toFind.UserFile.Username == client.UserFile.Username)
-                        DenyConnectionWithReason(toFind, LoginResponse.Duplicate);
-                }
+                if (toFind.UserFile.Username == client.UserFile.Username)
+                    DenyConnectionWithReason(toFind, LoginResponse.Duplicate);
             }
+        }
 
-            public static void DenyConnectionWithReason(ServerClient client, LoginResponse response, object extraDetails = null)
-            {
-                LoginData loginData = new LoginData();
-                loginData._tryResponse = response;
+        public static void DenyConnectionWithReason(ServerClient client, LoginResponse response, object extraDetails = null)
+        {
+            LoginData loginData = new LoginData();
+            loginData._tryResponse = response;
 
-                if (response == LoginResponse.Mods)
-                    loginData._extraDetails = (System.Collections.Generic.List<string>)extraDetails;
-                else if (response == LoginResponse.Version)
-                    loginData._extraDetails = new System.Collections.Generic.List<string>() { CommonValues.ExecutableVersion };
+            if (response == LoginResponse.Mods)
+                loginData._extraDetails = (System.Collections.Generic.List<string>)extraDetails;
+            else if (response == LoginResponse.Version)
+                loginData._extraDetails = new System.Collections.Generic.List<string>() { CommonValues.ExecutableVersion };
 
-                client.Listener.EnqueuePacket(PacketHeader.LoginManager, loginData);
-                client.Listener.Disconnect();
-            }
+            client.Listener.EnqueuePacket(PacketHeader.LoginManager, loginData);
+            client.Listener.Disconnect();
         }
     }
 }

@@ -8,14 +8,13 @@ using System.IO;
 using System.Linq;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
-using static Shared.CommonEnumerators;
 
 namespace GameServer.PacketManager
 {
-    public static class PM_Maps
+    public class PM_Maps : PM_Base
     {
         [HandlesPacket(PacketHeader.MapManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             MapData data = Serializer.ConvertBytesToObject<MapData>(bytes);
             if (data == null) return;

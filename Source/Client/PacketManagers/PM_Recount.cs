@@ -1,20 +1,22 @@
-using System.Collections.Generic;
 using GameClient.Misc;
-using TCPNetwork.Packets;
 using Shared;
+using System.Collections.Generic;
+using TCPNetwork;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
 
 namespace GameClient.PacketManagers
 {
 
-    public static class PM_Recount
+    public class PM_Recount : PM_Base
     {
         public static int CurrentPlayers { get; private set; }
 
         public static List<string> CurrentPlayerNames { get; private set; }
 
         [HandlesPacket(PacketHeader.RecountManager)]
-        private static void ParsePacket(byte[] bytes) { SetServerPlayers(bytes); }
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header) { SetServerPlayers(bytes); }
 
         public static void SetServerPlayers(byte[] bytes)
         {

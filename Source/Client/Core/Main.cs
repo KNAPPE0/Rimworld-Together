@@ -2,16 +2,12 @@
 using GameClient.Files;
 using GameClient.Hooks.Shared;
 using GameClient.Misc;
-using HarmonyLib;
 using Shared;
 using Shared.Misc;
 using System;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using TCPNetwork.Misc;
 using UnityEngine;
 using Verse;
 using static Shared.CommonEnumerators;
@@ -38,7 +34,6 @@ namespace GameClient.Core
                 HarmonyHandler.EnableStartPatches();
 
                 CreateUnityDispatcher();
-                PacketCache.CacheAllPacketsInAppDomain(AssemblyType.Client);
                 MethodGatherer.CacheAllMethods(AssemblyType.Client);
             }
         }

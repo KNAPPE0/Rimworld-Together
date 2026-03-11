@@ -1,17 +1,18 @@
-﻿using GameServer.Misc;
+﻿using GameServer.Hooks.TCPNetwork;
+using GameServer.Misc;
 using Shared;
-using static Shared.CommonEnumerators;
 using Shared.Files;
-using TCPNetwork.Packets;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
-using GameServer.Hooks.TCPNetwork;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
 namespace GameServer.PacketManager
 {
-    public static class PM_Caravan
+    public class PM_Caravan : PM_Base
     {
         [HandlesPacket(PacketHeader.CaravanManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             CaravanData data = Serializer.ConvertBytesToObject<CaravanData>(bytes);
 

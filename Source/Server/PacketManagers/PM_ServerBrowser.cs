@@ -18,7 +18,7 @@ using static Shared.CommonEnumerators;
 
 namespace GameServer.PacketManager
 {
-    public static class PM_ServerBrowser
+    public class PM_ServerBrowser : PM_Base
     {
         private const string GetPublicIpAddressURL = "https://api.ipify.org";
         
@@ -37,7 +37,7 @@ namespace GameServer.PacketManager
         private static readonly byte[] TelemetryBuffer = new byte[ServerAuth.PacketSize + Telemetry.PacketSize];
         
         [HandlesPacket(PacketHeader.ServerBrowserReachability)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if(!IsRunning)
                 ResponseShortcutManager.SendIllegalPacket(client, 

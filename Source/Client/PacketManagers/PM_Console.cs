@@ -1,20 +1,22 @@
 ﻿using GameClient.Dialogs;
+using GameClient.Managers;
 using GameClient.Misc;
-using TCPNetwork.Packets;
 using RimWorld;
 using Shared;
+using TCPNetwork;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
-using GameClient.Managers;
 
 namespace GameClient.PacketManagers
 {
     //Class that handles how the client will answer to incoming server commands
-    public static class PM_Console
+    public class PM_Console : PM_Base
     {
         //Parses the received packet into a command to execute
 
         [HandlesPacket(PacketHeader.ConsoleManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             CommandData data = Serializer.ConvertBytesToObject<CommandData>(bytes);
 

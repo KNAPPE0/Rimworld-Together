@@ -12,16 +12,17 @@ using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
 
 namespace GameServer.Hooks.Synchronous
 {
-    public static class SynchronousManager
+    public class PM_Synchronous : PM_Base
     {
         [HandlesPacket(PacketHeader.SynchronousManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             SynchronousData data = Serializer.ConvertBytesToObject<SynchronousData>(bytes);
 

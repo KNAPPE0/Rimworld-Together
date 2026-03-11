@@ -3,6 +3,7 @@ using Shared;
 using Shared.Files;
 using Shared.Files.Configs.Mods;
 using Shared.Misc;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TCPNetwork.Packets;
@@ -12,10 +13,10 @@ using static Shared.Files.Configs.Mods.ModsConfigFile;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_Mods
+    public class PM_Mods : PM_Base
     {
         [HandlesPacket(PacketHeader.ModManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             ModConfigData data = Serializer.ConvertBytesToObject<ModConfigData>(bytes);
 
@@ -77,7 +78,7 @@ namespace GameClient.PacketManagers
         }
     }
 
-    public static class ModManagerH
+    public class ModManagerH
     {
         public static ModsConfigFile GetRunningModList()
         {

@@ -18,7 +18,6 @@ namespace GameServer.PacketManager
         private static readonly ReaderWriterLockSlim CacheLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         private static readonly Dictionary<int, LeaderboardEntryFile> EntriesByTile = new Dictionary<int, LeaderboardEntryFile>();
 
-
         private static volatile bool _cacheBuilt = false;
 
         private static int _lastFullRebuildTick = 0;
@@ -326,7 +325,6 @@ namespace GameServer.PacketManager
             stats.WealthExact = mapFile.WealthExact >= 0 ? mapFile.WealthExact : -1;
 
             stats.GameTicks = mapFile.GameTicks;
-
             stats.RealPlayTimeSeconds = mapFile.RealPlayTimeSeconds >= 0 ? mapFile.RealPlayTimeSeconds : -1;
             stats.RealPlayTimeInteractingSeconds = mapFile.RealPlayTimeInteractingSeconds >= 0 ? mapFile.RealPlayTimeInteractingSeconds : -1;
 
@@ -391,7 +389,6 @@ namespace GameServer.PacketManager
                         return;
 
                     TryClearTombstoneIfNewerUnsafe(stats.Tile, stats.LastSavedUtcTicks);
-
                     UpsertEntryUnsafe(stats, preferNewer);
                     return;
                 }
@@ -413,7 +410,6 @@ namespace GameServer.PacketManager
                     return;
 
                 TryClearTombstoneIfNewerUnsafe(stats.Tile, stats.LastSavedUtcTicks);
-
                 UpsertEntryUnsafe(stats, preferNewer);
             }
             catch { }
@@ -734,9 +730,7 @@ namespace GameServer.PacketManager
                 return;
 
             if (candidateSavedTicks > deletedTicks)
-            {
                 TombstonesByTile.Remove(tile);
-            }
         }
 
         private static int CompareEntries(LeaderboardEntryFile a, LeaderboardEntryFile b, InformationData.LeaderboardSortMode sort, InformationData.LeaderboardOrder order)

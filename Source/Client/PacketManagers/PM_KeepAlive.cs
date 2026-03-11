@@ -5,10 +5,11 @@ using Shared.Misc;
 using System;
 using System.Diagnostics;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_KeepAlive
+    public class PM_KeepAlive : PM_Base
     {
         private static Stopwatch LatencyStopwatch { get; set; } = new Stopwatch();
 
@@ -17,7 +18,7 @@ namespace GameClient.PacketManagers
         public static int CurrentPing { get; set; } = int.MaxValue;
 
         [HandlesPacket(PacketHeader.KeepAliveManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             Network.ServerEndpoint.LastKAPacket = DateTime.Now;
 

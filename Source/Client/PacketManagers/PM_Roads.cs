@@ -15,13 +15,14 @@ using Shared.Misc;
 using GameClient.Hooks.TCPNetwork;
 using TCPNetwork;
 using GameClient.Managers;
+using TCPNetwork.Files.Client;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_Roads
+    public class PM_Roads : PM_Base
     {
         [HandlesPacket(PacketHeader.RoadManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             RoadData data = Serializer.ConvertBytesToObject<RoadData>(bytes);
 
@@ -158,7 +159,7 @@ namespace GameClient.PacketManagers
         }
     }
 
-    public static class RoadManagerHelper
+    public class RoadManagerHelper
     {
         public static RoadDetail[] tempRoadDetails;
 

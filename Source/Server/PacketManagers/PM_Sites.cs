@@ -13,10 +13,10 @@ using GameServer.Managers;
 
 namespace GameServer.PacketManager
 {
-    public static class PM_Sites
+    public class PM_Sites : PM_Base
     {
         [HandlesPacket(PacketHeader.SiteManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if (!Master.ActionConfigs.SiteAction.IsEnabled)
             {
@@ -162,7 +162,7 @@ namespace GameServer.PacketManager
         }
     }
 
-    public static class SiteManagerHelper
+    public class SiteManagerHelper
     {
         public static SiteFile[] GetAllSitesFromUsername(string username)
         {

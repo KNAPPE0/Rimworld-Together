@@ -1,15 +1,17 @@
 using GameClient.Dialogs;
 using GameClient.Misc;
-using TCPNetwork.Packets;
 using Shared;
+using TCPNetwork;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_ResponseShortcuts
+    public class PM_ResponseShortcuts : PM_Base
     {
         [HandlesPacket(PacketHeader.ResponseShortcutManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             ResponseShortcutData data = Serializer.ConvertBytesToObject<ResponseShortcutData>(bytes);
 

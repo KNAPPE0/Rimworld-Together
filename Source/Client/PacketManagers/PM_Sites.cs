@@ -16,6 +16,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using TCPNetwork.Packets.Goodwills;
 using UnityEngine.Tilemaps;
@@ -26,7 +27,7 @@ using static Shared.CommonEnumerators;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_Sites
+    public class PM_Sites : PM_Base
     {
         public static SiteType[] SiteValues { get; set; }
 
@@ -37,7 +38,7 @@ namespace GameClient.PacketManagers
         public static double RewardDelay { get; set; } = -1;
 
         [HandlesPacket(PacketHeader.SiteManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             SiteData data = Serializer.ConvertBytesToObject<SiteData>(bytes);
 
@@ -312,7 +313,7 @@ namespace GameClient.PacketManagers
     }
 }
 
-public static class SiteManagerH
+public class SiteManagerH
 {
     public static SiteFile[] tempSites;
 

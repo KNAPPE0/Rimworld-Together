@@ -9,13 +9,14 @@ using TCPNetwork.Packets;
 using GameClient.Hooks.TCPNetwork;
 using TCPNetwork;
 using GameClient.Managers;
+using TCPNetwork.Files.Client;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_Aids
+    public class PM_Aids : PM_Base
     {
         [HandlesPacket(PacketHeader.AidManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             AidData data = Serializer.ConvertBytesToObject<AidData>(bytes);
 

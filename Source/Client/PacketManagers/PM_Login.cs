@@ -7,6 +7,7 @@ using Shared;
 using System;
 using System.Collections.Generic;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using UnityEngine;
 using Verse;
@@ -14,10 +15,10 @@ using static Shared.CommonEnumerators;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_Login
+    public class PM_Login : PM_Base
     {
         [HandlesPacket(PacketHeader.LoginManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             LoginData data = Serializer.ConvertBytesToObject<LoginData>(bytes);
 
@@ -135,7 +136,7 @@ namespace GameClient.PacketManagers
         }
     }
 
-    public static class LoginManagerH
+    public class LoginManagerH
     {
         public static bool CheckIfLoginIsValid()
         {

@@ -2,8 +2,7 @@
 using Shared;
 using Shared.Files;
 using System;
-using System.Linq;
-using TCPNetwork.Packets;
+using TCPNetwork;
 using Verse;
 
 namespace GameClient.PacketManagers

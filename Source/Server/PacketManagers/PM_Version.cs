@@ -1,16 +1,16 @@
 ﻿using GameServer.Misc;
 using Shared;
-using static Shared.CommonEnumerators;
-using TCPNetwork.Packets;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
 namespace GameServer.PacketManager
 {
-
-    public static class PM_Version
+    public class PM_Version : PM_Base
     {
         [HandlesPacket(PacketHeader.VersionManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             VersionData data = Serializer.ConvertBytesToObject<VersionData>(bytes);
 

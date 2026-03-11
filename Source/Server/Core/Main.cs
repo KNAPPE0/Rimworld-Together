@@ -8,7 +8,6 @@ using Shared.Files.Guilds;
 using System.Globalization;
 using System.Reflection;
 using Shared.Misc;
-using TCPNetwork.Misc;
 using static Shared.CommonEnumerators;
 using GameServer.Hooks.TCPNetwork;
 using GameServer.Hooks.Shared;
@@ -23,7 +22,11 @@ namespace GameServer.Core
         {
             Console.ForegroundColor = ConsoleColor.White;
             ServerPrinter.CreateLogger();
+
             SetPaths();
+            LoadFiles();
+            SetCulture();
+            LoadResources();
 
             if (!File.Exists(ServerConfigFile.SavePath))
             {
@@ -31,15 +34,11 @@ namespace GameServer.Core
                     "https://rimworldtogether.wiki.gg/");
             }
 
-            LoadFiles();
-            SetCulture();
-            LoadResources();
-
-            PacketCache.CacheAllPacketsInAppDomain(AssemblyType.Server);
-
-            if (Master.BackupConfig.AutomaticBackups) Task.Run(BackupManager.AutoBackup);
+            MethodGatherer.CacheAllMethods(AssemblyType.Server);
+            MethodGatherer.CacheAllPackets(AssemblyType.Server);
 
             PM_ServerBrowser.StartFeature();
+            if (Master.BackupConfig.AutomaticBackups) Task.Run(BackupManager.AutoBackup);
 
             ServerNetwork _ = new ServerNetwork();
 

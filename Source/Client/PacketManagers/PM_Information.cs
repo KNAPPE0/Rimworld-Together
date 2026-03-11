@@ -5,13 +5,14 @@ using GameClient.Misc;
 using Shared.Files.Maps;
 using GameClient.Hooks.TCPNetwork;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_Information
+    public class PM_Information : PM_Base
     {
         [HandlesPacket(PacketHeader.InformationManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             InformationData data = Serializer.ConvertBytesToObject<InformationData>(bytes);
 

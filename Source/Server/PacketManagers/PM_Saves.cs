@@ -6,6 +6,7 @@ using Shared;
 using Shared.Files;
 using Shared.Files.Sites;
 using Shared.Misc;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
@@ -13,10 +14,10 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GameServer.PacketManager
 {
-    public static class PM_Saves
+    public class PM_Saves : PM_Base
     {
         [HandlesPacket(PacketHeader.SaveManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             SaveData data = Serializer.ConvertBytesToObject<SaveData>(bytes);
 

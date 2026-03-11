@@ -15,6 +15,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using Verse;
 using Verse.Noise;
@@ -22,12 +23,12 @@ using static Shared.CommonEnumerators;
 
 namespace GameClient.Hooks.Synchronous
 {
-    public static class SynchronousManager
+    public class PM_Synchronous : PM_Base
     {
         private enum SynchronousSide { Host, Guest }
 
         [HandlesPacket(PacketHeader.SynchronousManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             SynchronousData data = Serializer.ConvertBytesToObject<SynchronousData>(bytes);
 

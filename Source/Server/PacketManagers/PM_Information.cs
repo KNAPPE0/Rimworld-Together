@@ -8,10 +8,10 @@ using TCPNetwork.Packets;
 
 namespace GameServer.PacketManager
 {
-    public static class PM_Information
+    public class PM_Information : PM_Base
     {
         [HandlesPacket(PacketHeader.InformationManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             InformationData data = Serializer.ConvertBytesToObject<InformationData>(bytes);
             if (data == null) return;

@@ -15,12 +15,13 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.XPath;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using Verse;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_Saves
+    public class PM_Saves : PM_Base
     {
         public static string LatestSavePath { get; set; } = string.Empty;
 
@@ -31,7 +32,7 @@ namespace GameClient.PacketManagers
         public static string TempSaveFilePath => SaveFilePath + ".rws.temp";
 
         [HandlesPacket(PacketHeader.SaveManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             SaveData data = Serializer.ConvertBytesToObject<SaveData>(bytes);
 

@@ -18,8 +18,8 @@ namespace GameServer.PacketManager
 {
     public static class PM_Chat
     {
-        private static Semaphore LogSemaphore = new Semaphore(1, 1);
-        private static Semaphore CommandSemaphore { get; set; } = new Semaphore(1, 1);
+        private static readonly Semaphore LogSemaphore = new Semaphore(1, 1);
+        private static readonly Semaphore CommandSemaphore = new Semaphore(1, 1);
 
         private static string SystemName { get; set; } = "CONSOLE";
         private static string NotificationName { get; set; } = "SERVER";
@@ -40,7 +40,7 @@ namespace GameServer.PacketManager
         };
 
         [HandlesPacket(PacketHeader.ChatManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public static void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             ChatData data = Serializer.ConvertBytesToObject<ChatData>(bytes);
 
@@ -55,25 +55,30 @@ namespace GameServer.PacketManager
         {
             CommandSemaphore.WaitOne();
 
-            CommandBase toFind = ChatManagerHelper.GetCommandFromName(command[0]);
-            if (toFind == null)
+            try
             {
-                SendConsoleMessage(client, "Command was not found.");
+                CommandBase toFind = ChatManagerHelper.GetCommandFromName(command[0]);
+                if (toFind == null)
+                {
+                    SendConsoleMessage(client, "Command was not found.");
+                }
+                else
+                {
+                    ChatCommandActions.TargetClient = client;
+                    ChatCommandActions.Command = command;
+                    toFind.CommandAction.Invoke();
+                }
+
+                string chatCommand = "";
+                for (int i = 0; i < command.Length; i++) chatCommand += command[i] + " ";
+                chatCommand = chatCommand.TrimEnd();
+
+                ChatManagerHelper.ShowChatInConsole(client.UserFile.Username, chatCommand);
             }
-            else
+            finally
             {
-                ChatCommandActions.TargetClient = client;
-                ChatCommandActions.Command = command;
-                toFind.CommandAction.Invoke();
+                CommandSemaphore.Release();
             }
-
-            string chatCommand = "";
-            for (int i = 0; i < command.Length; i++) chatCommand += command[i] + " ";
-            chatCommand = chatCommand.TrimEnd();
-
-            ChatManagerHelper.ShowChatInConsole(client.UserFile.Username, chatCommand);
-
-            CommandSemaphore.Release();
         }
 
         private static void BroadcastChatMessage(ServerClient client, string message)
@@ -160,22 +165,27 @@ namespace GameServer.PacketManager
         {
             LogSemaphore.WaitOne();
 
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append($"[{DateTime.Now:HH:mm:ss}] | [" + username + "]: " + message);
-            stringBuilder.Append(Environment.NewLine);
+            try
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append($"[{DateTime.Now:HH:mm:ss}] | [" + username + "]: " + message);
+                stringBuilder.Append(Environment.NewLine);
 
-            DateTime dateTime = DateTime.Now.Date;
-            string nowFileName = (dateTime.Year + "-" + dateTime.Month.ToString("D2") + "-" + dateTime.Day.ToString("D2")).ToString();
-            string nowFullPath = Master.ChatLogsPath + Path.DirectorySeparatorChar + nowFileName + ".txt";
+                DateTime dateTime = DateTime.Now.Date;
+                string nowFileName = (dateTime.Year + "-" + dateTime.Month.ToString("D2") + "-" + dateTime.Day.ToString("D2")).ToString();
+                string nowFullPath = Master.ChatLogsPath + Path.DirectorySeparatorChar + nowFileName + ".txt";
 
-            File.AppendAllText(nowFullPath, stringBuilder.ToString());
-            stringBuilder.Clear();
-
-            LogSemaphore.Release();
+                File.AppendAllText(nowFullPath, stringBuilder.ToString());
+                stringBuilder.Clear();
+            }
+            finally
+            {
+                LogSemaphore.Release();
+            }
         }
     }
 
-    public static class ChatManagerHelper
+    public class ChatManagerHelper
     {
         public static ServerClient GetUserFromName(string username)
         {

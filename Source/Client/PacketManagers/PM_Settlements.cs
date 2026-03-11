@@ -11,18 +11,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using Verse;
 using static Shared.CommonEnumerators;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_Settlements
+    public class PM_Settlements : PM_Base
     {
         public static List<WO_Settlement> PlayerSettlements { get; set; } = new List<WO_Settlement>();
 
         [HandlesPacket(PacketHeader.SettlementManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             PlayerSettlementData data = Serializer.ConvertBytesToObject<PlayerSettlementData>(bytes);
             if (data == null) return;
@@ -177,7 +178,7 @@ namespace GameClient.PacketManagers
         }
     }
 
-    public static class PlayerSettlementManagerHelper
+    public class PlayerSettlementManagerHelper
     {
         public static SettlementFile[] tempSettlements;
 

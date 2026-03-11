@@ -29,8 +29,6 @@ namespace TCPNetwork
 
         public static readonly TimeSpan KeepAliveMaxTime = TimeSpan.FromSeconds(60);
 
-        public static readonly string DefaultParserMethodName = "ParsePacket";
-
         public static readonly PacketHeader[] IgnoreLogPackets = { PacketHeader.KeepAliveManager };
 
         public static readonly PacketHeader[] BypassReadyPackets =

@@ -1,13 +1,15 @@
 ﻿using GameServer.Core;
+using GameServer.PacketManager;
 using Shared;
 using Shared.Files;
-using TCPNetwork.Packets;
-using TCPNetwork.Files.Client;
 using Shared.Files.Sites;
+using TCPNetwork;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
 
-namespace GameServer.PacketManager
+namespace GameServer.Managers
 {
-    public static class PM_GlobalData
+    public class GlobalDataManager
     {
         public static void SendServerGlobalData(ServerClient client)
         {
@@ -39,7 +41,7 @@ namespace GameServer.PacketManager
         }
     }
 
-    public static class GlobalDataManagerHelper
+    public class GlobalDataManagerHelper
     {
         public static SettlementFile[] GetServerSettlements(ServerClient client)
         {

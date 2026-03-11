@@ -15,10 +15,10 @@ using static Shared.Files.Guilds.GuildMember;
 namespace GameServer.PacketManager
 {
 
-    public static class PM_Guilds
+    public class PM_Guilds : PM_Base
     {
         [HandlesPacket(PacketHeader.GuildManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if (!Master.ActionConfigs.EnableFactions)
             {
@@ -253,7 +253,7 @@ namespace GameServer.PacketManager
         }
     }
 
-    public static class GuildManagerH
+    public class GuildManagerH
     {
         public static GuildFile[] GetAllFactions()
         {

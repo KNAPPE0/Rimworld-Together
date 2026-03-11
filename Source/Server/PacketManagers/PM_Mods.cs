@@ -12,7 +12,7 @@ using static Shared.CommonEnumerators;
 
 namespace GameServer.PacketManager
 {
-    public static class PM_Mods
+    public class PM_Mods : PM_Base
     {
         static PM_Mods()
         {
@@ -20,7 +20,7 @@ namespace GameServer.PacketManager
         }
 
         [HandlesPacket(PacketHeader.ModManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             ModConfigData data = Serializer.ConvertBytesToObject<ModConfigData>(bytes);
 
@@ -107,7 +107,7 @@ namespace GameServer.PacketManager
                 else
                 {
                     InformationDisplayer.DisplayModMismatch(client.UserFile.Username);
-                    PM_Logins.LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Mods, conflictingModNames);
+                    LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Mods, conflictingModNames);
                     return true;
                 }
             }

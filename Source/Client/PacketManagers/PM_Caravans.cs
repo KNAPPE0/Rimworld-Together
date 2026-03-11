@@ -13,20 +13,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using Verse;
 using static Shared.CommonEnumerators;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_Caravans
+    public class PM_Caravans : PM_Base
     {
         public static List<Caravan> PlayerCaravans { get; private set; } = new List<Caravan>();
 
         public static List<CaravanFile> GuestCaravans { get; private set; } = new List<CaravanFile>();
 
         [HandlesPacket(PacketHeader.CaravanManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             CaravanData data = Serializer.ConvertBytesToObject<CaravanData>(bytes);
 
@@ -163,7 +164,7 @@ namespace GameClient.PacketManagers
     }
 }
 
-public static class CaravanManagerH
+public class CaravanManagerH
 {
     public static WO_Caravan[] GetAllExistingOnlineCaravans()
     {

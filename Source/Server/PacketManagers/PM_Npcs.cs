@@ -1,23 +1,23 @@
 ﻿using GameServer.Core;
+using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 using GameServer.Misc;
 using Shared;
-using static Shared.CommonEnumerators;
-using Shared.Files;
-using TCPNetwork.Packets;
-using TCPNetwork.Files.Client;
 using Shared.Details.Planet;
-using Shared.Misc;
-using GameServer.Hooks.TCPNetwork;
+using Shared.Files;
 using Shared.Files.Configs;
-using GameServer.Managers;
+using Shared.Misc;
+using TCPNetwork;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
 namespace GameServer.PacketManager
 {
-
-    public static class PM_Npcs
+    public class PM_Npcs : PM_Base
     {
         [HandlesPacket(PacketHeader.NPCManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if (!Master.ActionConfigs.EnableNPCDestruction)
             {
@@ -74,7 +74,7 @@ namespace GameServer.PacketManager
         }
     }
 
-    public static class NPCSettlementManagerHelper
+    public class NPCSettlementManagerHelper
     {
         public static bool CheckIfSettlementFromTileExists(int tile)
         {

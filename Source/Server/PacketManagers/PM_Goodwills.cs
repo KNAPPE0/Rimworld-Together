@@ -6,6 +6,7 @@ using Shared.Files.Guilds;
 using Shared.Files.Sites;
 using System.Linq;
 using System.Security.Policy;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets.Goodwills;
 using static Shared.CommonEnumerators;
@@ -13,11 +14,10 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GameServer.PacketManager
 {
-
-    public static class PM_Goodwills
+    public class PM_Goodwills : PM_Base
     {
         [HandlesPacket(PacketHeader.GoodWillManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             FactionGoodwillData data = Serializer.ConvertBytesToObject<FactionGoodwillData>(bytes);
 

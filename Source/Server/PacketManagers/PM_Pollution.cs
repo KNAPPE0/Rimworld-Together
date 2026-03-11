@@ -1,22 +1,22 @@
 ﻿using GameServer.Core;
+using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 using GameServer.Misc;
 using Shared;
-using Shared.Files;
-using TCPNetwork.Packets;
-using TCPNetwork.Files.Client;
 using Shared.Details.Planet;
-using Shared.Misc;
-using GameServer.Hooks.TCPNetwork;
+using Shared.Files;
 using Shared.Files.Configs;
-using GameServer.Managers;
+using Shared.Misc;
+using TCPNetwork;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
 
 namespace GameServer.PacketManager
 {
-
-    public static class PM_Pollution
+    public class PM_Pollution : PM_Base
     {
         [HandlesPacket(PacketHeader.PollutionManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if (!Master.ActionConfigs.EnablePollutionSpread)
             {

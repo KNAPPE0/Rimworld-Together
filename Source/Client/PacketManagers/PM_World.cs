@@ -18,10 +18,11 @@ using Shared.Files.Configs;
 using Shared.Misc;
 using GameClient.Hooks.TCPNetwork;
 using TCPNetwork;
+using TCPNetwork.Files.Client;
 
 namespace GameClient.PacketManagers
 {
-    public static class PM_World
+    public class PM_World : PM_Base
     {
         public static string tempWorldPath => Path.Combine(Master.AppdataTempPath, "World.temp");
 
@@ -42,7 +43,7 @@ namespace GameClient.PacketManagers
         };
 
         [HandlesPacket(PacketHeader.WorldManager)]
-        private static void ParsePacket(byte[] bytes)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             WorldData data = Serializer.ConvertBytesToObject<WorldData>(bytes);
 
@@ -231,7 +232,7 @@ namespace GameClient.PacketManagers
         }
     }
 
-    public static class WorldManagerH
+    public class WorldManagerH
     {
         public static void PopulateWorldValues()
         {

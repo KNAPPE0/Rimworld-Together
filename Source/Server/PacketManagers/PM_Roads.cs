@@ -1,21 +1,22 @@
 ﻿using GameServer.Core;
+using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 using GameServer.Misc;
 using Shared;
-using static Shared.CommonEnumerators;
-using Shared.Files;
-using TCPNetwork.Packets;
-using TCPNetwork.Files.Client;
 using Shared.Details.Planet;
-using GameServer.Hooks.TCPNetwork;
+using Shared.Files;
 using Shared.Files.Configs;
-using GameServer.Managers;
+using TCPNetwork;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
 namespace GameServer.PacketManager
 {
-    public static class PM_Roads
+    public class PM_Roads : PM_Base
     {
         [HandlesPacket(PacketHeader.RoadManager)]
-        private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             if (!Master.ActionConfigs.RoadsAction.IsEnabled)
             {
@@ -106,7 +107,7 @@ namespace GameServer.PacketManager
         }
     }
 
-    public static class RoadManagerHelper
+    public class RoadManagerHelper
     {
         public static bool CheckIfRoadExists(RoadDetail details)
         {

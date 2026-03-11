@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Threading.Tasks;
 using TCPNetwork;
 using TCPNetwork.Files.Client;
@@ -25,7 +26,8 @@ namespace GameServer.Hooks.TCPNetwork
 
         private Action<PacketHeader, byte[], ServerClient> OnReadPacket { get; set; } = delegate (PacketHeader header, byte[] buffer, ServerClient client)
         {
-            PacketCache.ServerMethodDictionary[header](client, buffer, header);
+            MethodInfo method = (MethodInfo)MethodGatherer.ServerMethodDictionary[header][1];
+            method.Invoke(MethodGatherer.ServerMethodDictionary[header][0], new object[] { client, buffer, header });
         };
 
         private Action<ServerClient> OnWritePacket { get; set; } = delegate (ServerClient client) { };
@@ -141,7 +143,7 @@ namespace GameServer.Hooks.TCPNetwork
             {
                 if (connectedCount >= Master.ServerConfig.MaxPlayers)
                 {
-                    PM_Logins.LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Full);
+                    LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Full);
                     return;
                 }
             }
@@ -149,7 +151,7 @@ namespace GameServer.Hooks.TCPNetwork
 
             if (Master.WorldValues == null && connectedCount > 0)
             {
-                PM_Logins.LoginManagerH.DenyConnectionWithReason(client, LoginResponse.NoWorld);
+                LoginManagerH.DenyConnectionWithReason(client, LoginResponse.NoWorld);
                 return;
             }
 

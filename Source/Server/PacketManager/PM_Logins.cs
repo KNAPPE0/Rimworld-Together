@@ -1,22 +1,22 @@
 ﻿using GameServer.Core;
-using GameServer.Misc;
-using TCPNetwork.Packets;
-using Shared;
-using static Shared.CommonEnumerators;
-using TCPNetwork.Files.Client;
-using Shared.Misc;
-using GameServer.Integrations.Discord;
 using GameServer.Hooks.TCPNetwork;
+using GameServer.Integrations.Discord;
+using GameServer.Managers;
+using GameServer.Misc;
+using Shared;
+using Shared.Misc;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class LoginManager
+    public static class PM_Logins
     {
         [HandlesPacket(PacketHeader.LoginManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
         {
             LoginData data = Serializer.ConvertBytesToObject<LoginData>(bytes);
-
             HandleUser(client, data);
         }
 
@@ -29,29 +29,28 @@ namespace GameServer.Managers
             {
                 var result = TryLoginUser(client, data);
                 if (!string.IsNullOrEmpty(result))
-                {
                     Printer.Error($"Error during login: {result}");
-                }
             }
-            else RegisterUser(client, data);
+            else
+            {
+                RegisterUser(client, data);
+            }
         }
 
         public static string TryLoginUser(ServerClient client, LoginData data)
         {
-            if (!UserManagerH.CheckIfUserAuthCorrect(client, data)) return $"Login details to not match, either the password or username is wrong for {data._username}";
+            if (!UserManagerH.CheckIfUserAuthCorrect(client, data))
+                return $"Login details to not match, either the password or username is wrong for {data._username}";
 
             client.LoadUserFromFile(client);
 
             if (UserManagerH.CheckIfUserBanned(client)) return $"{data._username} is banned";
-
             if (!UserManagerH.CheckWhitelist(client)) return $"{data._username} is not whitelisted";
-
-            if (WorldManager.CheckIfWorldExists() && ModManager.CheckIfModConflict(client, data)) return $"{data._username} has a mod conflict";
+            if (PM_World.CheckIfWorldExists() && PM_Mods.CheckIfModConflict(client, data)) return $"{data._username} has a mod conflict";
 
             LoginManagerH.RemoveOldClientSessions(client);
 
             InformationDisplayer.DisplayLogin(client);
-
             PostLogin(client);
             return "";
         }
@@ -64,31 +63,33 @@ namespace GameServer.Managers
 
             var error = TryLoginUser(client, data);
             if (!string.IsNullOrEmpty(error))
-            {
                 Printer.Error($"Error during login: {error}");
-            }
         }
 
         private static void PostLogin(ServerClient client)
         {
-            SiteManager.SetSiteInfoForClient(client);
+            PM_Sites.SetSiteInfoForClient(client);
 
             UserManager.SendPlayerRecount();
+            PM_GlobalData.SendServerGlobalData(client);
 
-            GlobalDataManager.SendServerGlobalData(client);
+            foreach (string str in PM_Chat.DefaultJoinMessages)
+                PM_Chat.SendConsoleMessage(client, str);
 
-            foreach (string str in ChatManager.DefaultJoinMessages) ChatManager.SendConsoleMessage(client, str);
+            if (Master.ChatConfig.EnableMoTD)
+                PM_Chat.SendServerMessage(client, $"MoTD > {Master.ChatConfig.MessageOfTheDay}");
 
-            if (Master.ChatConfig.EnableMoTD) ChatManager.SendServerMessage(client, $"MoTD > {Master.ChatConfig.MessageOfTheDay}");
-
-            if (Master.ChatConfig.LoginNotifications) ChatManager.BroadcastServerNotification($"{client.UserFile.Username} has joined the server!");
+            if (Master.ChatConfig.LoginNotifications)
+                PM_Chat.BroadcastServerNotification($"{client.UserFile.Username} has joined the server!");
 
             DiscordPlayerAnnouncer.AnnounceFullyJoined(client.UserFile.Username);
 
-            if (WorldManager.CheckIfWorldExists())
+            if (PM_World.CheckIfWorldExists())
             {
-                if (SaveManager.CheckIfUserHasSave(client)) SaveManager.SendSaveToClient(client);
-                else WorldManager.SendWorld(client);
+                if (PM_Saves.CheckIfUserHasSave(client))
+                    PM_Saves.SendSaveToClient(client);
+                else
+                    PM_World.SendWorld(client);
             }
             else
             {
@@ -99,38 +100,36 @@ namespace GameServer.Managers
                 commandData._commandMode = CommandMode.Op;
                 client.Listener.EnqueuePacket(PacketHeader.ConsoleManager, commandData);
 
-                WorldManager.RequireWorldFile(client);
+                PM_World.RequireWorldFile(client);
             }
         }
-    }
 
-    public static class LoginManagerH
-    {
-        public static void RemoveOldClientSessions(ServerClient client)
+        public static class LoginManagerH
         {
-            foreach (ServerClient toFind in ServerNetwork.GetConnectedClients())
+            public static void RemoveOldClientSessions(ServerClient client)
             {
-                if (toFind == client) continue;
-                else
+                foreach (ServerClient toFind in ServerNetwork.GetConnectedClients())
                 {
+                    if (toFind == client) continue;
+
                     if (toFind.UserFile.Username == client.UserFile.Username)
-                    {
                         DenyConnectionWithReason(toFind, LoginResponse.Duplicate);
-                    }
                 }
             }
-        }
 
-        public static void DenyConnectionWithReason(ServerClient client, LoginResponse response, object extraDetails = null)
-        {
-            LoginData loginData = new LoginData();
-            loginData._tryResponse = response;
+            public static void DenyConnectionWithReason(ServerClient client, LoginResponse response, object extraDetails = null)
+            {
+                LoginData loginData = new LoginData();
+                loginData._tryResponse = response;
 
-            if (response == LoginResponse.Mods) loginData._extraDetails = (List<string>)extraDetails;
-            else if (response == LoginResponse.Version) loginData._extraDetails = new List<string>() { CommonValues.ExecutableVersion };
+                if (response == LoginResponse.Mods)
+                    loginData._extraDetails = (System.Collections.Generic.List<string>)extraDetails;
+                else if (response == LoginResponse.Version)
+                    loginData._extraDetails = new System.Collections.Generic.List<string>() { CommonValues.ExecutableVersion };
 
-            client.Listener.EnqueuePacket(PacketHeader.LoginManager, loginData);
-            client.Listener.Disconnect();
+                client.Listener.EnqueuePacket(PacketHeader.LoginManager, loginData);
+                client.Listener.Disconnect();
+            }
         }
     }
 }

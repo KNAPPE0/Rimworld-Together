@@ -1,29 +1,27 @@
 using GameServer.Commands;
-using GameServer.Integrations.Discord;
 using GameServer.Core;
+using GameServer.Hooks.TCPNetwork;
+using GameServer.Integrations.Discord;
 using GameServer.Misc;
 using Shared;
+using Shared.Misc;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using static Shared.CommonEnumerators;
-using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
-using Shared.Misc;
-using GameServer.Hooks.TCPNetwork;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class ChatManager
+    public static class PM_Chat
     {
         private static Semaphore LogSemaphore = new Semaphore(1, 1);
-
         private static Semaphore CommandSemaphore { get; set; } = new Semaphore(1, 1);
 
         private static string SystemName { get; set; } = "CONSOLE";
-
         private static string NotificationName { get; set; } = "SERVER";
 
         public static string[] DefaultJoinMessages { get; set; } = new string[]
@@ -58,7 +56,10 @@ namespace GameServer.Managers
             CommandSemaphore.WaitOne();
 
             CommandBase toFind = ChatManagerHelper.GetCommandFromName(command[0]);
-            if (toFind == null) SendConsoleMessage(client, "Command was not found.");
+            if (toFind == null)
+            {
+                SendConsoleMessage(client, "Command was not found.");
+            }
             else
             {
                 ChatCommandActions.TargetClient = client;
@@ -194,11 +195,9 @@ namespace GameServer.Managers
         public static void ShowChatInConsole(string username, string message, bool fromDiscord = false)
         {
             if (!Master.ServerConfig.DisplayChatInConsole) return;
-            else
-            {
-                if (fromDiscord) Printer.Message($"[Discord] > {username} > {message}");
-                else InformationDisplayer.DisplayChatMap(username, message);
-            }
+
+            if (fromDiscord) Printer.Message($"[Discord] > {username} > {message}");
+            else InformationDisplayer.DisplayChatMap(username, message);
         }
     }
 }

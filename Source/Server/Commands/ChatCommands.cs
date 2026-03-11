@@ -2,9 +2,9 @@ using Shared;
 using static Shared.CommonEnumerators;
 using static GameServer.Commands.ChatCommandActions;
 using static GameServer.Commands.ChatCommands;
-using GameServer.Managers;
 using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
+using GameServer.PacketManager;
 
 namespace GameServer.Commands
 {
@@ -54,7 +54,7 @@ namespace GameServer.Commands
                 List<string> messagesToSend = new List<string> { "List of available commands:" };
                 foreach (CommandBase command in commands) messagesToSend.Add($"{command.Prefix} - {command.Description}");
 
-                foreach (string str in messagesToSend) ChatManager.SendConsoleMessage(TargetClient, str);
+                foreach (string str in messagesToSend) PM_Chat.SendConsoleMessage(TargetClient, str);
             }
         }
 
@@ -63,9 +63,9 @@ namespace GameServer.Commands
             if (TargetClient == null) return;
             else
             {
-                foreach (string str in ChatManager.DefaultTextTools)
+                foreach (string str in PM_Chat.DefaultTextTools)
                 {
-                    ChatManager.SendConsoleMessage(TargetClient, str);
+                    PM_Chat.SendConsoleMessage(TargetClient, str);
                 }
             }
         }
@@ -73,7 +73,7 @@ namespace GameServer.Commands
         public static void PingCommandAction()
         {
             if (TargetClient == null) return;
-            else ChatManager.SendConsoleMessage(TargetClient, "Pong!");
+            else PM_Chat.SendConsoleMessage(TargetClient, "Pong!");
         }
 
         public static void DisconnectCommandAction()
@@ -90,11 +90,11 @@ namespace GameServer.Commands
                 string message = "";
                 for (int i = 2; i < Command.Length; i++) message += Command[i] + " ";
 
-                if (string.IsNullOrWhiteSpace(message)) ChatManager.SendConsoleMessage(TargetClient, "Message was empty.");
+                if (string.IsNullOrWhiteSpace(message)) PM_Chat.SendConsoleMessage(TargetClient, "Message was empty.");
                 else
                 {
                     ServerClient toFind = ChatManagerHelper.GetUserFromName(ChatManagerHelper.GetUsernameFromMention(Command[1]));
-                    if (toFind == null) ChatManager.SendConsoleMessage(TargetClient, "User was not found.");
+                    if (toFind == null) PM_Chat.SendConsoleMessage(TargetClient, "User was not found.");
                     else
                     {
                         ChatData chatData = new ChatData();

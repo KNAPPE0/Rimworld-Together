@@ -1,6 +1,7 @@
 ﻿using GameServer.Core;
 using GameServer.Hooks.TCPNetwork;
 using GameServer.Managers;
+using GameServer.PacketManager;
 using Shared;
 using Shared.Files;
 using Shared.Misc;
@@ -46,7 +47,7 @@ namespace GameServer.Hooks.Synchronous
 
         private static void TryStartSynchronousSession(ServerClient client, SynchronousData data)
         {
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(data._toTile);
+            SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(data._toTile);
             ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
             if (toFind == null) ResponseShortcutManager.SendUnavailablePacket(client);
@@ -54,7 +55,7 @@ namespace GameServer.Hooks.Synchronous
             {
                 SynchronousData _ = new SynchronousData();
                 _._stepMode = SynchronousData.StepMode.Ask;
-                _._fromTile = SettlementManager.GetSettlementFileFromUsername(client.UserFile.Username).Tile;
+                _._fromTile = PM_Settlements.GetSettlementFileFromUsername(client.UserFile.Username).Tile;
                 _._username = client.UserFile.Username;
                 _._toTile = data._toTile;
                 _._party = data._party;
@@ -66,14 +67,14 @@ namespace GameServer.Hooks.Synchronous
 
         private static void AcceptSynchronousSession(ServerClient client, SynchronousData data)
         {
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(data._toTile);
+            SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(data._toTile);
             ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
             SynchronousData _ = new SynchronousData();
             _._stepMode = SynchronousData.StepMode.Accept;
             _._fromTile = data._fromTile;
             _._toTile = data._toTile;
-            _._contents = MapManager.GetMapFromTile(data._fromTile);
+            _._contents = PM_Maps.GetMapFromTile(data._fromTile);
             _._party = data._party;
             _._type = data._type;
 
@@ -85,7 +86,7 @@ namespace GameServer.Hooks.Synchronous
 
         private static void RejectSynchronousSession(ServerClient client, SynchronousData data)
         {
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(data._toTile);
+            SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(data._toTile);
             ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
             SynchronousData _ = new SynchronousData();

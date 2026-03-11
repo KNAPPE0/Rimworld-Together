@@ -2,6 +2,7 @@
 using GameServer.Integrations.Discord;
 using GameServer.Managers;
 using GameServer.Misc;
+using GameServer.PacketManager;
 using Shared;
 using Shared.Misc;
 using System;
@@ -53,7 +54,7 @@ namespace GameServer.Hooks.TCPNetwork
             try
             {
                 if (Master.ChatConfig.DisconnectNotifications && !string.IsNullOrWhiteSpace(username))
-                    ChatManager.BroadcastServerNotification($"{username} has left the server!");
+                    PM_Chat.BroadcastServerNotification($"{username} has left the server!");
             }
             catch { }
 
@@ -140,7 +141,7 @@ namespace GameServer.Hooks.TCPNetwork
             {
                 if (connectedCount >= Master.ServerConfig.MaxPlayers)
                 {
-                    LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Full);
+                    PM_Logins.LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Full);
                     return;
                 }
             }
@@ -148,7 +149,7 @@ namespace GameServer.Hooks.TCPNetwork
 
             if (Master.WorldValues == null && connectedCount > 0)
             {
-                LoginManagerH.DenyConnectionWithReason(client, LoginResponse.NoWorld);
+                PM_Logins.LoginManagerH.DenyConnectionWithReason(client, LoginResponse.NoWorld);
                 return;
             }
 
@@ -162,7 +163,7 @@ namespace GameServer.Hooks.TCPNetwork
 
             try { InformationDisplayer.DisplayConnect(client); } catch { }
 
-            VersionManager.AskForClientVersion(client);
+            PM_Version.AskForClientVersion(client);
         }
 
         public static ServerClient[] GetConnectedClients(ServerClient toExclude = null)

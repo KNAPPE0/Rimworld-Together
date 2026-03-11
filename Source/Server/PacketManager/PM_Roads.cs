@@ -8,10 +8,11 @@ using TCPNetwork.Files.Client;
 using Shared.Details.Planet;
 using GameServer.Hooks.TCPNetwork;
 using Shared.Files.Configs;
+using GameServer.Managers;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class RoadManager
+    public static class PM_Roads
     {
         [HandlesPacket(PacketHeader.RoadManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)

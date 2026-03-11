@@ -2,6 +2,7 @@ using GameServer.Core;
 using GameServer.Hooks.TCPNetwork;
 using GameServer.Managers;
 using GameServer.Misc;
+using GameServer.PacketManager;
 using Shared;
 using Shared.Files;
 using Shared.Files.Configs.Mods;
@@ -488,7 +489,7 @@ namespace GameServer.Commands
             }
             fullText = fullText.Remove(fullText.Length - 1, 1);
 
-            ChatManager.BroadcastConsoleMessage(fullText);
+            PM_Chat.BroadcastConsoleMessage(fullText);
 
             Printer.Title($"Sent chat: '{fullText}'");
         }
@@ -559,7 +560,7 @@ namespace GameServer.Commands
             else
             {
                 ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(userFile.Username);
-                SaveManager.ResetPlayerData(toFind, userFile.Username);
+                PM_Saves.ResetPlayerData(toFind, userFile.Username);
             }
         }
 
@@ -611,7 +612,7 @@ namespace GameServer.Commands
 
         public static void ForceSiteRewardsCommandAction()
         {
-            SiteManager.SendRewardsToEveryPlayer();
+            PM_Sites.SendRewardsToEveryPlayer();
             Printer.Title("[Forced rewards]");
         }
 

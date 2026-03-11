@@ -1,4 +1,5 @@
-﻿using GameServer.Misc;
+﻿using GameServer.Managers;
+using GameServer.Misc;
 using Shared;
 using Shared.Files;
 using Shared.Files.Guilds;
@@ -10,10 +11,10 @@ using TCPNetwork.Packets.Goodwills;
 using static Shared.CommonEnumerators;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
 
-    public static class GoodwillManager
+    public static class PM_Goodwills
     {
         [HandlesPacket(PacketHeader.GoodWillManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
@@ -25,7 +26,7 @@ namespace GameServer.Managers
 
         public static void ChangeUserGoodwills(ServerClient client, FactionGoodwillData data)
         {
-            SettlementFile settlementFile = SettlementManager.GetSettlementFileFromTile(data._tile);
+            SettlementFile settlementFile = PM_Settlements.GetSettlementFileFromTile(data._tile);
             SiteFile siteFile = SiteManagerHelper.GetSiteFileFromTile(data._tile);
 
             if (settlementFile != null) data._username = settlementFile.Username;
@@ -44,7 +45,7 @@ namespace GameServer.Managers
 
         public static void UpdateClientGoodwills(ServerClient client)
         {
-            SettlementFile[] settlements = SettlementManager.GetAllSettlements().Where(fetch => fetch.Username != client.UserFile.Username).ToArray();
+            SettlementFile[] settlements = PM_Settlements.GetAllSettlements().Where(fetch => fetch.Username != client.UserFile.Username).ToArray();
             SiteFile[] sites = SiteManagerHelper.GetAllSites().Where(fetch => fetch.Username != client.UserFile.Username).ToArray();
 
             FactionGoodwillData factionGoodwillData = new FactionGoodwillData();

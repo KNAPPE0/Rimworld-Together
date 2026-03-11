@@ -6,11 +6,12 @@ using Shared.Misc;
 using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
 using Shared.Files.Configs;
+using GameServer.Managers;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
 
-    public static class GameParameterManager
+    public static class PM_GameParameter
     {
         [HandlesPacket(PacketHeader.GameParameterManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)

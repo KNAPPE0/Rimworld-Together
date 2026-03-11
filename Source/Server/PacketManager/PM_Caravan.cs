@@ -6,9 +6,9 @@ using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
 using GameServer.Hooks.TCPNetwork;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class CaravanManager
+    public static class PM_Caravan
     {
         [HandlesPacket(PacketHeader.CaravanManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)

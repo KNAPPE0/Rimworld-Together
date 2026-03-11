@@ -9,10 +9,11 @@ using Shared.Files.Sites;
 using TCPNetwork;
 using Shared.Misc;
 using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class SiteManager
+    public static class PM_Sites
     {
         [HandlesPacket(PacketHeader.SiteManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
@@ -63,7 +64,7 @@ namespace GameServer.Managers
 
             foreach (ServerClient cClient in ServerNetwork.GetConnectedClients())
             {
-                siteData._file.Goodwill = GoodwillManager.GetSiteGoodwill(cClient, siteFile);
+                siteData._file.Goodwill = PM_Goodwills.GetSiteGoodwill(cClient, siteFile);
                 cClient.Listener.EnqueuePacket(PacketHeader.SiteManager, siteData);
             }
 
@@ -75,7 +76,7 @@ namespace GameServer.Managers
 
         private static void AddNewSite(ServerClient client, SiteData siteData)
         {
-            if (SettlementManager.CheckIfTileIsInUse(siteData._file.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"A site tried to be added to tile {siteData._file.Tile}, but that tile already has a settlement");
+            if (PM_Settlements.CheckIfTileIsInUse(siteData._file.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"A site tried to be added to tile {siteData._file.Tile}, but that tile already has a settlement");
             else if (SiteManagerHelper.CheckIfTileIsInUse(siteData._file.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"A site tried to be added to tile {siteData._file.Tile}, but that tile already has a site");
             else
             {

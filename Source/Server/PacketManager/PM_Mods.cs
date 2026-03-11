@@ -1,19 +1,20 @@
 ﻿using GameServer.Core;
+using GameServer.Managers;
 using GameServer.Misc;
 using Shared;
-using static Shared.CommonEnumerators;
-using TCPNetwork.Packets;
-using TCPNetwork.Files.Client;
 using Shared.Files.Configs.Mods;
 using Shared.Misc;
 using System.Collections.Generic;
 using System.Linq;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class ModManager
+    public static class PM_Mods
     {
-        static ModManager()
+        static PM_Mods()
         {
             OptionsProfileManager.Initialize();
         }
@@ -106,7 +107,7 @@ namespace GameServer.Managers
                 else
                 {
                     InformationDisplayer.DisplayModMismatch(client.UserFile.Username);
-                    LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Mods, conflictingModNames);
+                    PM_Logins.LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Mods, conflictingModNames);
                     return true;
                 }
             }

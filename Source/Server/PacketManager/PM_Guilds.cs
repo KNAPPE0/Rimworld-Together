@@ -1,5 +1,6 @@
 ﻿using GameServer.Core;
 using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 using GameServer.Misc;
 using Shared;
 using Shared.Files;
@@ -11,10 +12,10 @@ using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
 using static Shared.Files.Guilds.GuildMember;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
 
-    public static class GuildManager
+    public static class PM_Guilds
     {
         [HandlesPacket(PacketHeader.GuildManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
@@ -109,7 +110,7 @@ namespace GameServer.Managers
                 {
                     toUpdateConnected.UserFile.UpdateFaction(null);
                     toUpdateConnected.Listener.EnqueuePacket(PacketHeader.GuildManager, factionManifest);
-                    GoodwillManager.UpdateClientGoodwills(toUpdateConnected);
+                    PM_Goodwills.UpdateClientGoodwills(toUpdateConnected);
                 }
 
                 guild.Delete();
@@ -121,7 +122,7 @@ namespace GameServer.Managers
         private static void InviteMemberToFaction(ServerClient client, PlayerGuildData guildManifest)
         {
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(guildManifest._dataInt);
+            SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(guildManifest._dataInt);
             ServerClient toAdd = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
             if (GuildManagerH.GetMemberRank(guild, client.UserFile.Username) == GuildRanks.Member) ResponseShortcutManager.SendNoPowerPacket(client);
@@ -151,14 +152,14 @@ namespace GameServer.Managers
 
                 foreach (SiteFile site in SiteManagerHelper.GetAllSitesFromUsername(client.UserFile.Username)) site.UpdateFaction(guild);
 
-                foreach (ServerClient sc in GuildManagerH.GetConnectedFactionMembers(guild)) GoodwillManager.UpdateClientGoodwills(sc);
+                foreach (ServerClient sc in GuildManagerH.GetConnectedFactionMembers(guild)) PM_Goodwills.UpdateClientGoodwills(sc);
             }
         }
 
         private static void RemoveMemberFromFaction(ServerClient client, PlayerGuildData guildManifest)
         {
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(guildManifest._dataInt);
+            SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(guildManifest._dataInt);
             UserFile toRemoveOffline = UserManagerH.GetUserFileFromName(settlement.Username);
             ServerClient toRemoveOnline = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
@@ -186,7 +187,7 @@ namespace GameServer.Managers
                 {
                     toRemoveOnline.UserFile.UpdateFaction(null);
 
-                    GoodwillManager.UpdateClientGoodwills(toRemoveOnline);
+                    PM_Goodwills.UpdateClientGoodwills(toRemoveOnline);
 
                     toRemoveOnline.Listener.EnqueuePacket(PacketHeader.GuildManager, guildManifest);
                 }
@@ -197,13 +198,13 @@ namespace GameServer.Managers
 
                 foreach (SiteFile site in SiteManagerHelper.GetAllSitesFromUsername(toRemoveOffline.Username)) site.UpdateFaction(null);
 
-                foreach (ServerClient member in GuildManagerH.GetConnectedFactionMembers(guild)) GoodwillManager.UpdateClientGoodwills(member);
+                foreach (ServerClient member in GuildManagerH.GetConnectedFactionMembers(guild)) PM_Goodwills.UpdateClientGoodwills(member);
             }
         }
 
         private static void PromoteMember(ServerClient client, PlayerGuildData factionManifest)
         {
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(factionManifest._dataInt);
+            SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(factionManifest._dataInt);
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
 
             GuildRanks rank = GuildManagerH.GetMemberRank(guild, client.UserFile.Username);
@@ -225,7 +226,7 @@ namespace GameServer.Managers
 
         private static void DemoteMember(ServerClient client, PlayerGuildData factionManifest)
         {
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(factionManifest._dataInt);
+            SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(factionManifest._dataInt);
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
 
             GuildRanks rank = GuildManagerH.GetMemberRank(guild, client.UserFile.Username);

@@ -1,5 +1,6 @@
 ﻿using GameServer.Core;
 using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 using Shared;
 using Shared.Files.Configs;
 using Shared.Misc;
@@ -15,9 +16,9 @@ using TCPNetwork.Packets.ServerBrowser;
 using static Shared.CommonEnumerators;
 // ReSharper disable FunctionNeverReturns
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class ServerBrowserManager
+    public static class PM_ServerBrowser
     {
         private const string GetPublicIpAddressURL = "https://api.ipify.org";
         

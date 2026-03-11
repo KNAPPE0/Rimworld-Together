@@ -1,4 +1,5 @@
 ﻿using GameServer.Core;
+using GameServer.Managers;
 using GameServer.Misc;
 using MessagePack;
 using Shared;
@@ -10,9 +11,9 @@ using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class SaveManager
+    public static class PM_Saves
     {
         [HandlesPacket(PacketHeader.SaveManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
@@ -66,17 +67,17 @@ namespace GameServer.Managers
 
             // Delete site files
             SiteFile[] playerSites = SiteManagerHelper.GetAllSitesFromUsername(username);
-            foreach (SiteFile site in playerSites) SiteManager.DestroySiteFromFile(site);
+            foreach (SiteFile site in playerSites) PM_Sites.DestroySiteFromFile(site);
 
             // Delete settlement files
-            SettlementFile[] playerSettlements = SettlementManager.GetAllSettlementsFromUsername(username);
+            SettlementFile[] playerSettlements = PM_Settlements.GetAllSettlementsFromUsername(username);
             foreach (SettlementFile settlement in playerSettlements)
             {
                 PlayerSettlementData settlementData = new PlayerSettlementData();
                 settlementData._settlementFile.Tile = settlement.Tile;
                 settlementData._settlementFile.Username = settlement.Username;
 
-                SettlementManager.RemoveSettlement(client, settlementData);
+                PM_Settlements.RemoveSettlement(client, settlementData);
             }
 
             InformationDisplayer.DisplayResetPlayer(username);

@@ -1,5 +1,6 @@
 ﻿using GameServer.Core;
 using GameServer.Misc;
+using GameServer.PacketManager;
 using Shared;
 using Shared.Files;
 using Shared.Files.Sites;
@@ -78,7 +79,7 @@ namespace GameServer.Managers
                 SiteFile[] playerSites = SiteManagerHelper.GetAllSitesFromUsername(username);
                 foreach (SiteFile site in playerSites) toArchive.Add(Path.Combine(Master.SitesPath, site.Tile + CommonValues.DefaultSaveFormat));
 
-                SettlementFile[] playerSettlements = SettlementManager.GetAllSettlementsFromUsername(username);
+                SettlementFile[] playerSettlements = PM_Settlements.GetAllSettlementsFromUsername(username);
                 foreach (SettlementFile settlementFile in playerSettlements) toArchive.Add(Path.Combine(Master.SettlementsPath, settlementFile.Tile + CommonValues.DefaultSaveFormat));
 
                 CreateArchive(toArchive, playerArchivedSavePath);

@@ -6,10 +6,10 @@ using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
 using Shared.Files.Configs;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
 
-    public static class WorldManager
+    public static class PM_World
     {
         [HandlesPacket(PacketHeader.WorldManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)

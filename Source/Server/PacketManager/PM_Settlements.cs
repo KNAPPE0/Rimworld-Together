@@ -1,15 +1,18 @@
 ﻿using GameServer.Core;
 using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 using GameServer.Misc;
 using Shared;
 using Shared.Files;
 using System.Collections.Generic;
 using System.IO;
 using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class SettlementManager
+    public static class PM_Settlements
     {
         [HandlesPacket(PacketHeader.SettlementManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
@@ -42,7 +45,7 @@ namespace GameServer.Managers
                 return;
             }
 
-            MapManager.DeleteMapByTile(tile);
+            PM_Maps.DeleteMapByTile(tile);
 
             SettlementFile settlementFile = new SettlementFile();
             settlementFile.Tile = tile;
@@ -97,7 +100,7 @@ namespace GameServer.Managers
             }
             catch { }
 
-            MapManager.DeleteMapByTile(settlementFile.Tile);
+            PM_Maps.DeleteMapByTile(settlementFile.Tile);
 
             settlementData._stepMode = SettlementStepMode.Remove;
             ServerNetwork.SendPacketToAllClients(PacketHeader.SettlementManager, settlementData, client);

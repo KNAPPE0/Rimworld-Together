@@ -8,11 +8,12 @@ using Shared.Details.Planet;
 using Shared.Misc;
 using GameServer.Hooks.TCPNetwork;
 using Shared.Files.Configs;
+using GameServer.Managers;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
 
-    public static class PollutionManager
+    public static class PM_Pollution
     {
         [HandlesPacket(PacketHeader.PollutionManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)

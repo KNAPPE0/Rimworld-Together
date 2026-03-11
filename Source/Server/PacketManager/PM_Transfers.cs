@@ -7,11 +7,12 @@ using TCPNetwork.Packets;
 using static TCPNetwork.Packets.TransferData;
 using TCPNetwork.Files.Client;
 using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
 
-    public static class TransferManager
+    public static class PM_Transfers
     {
         [HandlesPacket(PacketHeader.TransferManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
@@ -50,10 +51,10 @@ namespace GameServer.Managers
 
         public static void TransferThings(ServerClient client, TransferData transferData)
         {
-            if (!SettlementManager.CheckIfTileIsInUse(transferData._toTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send items to a settlement at tile {transferData._toTile}, but no settlement could be found");
+            if (!PM_Settlements.CheckIfTileIsInUse(transferData._toTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send items to a settlement at tile {transferData._toTile}, but no settlement could be found");
             else
             {
-                SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData._toTile);
+                SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData._toTile);
 
                 if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
                 {
@@ -89,7 +90,7 @@ namespace GameServer.Managers
         {
             TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(bytes);
 
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData._fromTile);
+            SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData._fromTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
             {
                 transferData._stepMode = TransferStepMode.Recover;
@@ -107,7 +108,7 @@ namespace GameServer.Managers
         {
             TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(bytes);
 
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData._toTile);
+            SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData._toTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
             {
                 transferData._stepMode = TransferStepMode.TradeReReject;
@@ -125,7 +126,7 @@ namespace GameServer.Managers
         {
             TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(bytes);
 
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData._fromTile);
+            SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData._fromTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
             {
                 transferData._stepMode = TransferStepMode.Recover;
@@ -143,7 +144,7 @@ namespace GameServer.Managers
         {
             TransferData transferData = Serializer.ConvertBytesToObject<TransferData>(bytes);
 
-            SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(transferData._fromTile);
+            SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData._fromTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
             {
                 transferData._stepMode = TransferStepMode.Recover;

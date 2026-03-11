@@ -1,13 +1,14 @@
 ﻿using GameServer.Core;
+using GameServer.Managers;
 using GameServer.Misc;
 using Shared;
-using static Shared.CommonEnumerators;
-using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
+using static Shared.CommonEnumerators;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class ActivityManager
+    public static class PM_Activity
     {
         [HandlesPacket(PacketHeader.ActivityManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
@@ -37,9 +38,6 @@ namespace GameServer.Managers
                 case ActivityStepMode.Request:
                     SendRequestedMap(client, data);
                     break;
-
-                default:
-                    break;
             }
         }
 
@@ -47,7 +45,7 @@ namespace GameServer.Managers
         {
             if (client == null || data == null) return;
 
-            if (data._targetTile < 0 || !MapManager.CheckIfMapExists(data._targetTile))
+            if (data._targetTile < 0 || !PM_Maps.CheckIfMapExists(data._targetTile))
             {
                 data._stepMode = ActivityStepMode.Deny;
                 data._mapRawData = null;
@@ -55,7 +53,7 @@ namespace GameServer.Managers
                 return;
             }
 
-            byte[] mapBytes = MapManager.GetMapBytesFromTile(data._targetTile);
+            byte[] mapBytes = PM_Maps.GetMapBytesFromTile(data._targetTile);
 
             if (mapBytes == null || mapBytes.Length == 0)
             {

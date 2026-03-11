@@ -1,13 +1,14 @@
-﻿using TCPNetwork.Packets;
+﻿using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 using Shared;
 using Shared.Files;
-using TCPNetwork.Files.Client;
 using Shared.Files.Maps;
-using GameServer.Hooks.TCPNetwork;
+using TCPNetwork.Files.Client;
+using TCPNetwork.Packets;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class InformationManager
+    public static class PM_Information
     {
         [HandlesPacket(PacketHeader.InformationManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
@@ -37,7 +38,7 @@ namespace GameServer.Managers
 
         private static void SendInformation(ServerClient client, InformationData data)
         {
-            SettlementFile settlementToFind = SettlementManager.GetSettlementFileFromTile(data._settlementTile);
+            SettlementFile settlementToFind = PM_Settlements.GetSettlementFileFromTile(data._settlementTile);
             if (settlementToFind == null)
             {
                 data._isPlayerOnline = false;
@@ -53,9 +54,9 @@ namespace GameServer.Managers
 
         private static void SendWealth(ServerClient client, InformationData data)
         {
-            data._settlementRawData = MapManager.GetMapBytesFromTile(data._settlementTile);
+            data._settlementRawData = PM_Maps.GetMapBytesFromTile(data._settlementTile);
 
-            MapStatsFile stats = MapManager.GetOrCreateMapStatsFromTile(data._settlementTile);
+            MapStatsFile stats = PM_Maps.GetOrCreateMapStatsFromTile(data._settlementTile);
             data._settlementStats = stats;
             data._settlementWealth = stats != null ? stats.Wealth : -1;
 

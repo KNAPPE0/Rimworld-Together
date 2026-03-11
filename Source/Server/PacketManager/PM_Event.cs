@@ -6,11 +6,12 @@ using Shared.Files;
 using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
 using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
 
-    public static class EventManager
+    public static class PM_Event
     {
         [HandlesPacket(PacketHeader.EventManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
@@ -41,10 +42,10 @@ namespace GameServer.Managers
 
         public static void SendEvent(ServerClient client, EventData eventData)
         {
-            if (!SettlementManager.CheckIfTileIsInUse(eventData._toTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an event to settlement at tile {eventData._toTile}, but it has no settlement");
+            if (!PM_Settlements.CheckIfTileIsInUse(eventData._toTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an event to settlement at tile {eventData._toTile}, but it has no settlement");
             else
             {
-                SettlementFile settlement = SettlementManager.GetSettlementFileFromTile(eventData._toTile);
+                SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(eventData._toTile);
                 if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
                 {
                     eventData._stepMode = EventStepMode.Recover;

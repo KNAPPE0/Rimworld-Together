@@ -6,11 +6,12 @@ using Shared.Files;
 using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
 using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
 
-    public static class AidManager
+    public static class PM_Aid
     {
         [HandlesPacket(PacketHeader.AidManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
@@ -45,10 +46,10 @@ namespace GameServer.Managers
 
         private static void SendAidRequest(ServerClient client, AidData data)
         {
-            if (!SettlementManager.CheckIfTileIsInUse(data._toTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an aid packet to settlement at tile {data._toTile}, but it has no settlement");
+            if (!PM_Settlements.CheckIfTileIsInUse(data._toTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an aid packet to settlement at tile {data._toTile}, but it has no settlement");
             else
             {
-                SettlementFile settlementFile = SettlementManager.GetSettlementFileFromTile(data._toTile);
+                SettlementFile settlementFile = PM_Settlements.GetSettlementFileFromTile(data._toTile);
                 if (UserManagerH.CheckIfUserIsConnected(settlementFile.Username))
                 {
                     ServerClient target = ServerNetwork.GetConnectedClientFromUsername(settlementFile.Username);
@@ -76,10 +77,10 @@ namespace GameServer.Managers
 
         private static void SendAidAccept(ServerClient client, AidData data)
         {
-            if (!SettlementManager.CheckIfTileIsInUse(data._fromTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an aid packet to settlement at tile {data._fromTile}, but it has no settlement");
+            if (!PM_Settlements.CheckIfTileIsInUse(data._fromTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an aid packet to settlement at tile {data._fromTile}, but it has no settlement");
             else
             {
-                SettlementFile settlementFile = SettlementManager.GetSettlementFileFromTile(data._fromTile);
+                SettlementFile settlementFile = PM_Settlements.GetSettlementFileFromTile(data._fromTile);
                 if (UserManagerH.CheckIfUserIsConnected(settlementFile.Username))
                 {
                     client.UserFile.Cooldowns.SetAidTimer(TimeConverter.GetCurrentTimeToEpoch(), client.UserFile);
@@ -100,10 +101,10 @@ namespace GameServer.Managers
 
         private static void SendAidReject(ServerClient client, AidData data)
         {
-            if (!SettlementManager.CheckIfTileIsInUse(data._fromTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an aid packet to settlement at tile {data._fromTile}, but it has no settlement");
+            if (!PM_Settlements.CheckIfTileIsInUse(data._fromTile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to send an aid packet to settlement at tile {data._fromTile}, but it has no settlement");
             else
             {
-                SettlementFile settlementFile = SettlementManager.GetSettlementFileFromTile(data._fromTile);
+                SettlementFile settlementFile = PM_Settlements.GetSettlementFileFromTile(data._fromTile);
                 if (UserManagerH.CheckIfUserIsConnected(settlementFile.Username))
                 {
                     ServerClient target = ServerNetwork.GetConnectedClientFromUsername(settlementFile.Username);

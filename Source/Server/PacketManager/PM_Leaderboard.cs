@@ -11,9 +11,9 @@ using System.Threading;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class LeaderboardManager
+    public static class PM_Leaderboard
     {
         private static readonly ReaderWriterLockSlim CacheLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         private static readonly Dictionary<int, LeaderboardEntryFile> EntriesByTile = new Dictionary<int, LeaderboardEntryFile>();

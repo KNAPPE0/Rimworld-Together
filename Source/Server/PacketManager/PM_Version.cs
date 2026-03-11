@@ -4,10 +4,10 @@ using static Shared.CommonEnumerators;
 using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
 
-    public static class VersionManager
+    public static class PM_Version
     {
         [HandlesPacket(PacketHeader.VersionManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)

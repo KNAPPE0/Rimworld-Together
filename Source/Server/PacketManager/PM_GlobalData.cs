@@ -5,9 +5,9 @@ using TCPNetwork.Packets;
 using TCPNetwork.Files.Client;
 using Shared.Files.Sites;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class GlobalDataManager
+    public static class PM_GlobalData
     {
         public static void SendServerGlobalData(ServerClient client)
         {
@@ -44,7 +44,7 @@ namespace GameServer.Managers
         public static SettlementFile[] GetServerSettlements(ServerClient client)
         {
             List<SettlementFile> tempList = new List<SettlementFile>();
-            foreach (SettlementFile settlement in SettlementManager.GetAllSettlements())
+            foreach (SettlementFile settlement in PM_Settlements.GetAllSettlements())
             {
                 SettlementFile file = new SettlementFile();
 
@@ -54,7 +54,7 @@ namespace GameServer.Managers
                     file.Tile = settlement.Tile;
                     file.Username = settlement.Username;
                     file.Username = settlement.Username;
-                    file.Goodwill = GoodwillManager.GetSettlementGoodwill(client, settlement);
+                    file.Goodwill = PM_Goodwills.GetSettlementGoodwill(client, settlement);
 
                     tempList.Add(file);
                 }
@@ -72,7 +72,7 @@ namespace GameServer.Managers
 
                 file.Tile = site.Tile;
                 file.Username = site.Username;
-                file.Goodwill = GoodwillManager.GetSiteGoodwill(client, site);
+                file.Goodwill = PM_Goodwills.GetSiteGoodwill(client, site);
                 file.Type = site.Type;
                 file.GuildName = site.GuildName;
 

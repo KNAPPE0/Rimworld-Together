@@ -16,7 +16,6 @@ using GameClient.PacketManagers;
 
 namespace GameClient.Managers
 {
-
     public static class GameParameterManager
     {
         public static void SetFirstTimeSetup()

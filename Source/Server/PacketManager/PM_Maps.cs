@@ -10,9 +10,9 @@ using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
-    public static class MapManager
+    public static class PM_Maps
     {
         [HandlesPacket(PacketHeader.MapManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)
@@ -30,12 +30,12 @@ namespace GameServer.Managers
             Directory.CreateDirectory(Master.MapsPath);
 
             int tile = data._mapTile;
-
             MapFile mapFile = data._mapFile;
 
             if (!IsMapFileValid(mapFile))
             {
-                if (tile < 0 && mapFile != null && mapFile.Tile >= 0) tile = mapFile.Tile;
+                if (tile < 0 && mapFile != null && mapFile.Tile >= 0)
+                    tile = mapFile.Tile;
 
                 if (tile >= 0 && data._rawData != null && data._rawData.Length > 0)
                 {
@@ -75,12 +75,9 @@ namespace GameServer.Managers
                 string mapPath = Path.Combine(Master.MapsPath, file.Tile + CommonValues.DefaultSaveFormat);
                 Serializer.ObjectBytesToFile(mapPath, file);
             }
-            catch
-            {
-            }
+            catch { }
 
             TryWriteStatsSnapshot(file);
-
             InformationDisplayer.DisplaySaveMap(client);
         }
 
@@ -165,9 +162,7 @@ namespace GameServer.Managers
                 if (File.Exists(statsPath))
                     return Serializer.FileBytesToObject<MapStatsFile>(statsPath);
             }
-            catch
-            {
-            }
+            catch { }
 
             MapFile map = GetMapFromTile(mapTileToGet);
             if (map == null) return null;
@@ -180,7 +175,10 @@ namespace GameServer.Managers
                     string mapPath = Path.Combine(Master.MapsPath, mapTileToGet + CommonValues.DefaultSaveFormat);
                     savedTicks = File.Exists(mapPath) ? File.GetLastWriteTimeUtc(mapPath).Ticks : DateTime.UtcNow.Ticks;
                 }
-                catch { savedTicks = DateTime.UtcNow.Ticks; }
+                catch
+                {
+                    savedTicks = DateTime.UtcNow.Ticks;
+                }
             }
 
             MapStatsFile stats = BuildStatsFromMapFile(map, mapTileToGet, savedTicks);
@@ -200,9 +198,7 @@ namespace GameServer.Managers
                 MapStatsFile stats = BuildStatsFromMapFile(mapFile, mapFile.Tile, savedTicks);
                 TryWriteStatsSnapshot(stats);
             }
-            catch
-            {
-            }
+            catch { }
         }
 
         private static void TryWriteStatsSnapshot(MapStatsFile stats)
@@ -219,9 +215,7 @@ namespace GameServer.Managers
 
                 LeaderboardManager.UpsertFromStats(stats);
             }
-            catch
-            {
-            }
+            catch { }
         }
 
         private static MapStatsFile BuildStatsFromMapFile(MapFile mapFile, int tileFallback, long savedTicksFallback)
@@ -239,10 +233,8 @@ namespace GameServer.Managers
             stats.WealthExact = mapFile.WealthExact >= 0 ? mapFile.WealthExact : -1;
 
             stats.GameTicks = mapFile.GameTicks;
-
             stats.RealPlayTimeSeconds = mapFile.RealPlayTimeSeconds >= 0 ? mapFile.RealPlayTimeSeconds : -1;
             stats.RealPlayTimeInteractingSeconds = mapFile.RealPlayTimeInteractingSeconds >= 0 ? mapFile.RealPlayTimeInteractingSeconds : -1;
-
             stats.LastSavedUtcTicks = savedTicksFallback > 0 ? savedTicksFallback : DateTime.UtcNow.Ticks;
 
             stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Count : -1;
@@ -265,7 +257,7 @@ namespace GameServer.Managers
         {
             try
             {
-                SettlementFile sf = SettlementManager.GetSettlementFileFromTile(tile);
+                SettlementFile sf = PM_Settlements.GetSettlementFileFromTile(tile);
                 if (sf == null) return;
 
                 if (string.IsNullOrWhiteSpace(stats.Username))
@@ -274,9 +266,7 @@ namespace GameServer.Managers
                 if (string.IsNullOrWhiteSpace(stats.SettlementName) && !string.IsNullOrWhiteSpace(sf.Name))
                     stats.SettlementName = sf.Name;
             }
-            catch
-            {
-            }
+            catch { }
         }
 
         private static string GetStatsPathForTile(int tile)
@@ -293,7 +283,6 @@ namespace GameServer.Managers
             if (file.Wealth >= 0) return true;
             if (file.WealthExact >= 0) return true;
             if (file.GameTicks >= 0) return true;
-
             if (file.RealPlayTimeSeconds >= 0) return true;
             if (file.RealPlayTimeInteractingSeconds >= 0) return true;
 

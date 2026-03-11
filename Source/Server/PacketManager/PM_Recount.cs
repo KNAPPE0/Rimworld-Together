@@ -1,10 +1,10 @@
 using Shared;
 using TCPNetwork.Files.Client;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManager
 {
 
-    public static class RecountManager
+    public static class PM_Recount
     {
         [HandlesPacket(PacketHeader.RecountManager)]
         private static void ParsePacket(ServerClient client, byte[] bytes, PacketHeader header)

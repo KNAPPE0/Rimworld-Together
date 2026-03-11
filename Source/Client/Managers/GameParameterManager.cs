@@ -12,6 +12,7 @@ using TCPNetwork.Packets;
 using Shared.Files.Configs;
 using GameClient.Hooks.TCPNetwork;
 using TCPNetwork;
+using GameClient.PacketManagers;
 
 namespace GameClient.Managers
 {
@@ -25,7 +26,7 @@ namespace GameClient.Managers
             string[] keys = new string[] { "Scenario", "Storyteller", "Difficulty" };
             string[] values = new string[] { "Free", "Enforced" };
 
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_ListingWithTuple(title, description, keys, values, null,
+            DLG_Base.PushNewDialog(new DLG_ListingWithTuple(title, description, keys, values, null,
                 GameParameterManager.SendFirstTimeSetup));
         }
 
@@ -115,23 +116,23 @@ namespace GameClient.Managers
             ModConfigData data = new ModConfigData();
             data._stepMode = ModConfigStepMode.Send;
             data._configFile.IsEnforced = isEnforced;
-            data._configFile = ModManagerH.SortModsIntoCategories(RT_Dialog_ListingWithTuple.DialogTupleListingResultString,
-                RT_Dialog_ListingWithTuple.DialogTupleListingResultInt);
+            data._configFile = ModManagerH.SortModsIntoCategories(DLG_ListingWithTuple.DialogTupleListingResultString,
+                DLG_ListingWithTuple.DialogTupleListingResultInt);
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.ModManager, data);
         }
 
         private static void SendFirstTimeSetup()
         {
-            if (RT_Dialog_ListingWithTuple.DialogTupleListingResultInt[0] == 1) { GameParameterManager.SendCurrentScenario(true); }
-            if (RT_Dialog_ListingWithTuple.DialogTupleListingResultInt[1] == 1) { GameParameterManager.SendCurrentStoryteller(true); }
-            if (RT_Dialog_ListingWithTuple.DialogTupleListingResultInt[2] == 1) { GameParameterManager.SendCurrentDifficulty(true); }
+            if (DLG_ListingWithTuple.DialogTupleListingResultInt[0] == 1) { GameParameterManager.SendCurrentScenario(true); }
+            if (DLG_ListingWithTuple.DialogTupleListingResultInt[1] == 1) { GameParameterManager.SendCurrentStoryteller(true); }
+            if (DLG_ListingWithTuple.DialogTupleListingResultInt[2] == 1) { GameParameterManager.SendCurrentDifficulty(true); }
 
-            WorldManager.SendWorld();
-            EventManager.SendExistingEventsToServer();
-            SaveManager.ForceSave();
+            PM_World.SendWorld();
+            PM_Events.SendExistingEventsToServer();
+            PM_Saves.ForceSave();
 
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", 
+            DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", 
                 new string[] { "Some configurations might require a server restart to apply" }));
         }
     }

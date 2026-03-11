@@ -1,6 +1,7 @@
 ﻿using GameClient.Dialogs;
 using GameClient.Managers;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using GameClient.Patches.Tabs;
 using GameClient.WorldObjects;
 using HarmonyLib;
@@ -32,10 +33,10 @@ namespace GameClient.Patches
                 {
                     if (SessionHandler.CurrentActionValues.EnableFactions)
                     {
-                        if (SessionHandler.HasFaction) GuildManager.OnFactionOpen();
-                        else GuildManager.OnNoFactionOpen();
+                        if (SessionHandler.HasFaction) PM_Guilds.OnFactionOpen();
+                        else PM_Guilds.OnNoFactionOpen();
                     }
-                    else RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                    else DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
                 }
             };
 
@@ -46,8 +47,8 @@ namespace GameClient.Patches
                 icon = ContentFinder<Texture2D>.Get("Commands/Leaderboard"),
                 action = delegate
                 {
-                    if (SessionHandler.CurrentActionValues.EnableLeaderboard) LeaderboardManager.Ask();
-                    else RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                    if (SessionHandler.CurrentActionValues.EnableLeaderboard) PM_Leaderboard.Ask();
+                    else DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
                 }
             };
 
@@ -58,8 +59,8 @@ namespace GameClient.Patches
                 icon = ContentFinder<Texture2D>.Get("Commands/Config"),
                 action = delegate
                 {
-                    if (SessionHandler.CurrentActionValues.SiteAction.IsEnabled) RT_Dialog_Base.PushNewDialog(new RT_Dialog_SiteMenu(true));
-                    else RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                    if (SessionHandler.CurrentActionValues.SiteAction.IsEnabled) DLG_Base.PushNewDialog(new DLG_SiteMenu(true));
+                    else DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
                 }
             };
 
@@ -92,8 +93,8 @@ namespace GameClient.Patches
                     {
                         SessionHandler.ChosenCaravan = __instance;
 
-                        if (SessionHandler.CurrentActionValues.SiteAction.IsEnabled) RT_Dialog_Base.PushNewDialog(new RT_Dialog_SiteMenu(false));
-                        else RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                        if (SessionHandler.CurrentActionValues.SiteAction.IsEnabled) DLG_Base.PushNewDialog(new DLG_SiteMenu(false));
+                        else DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
                     }
                 };
 
@@ -114,7 +115,7 @@ namespace GameClient.Patches
                             SurfaceTile selectedTile = (SurfaceTile)Find.WorldGrid[__instance.Tile];
                             RoadManagerHelper.ShowRoadChooseDialog(neighborTiles.ToArray(), selectedTile.Roads != null);
                         }
-                        else RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                        else DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
                     }
                 };
 

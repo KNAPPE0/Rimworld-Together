@@ -1,10 +1,10 @@
-﻿using HarmonyLib;
-using RimWorld;
-using Verse;
-using System.Reflection;
-using static Shared.CommonEnumerators;
-using GameClient.Dialogs;
+﻿using GameClient.Dialogs;
 using GameClient.Misc;
+using HarmonyLib;
+using RimWorld;
+using System.Reflection;
+using Verse;
+using static Shared.CommonEnumerators;
 
 namespace GameClient.Patches.Pages
 {
@@ -39,7 +39,7 @@ namespace GameClient.Patches.Pages
             if (!executedMessage)
             {
                 executedMessage = true;
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message(
+                DLG_Base.PushNewDialog(new DLG_Message(
                     "Error",
                     new string[] { "Mod options can't be changed in this server!" },
                     delegate { executedMessage = false; }
@@ -58,7 +58,7 @@ namespace GameClient.Patches.Pages
         [HarmonyPrefix]
         public static void Prefix(Page_ModsConfig __instance)
         {
-            if (SessionHandler.CurrentNetworkState == ClientNetworkState.Disconnected) return;
+            if (!SessionHandler.CurrentModConfig.IsEnforced) return;
             if (SessionHandler.IsAdmin) return;
 
             try
@@ -73,7 +73,7 @@ namespace GameClient.Patches.Pages
             if (!executedMessage)
             {
                 executedMessage = true;
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message(
+                DLG_Base.PushNewDialog(new DLG_Message(
                     "Error",
                     new string[] { "Mods can't be changed in this server!" },
                     delegate { executedMessage = false; }

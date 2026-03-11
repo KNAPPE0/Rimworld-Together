@@ -13,6 +13,7 @@ using static TCPNetwork.Packets.TransferData;
 using static Shared.CommonEnumerators;
 using Shared;
 using Shared.Misc;
+using GameClient.PacketManagers;
 
 namespace GameClient.Patches
 {
@@ -28,8 +29,8 @@ namespace GameClient.Patches
                 if (TradeSession.giftMode) SessionHandler.OutgoingManifest._transferMode = TransferMode.Gift;
                 else SessionHandler.OutgoingManifest._transferMode = TransferMode.Trade;
 
-                if (SessionHandler.LastTradeStep != CommonEnumerators.TradeMode.Receiving) TransferManager.SendTransferRequestToServer(TransferLocation.Caravan);
-                else TransferManager.SendTransferRequestToServer(TransferLocation.Settlement);
+                if (SessionHandler.LastTradeStep != CommonEnumerators.TradeMode.Receiving) PM_Transfers.SendTransferRequestToServer(TransferLocation.Caravan);
+                else PM_Transfers.SendTransferRequestToServer(TransferLocation.Settlement);
             }
         }
     }

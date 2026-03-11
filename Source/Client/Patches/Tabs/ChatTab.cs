@@ -1,10 +1,11 @@
-﻿using RimWorld;
-using UnityEngine;
-using Verse;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using GameClient.Managers;
+using RimWorld;
+using Shared;
+using UnityEngine;
+using Verse;
 
 namespace GameClient.Patches.Tabs
 {
@@ -118,9 +119,7 @@ namespace GameClient.Patches.Tabs
             Widgets.DrawMenuSection(rightOuter);
 
             DrawTopBar(topBar);
-
             DrawLeftPanel(leftOuter);
-
             DrawRightPanel(rightOuter, enterPressed);
 
             if (escapePressed && GUI.GetNameOfFocusedControl() == ChatInputControlName)
@@ -145,7 +144,7 @@ namespace GameClient.Patches.Tabs
                 _pendingFocusInput = true;
 
             if (Widgets.ButtonText(lbBtn, "Leaderboard"))
-                LeaderboardManager.OpenLeaderboardDialog(requestFresh: true);
+                PM_Leaderboard.OpenLeaderboardDialog(requestFresh: true);
 
             if (Widgets.ButtonText(resetBtn, "Reset"))
                 SetWindowPosition(_positionAtOpen);
@@ -262,7 +261,6 @@ namespace GameClient.Patches.Tabs
             DrawMessageList(messagesRect);
 
             bool inputFocused = GUI.GetNameOfFocusedControl() == ChatInputControlName;
-
             DrawInputRow(inputRow, enterPressed, inputFocused);
         }
 
@@ -302,9 +300,7 @@ namespace GameClient.Patches.Tabs
                     float textH = Text.CalcHeight(msg, textW);
                     float rowH = Mathf.Max(22f, textH + 6f);
 
-                    Rect row = new Rect(0f, y, viewRect.width, rowH);
                     Rect textRect = new Rect(6f, y + 2f, textW, rowH - 4f);
-
                     Widgets.Label(textRect, msg);
 
                     y += rowH;

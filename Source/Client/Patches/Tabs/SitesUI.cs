@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using GameClient.Managers;
 using GameClient.WorldObjects;
+using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
@@ -98,15 +99,11 @@ namespace GameClient.Patches.Tabs
 
             Rect btnRect = new Rect(row.xMax - 58f, row.y + 2f, 56f, row.height - 4f);
 
-            bool clickedFocus = Widgets.ButtonText(btnRect, "Focus");
-
-            if (clickedFocus)
+            if (Widgets.ButtonText(btnRect, "Focus"))
             {
                 WorldObject target = FindWorldSiteAtTile(tile);
                 if (target != null)
-                {
                     CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(target));
-                }
             }
 
             TooltipHandler.TipRegion(row, $"Site: {label}\nTile: {tile}\nAction: Focus");

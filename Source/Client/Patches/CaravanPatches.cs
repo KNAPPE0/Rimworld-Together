@@ -1,5 +1,6 @@
 ﻿using GameClient.Managers;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using HarmonyLib;
 using RimWorld.Planet;
 using static Shared.CommonEnumerators;
@@ -12,7 +13,7 @@ namespace GameClient.Patches
         [HarmonyPostfix]
         public static void DoPost(Caravan __instance)
         {
-            CaravanManager.RequestCaravanAdd(__instance);
+            PM_Caravans.RequestCaravanAdd(__instance);
         }
     }
 
@@ -22,7 +23,7 @@ namespace GameClient.Patches
         [HarmonyPostfix]
         public static void DoPost(Caravan __instance)
         {
-            CaravanManager.RequestCaravanRemove(__instance);
+            PM_Caravans.RequestCaravanRemove(__instance);
         }
     }
 
@@ -32,7 +33,7 @@ namespace GameClient.Patches
         [HarmonyPrefix]
         public static bool DoPre(Caravan ___caravan)
         {
-            CaravanManager.RequestCaravanUpdate(___caravan);
+            PM_Caravans.RequestCaravanUpdate(___caravan);
             return true;
         }
     }

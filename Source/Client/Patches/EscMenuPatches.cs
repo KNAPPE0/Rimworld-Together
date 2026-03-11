@@ -1,6 +1,7 @@
 ﻿using GameClient.Dialogs;
 using GameClient.Managers;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using HarmonyLib;
 using RimWorld;
 using System;
@@ -26,7 +27,7 @@ namespace GameClient.Patches
 
                     Find.MainTabsRoot.EscapeCurrentTab(playSound: false);
                     SessionHandler.IsExiting = true;
-                    SaveManager.ForceSave();
+                    PM_Saves.ForceSave();
                 }
 
                 if (Widgets.ButtonText(new Rect(0, (buttonSize.y + 7) * 3, buttonSize.x, buttonSize.y), ""))
@@ -35,7 +36,7 @@ namespace GameClient.Patches
 
                     Find.MainTabsRoot.EscapeCurrentTab(playSound: false);
                     SessionHandler.IsExiting = true;
-                    SaveManager.ForceSave();
+                    PM_Saves.ForceSave();
                 }
             }
 
@@ -92,12 +93,12 @@ namespace GameClient.Patches
 
                     Action r1 = delegate
                     {
-                        RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait("Waiting for server response"));
-                        SaveManager.RequestResetSave();
+                        DLG_Base.PushNewDialog(new DLG_Wait("Waiting for server response"));
+                        PM_Saves.RequestResetSave();
                     };
 
-                    RT_Dialog_YesNo d1 = new RT_Dialog_YesNo("Are you sure you want to delete your save?", r1, null, "DELETE!", "no", Color.red);
-                    RT_Dialog_Base.PushNewDialog(d1);
+                    DLG_YesNo d1 = new DLG_YesNo("Are you sure you want to delete your save?", r1, null, "DELETE!", "no", Color.red);
+                    DLG_Base.PushNewDialog(d1);
                 }
             }
 

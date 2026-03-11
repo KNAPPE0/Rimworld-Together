@@ -53,7 +53,7 @@ namespace GameClient.Hooks.Synchronous
 
         public static void Ask(int tile, SynchronousData.Type type)
         {
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait());
+            DLG_Base.PushNewDialog(new DLG_Wait());
 
             SynchronousData data = new SynchronousData();
             data._stepMode = SynchronousData.StepMode.Ask;
@@ -66,11 +66,11 @@ namespace GameClient.Hooks.Synchronous
 
         private static void OnAsk(SynchronousData data)
         {
-            RT_Dialog_Wait.Instance.Close();
+            DLG_Wait.Instance.Close();
 
             Action actionYes = delegate
             {
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait());
+                DLG_Base.PushNewDialog(new DLG_Wait());
 
                 SetMap(SynchronousSide.Host, null);
 
@@ -99,12 +99,12 @@ namespace GameClient.Hooks.Synchronous
             };
 
             string description = $"Player '{data._username}' wants to interact, accept?";
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_YesNo(description, actionYes, actionNo));
+            DLG_Base.PushNewDialog(new DLG_YesNo(description, actionYes, actionNo));
         }
 
         private static void OnAccept(SynchronousData data)
         {
-            RT_Dialog_Wait.Instance.Close();
+            DLG_Wait.Instance.Close();
 
             SetMap(SynchronousSide.Guest, data);
 
@@ -117,10 +117,10 @@ namespace GameClient.Hooks.Synchronous
 
         private static void OnReject(SynchronousData data)
         {
-            RT_Dialog_Wait.Instance.Close();
+            DLG_Wait.Instance.Close();
 
             string[] description = new string[] { "Interaction was rejected by the player!" };
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message(null, description));
+            DLG_Base.PushNewDialog(new DLG_Message(null, description));
         }
 
         private static void StartSession(SynchronousSide side)
@@ -129,10 +129,10 @@ namespace GameClient.Hooks.Synchronous
             {
                 SessionHandler.IsSynchronousHost = true;
                 MainThreadHandler.Instance.DoOnSynchronousStartMethods();
-                RT_Dialog_Wait.Instance.Close();
+                DLG_Wait.Instance.Close();
 
                 string[] description = new string[] { "Game will be unable to save while in synchronous!" };
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", description));
+                DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", description));
             }
 
             else
@@ -144,7 +144,7 @@ namespace GameClient.Hooks.Synchronous
                 MainThreadHandler.Instance.DoOnSynchronousStartMethods();
 
                 string[] description = new string[] { "Game will be unable to save while in synchronous!" };
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", description));
+                DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", description));
             }
         }
 

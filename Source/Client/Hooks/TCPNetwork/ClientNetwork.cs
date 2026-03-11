@@ -78,9 +78,9 @@ namespace GameClient.Hooks.TCPNetwork
             }
             else
             {
-                RT_Dialog_Wait.Instance.Close();
-                RT_Dialog_Message d1 = new RT_Dialog_Message("ERROR", new string[] { "The server did not respond in time" });
-                RT_Dialog_Base.PushNewDialog(d1);
+                DLG_Wait.Instance.Close();
+                DLG_Message d1 = new DLG_Message("ERROR", new string[] { "The server did not respond in time" });
+                DLG_Base.PushNewDialog(d1);
                 OnDisconnect.Invoke(null);
             }
         }

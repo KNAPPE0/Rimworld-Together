@@ -2,6 +2,7 @@
 using GameClient.Files;
 using GameClient.Managers;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using Shared;
 using Shared.Misc;
 using System;
@@ -69,7 +70,7 @@ namespace GameClient.Core.Configs
 
             listingStandard.GapLine();
             listingStandard.Label("Tweaks");
-            if (listingStandard.ButtonTextLabeled("Change mod version [Windows only]", "Change")) { VersionManager.PromptChangeVersion(); }
+            if (listingStandard.ButtonTextLabeled("Change mod version [Windows only]", "Change")) { PM_Version.PromptChangeVersion(); }
             if (listingStandard.ButtonTextLabeled("Export account", "Export")) { ShowExportAccountQuestion(); }
 
             GUI.color = Color.red;
@@ -141,7 +142,7 @@ namespace GameClient.Core.Configs
                 try
                 {
                     string path = Path.Combine(Master.AppdataRTPath, "LoginData.json");
-                    string destination = Path.Combine(RT_Dialog_Inputs.DialogInputResults[0], Path.GetFileName(path));
+                    string destination = Path.Combine(DLG_Inputs.DialogInputResults[0], Path.GetFileName(path));
                     File.Copy(path, destination);
 
                     string[] messages = new string[]
@@ -150,27 +151,27 @@ namespace GameClient.Core.Configs
                         "Put it inside the \"RimWorld Together\" AppData folder of the new machine"
                     };
 
-                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", messages));
+                    DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", messages));
                 }
-                catch { RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", new string[] { "Path couldn't be found!" })); }
+                catch { DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", new string[] { "Path couldn't be found!" })); }
             };
 
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Inputs("Choose where to export the file at", new string[] { "Path" }, new bool[] { false }, toDo));
+            DLG_Base.PushNewDialog(new DLG_Inputs("Choose where to export the file at", new string[] { "Path" }, new bool[] { false }, toDo));
         }
 
         private void ShowResetAccountQuestion()
         {
-            RT_Dialog_YesNo dialog = new RT_Dialog_YesNo("Are you sure you want to RESET your ACCOUNT?",
+            DLG_YesNo dialog = new DLG_YesNo("Are you sure you want to RESET your ACCOUNT?",
                 delegate
                 {
                     PersistentSettings settings = PersistentSettings.Load();
                     settings.UserSettings.Reset();
                     settings.Save();
 
-                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", new string[] { "Account has been reset" }));
+                    DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", new string[] { "Account has been reset" }));
                 });
 
-            RT_Dialog_Base.PushNewDialog(dialog);
+            DLG_Base.PushNewDialog(dialog);
         }
 
         private void StartProcess(string processPath)

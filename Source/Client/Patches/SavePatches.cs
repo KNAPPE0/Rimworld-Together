@@ -1,6 +1,7 @@
 ﻿using GameClient.Dialogs;
 using GameClient.Managers;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using HarmonyLib;
 using Shared.Misc;
 using System;
@@ -27,7 +28,7 @@ namespace GameClient.Patches
                 GameParameterManager.SetDifficulty(SessionHandler.CurrentDifficulty);
 
                 string filePath = GenFilePaths.FilePathForSavedGame(fileName);
-                SaveManager.LatestSavePath = filePath;
+                PM_Saves.LatestSavePath = filePath;
                 try
                 {
                     SafeSaver.Save(filePath, "savegame", delegate
@@ -46,10 +47,9 @@ namespace GameClient.Patches
                     MapManager.SendPlayerMapsToServer();
 
                     Printer.Message("Sending save to server", LogImportanceMode.Verbose);
-                    SaveManager.SendSaveToServer();
+                    PM_Saves.SendSaveToServer();
 
-                    RT_Dialog_Wait.Instance.Close();
-                }
+                    DLG_Wait.Instance.Close();
             }
             catch (Exception e) { Printer.Error($"{e}"); }
 

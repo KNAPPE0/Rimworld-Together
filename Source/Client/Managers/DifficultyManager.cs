@@ -22,7 +22,7 @@ namespace GameClient.Managers
                 GameParameterManager.SendCurrentDifficulty(true);
             };
 
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_YesNo(description, actionYes));
+            DLG_Base.PushNewDialog(new DLG_YesNo(description, actionYes));
         }
     }
 }

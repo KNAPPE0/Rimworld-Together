@@ -1,5 +1,6 @@
 ﻿using GameClient.Managers;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using HarmonyLib;
 using RimWorld;
 using RimWorld.Planet;
@@ -19,9 +20,9 @@ namespace GameClient.Patches
         [HarmonyPostfix]
         public static void ModifyPost(Caravan caravan)
         {
-            SettlementManager.SendNewPlayerSettlement(caravan.Tile);
+            PM_Settlements.SendNewPlayerSettlement(caravan.Tile);
 
-            SaveManager.ForceSave();
+            PM_Saves.ForceSave();
         }
     }
 
@@ -31,9 +32,9 @@ namespace GameClient.Patches
         [HarmonyPostfix]
         public static void ModifyPost(Map map)
         {
-            SettlementManager.SendNewPlayerSettlement(map.Tile);
+            PM_Settlements.SendNewPlayerSettlement(map.Tile);
 
-            SaveManager.ForceSave();
+            PM_Saves.ForceSave();
         }
     }
 
@@ -43,7 +44,7 @@ namespace GameClient.Patches
         [HarmonyPostfix]
         public static void ModifyPost(Settlement settlement)
         {
-            SettlementManager.AbandonSettlement(settlement.Tile);
+            PM_Settlements.AbandonSettlement(settlement.Tile);
         }
     }
 
@@ -57,7 +58,7 @@ namespace GameClient.Patches
             else
             {
                 if (__instance.Faction == Faction.OfPlayer) return;
-                else if (NPCManagerH.lastRemovedSettlement != __instance) NPCManager.RequestSettlementRemoval(__instance);
+                else if (NPCManagerH.lastRemovedSettlement != __instance) PM_Npcs.RequestSettlementRemoval(__instance);
             }
         }
     }

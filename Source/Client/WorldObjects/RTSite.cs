@@ -2,6 +2,7 @@
 using GameClient.Dialogs;
 using GameClient.Managers;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using RimWorld;
 using RimWorld.Planet;
 using Shared;
@@ -71,9 +72,9 @@ namespace GameClient.WorldObjects
                     if (SessionHandler.CurrentActionValues.SiteAction.IsEnabled)
                     {
                         SessionHandler.ChosenSite = this;
-                        SiteManager.RequestDestroySite();
+                        PM_Sites.RequestDestroySite();
                     }
-                    else RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                    else DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
                 }
             };
 
@@ -93,10 +94,10 @@ namespace GameClient.WorldObjects
                 icon = ContentFinder<Texture2D>.Get("Commands/Worker"),
                 action = delegate
                 {
-                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait());
+                    DLG_Base.PushNewDialog(new DLG_Wait());
                     SessionHandler.ChosenCaravan = caravan;
                     SessionHandler.ChosenSite = this;
-                    SiteManager.AskForInformation();
+                    PM_Sites.AskForInformation();
                 }
             };
 

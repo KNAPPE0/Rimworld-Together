@@ -1,4 +1,5 @@
 using GameClient.Dialogs;
+using GameClient.PacketManagers;
 
 namespace GameClient.Managers
 {
@@ -18,22 +19,22 @@ namespace GameClient.Managers
 
         public static void ShowAdminMenu()
         {
-            RT_Dialog_ScrollButtons d1 = new RT_Dialog_ScrollButtons(DialogTitle, DialogDescription,
+            DLG_ScrollButtons d1 = new DLG_ScrollButtons(DialogTitle, DialogDescription,
                 MenuButtons, delegate { OpenSpecificMenu(); }, null);
 
-            RT_Dialog_Base.PushNewDialog(d1);
+            DLG_Base.PushNewDialog(d1);
         }
 
         public static void OpenSpecificMenu()
         {
-            switch (RT_Dialog_ScrollButtons.SelectedScrollButton)
+            switch (DLG_ScrollButtons.SelectedScrollButton)
             {
                 case 0:
-                    ModManager.OpenModManagerMenu();
+                    PM_Mods.OpenModManagerMenu();
                     break;
 
                 case 1:
-                    EventManager.ShowEventTweakerMenu();
+                    PM_Events.ShowEventTweakerMenu();
                     break;
 
                 case 2:
@@ -41,7 +42,7 @@ namespace GameClient.Managers
                     break;
 
                 case 3:
-                    SaveManager.OpenSaveUploaderMenu();
+                    PM_Saves.OpenSaveUploaderMenu();
                     break;
             }
         }

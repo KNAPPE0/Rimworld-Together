@@ -4,6 +4,7 @@ using System.Reflection.Emit;
 using GameClient.Hooks.TCPNetwork;
 using GameClient.Managers;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using HarmonyLib;
 using RimWorld;
 using TCPNetwork;
@@ -20,8 +21,8 @@ namespace GameClient.Patches.Pages
         {
             if (!SessionHandler.IsGeneratingFreshWorld)
             {
-                WorldManager.SetPlanetFeatures();
-                WorldManager.SetPlanetFactions();
+                PM_World.SetPlanetFeatures();
+                PM_World.SetPlanetFactions();
             }
 
             PlanetManager.BuildPlanet();

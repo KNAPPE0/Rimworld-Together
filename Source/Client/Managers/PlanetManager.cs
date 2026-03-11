@@ -1,5 +1,6 @@
 ﻿using GameClient.Defs;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using RimWorld;
 using Shared.Misc;
 using System;
@@ -23,28 +24,28 @@ namespace GameClient.Managers
             if (SessionHandler.IsGeneratingFreshWorld) return;
             else
             {
-                SettlementManager.ClearAllSettlements();
-                SettlementManager.AddSettlements(PlayerSettlementManagerHelper.tempSettlements);
+                PM_Settlements.ClearAllSettlements();
+                PM_Settlements.AddSettlements(PlayerSettlementManagerHelper.tempSettlements);
                 
-                SiteManager.ClearAllSites();
-                SiteManager.AddSites(SiteManagerH.tempSites);
+                PM_Sites.ClearAllSites();
+                PM_Sites.AddSites(SiteManagerH.tempSites);
                 
-                NPCManager.ClearAllSettlements();
+                PM_Npcs.ClearAllSettlements();
                 NPCManagerH.SaveAllQuests();
                 
-                NPCManager.AddSettlements(NPCManagerH.tempNPCSettlements);
+                PM_Npcs.AddSettlements(NPCManagerH.tempNPCSettlements);
                 NPCManagerH.CleanupQuests();
                 
-                RoadManager.ClearAllRoads();
-                RoadManager.AddRoads(RoadManagerHelper.tempRoadDetails, false);
+                PM_Roads.ClearAllRoads();
+                PM_Roads.AddRoads(RoadManagerHelper.tempRoadDetails, false);
                 
                 if (ModLister.BiotechInstalled)
                 {
-                    PollutionManager.ClearAllPollution();
-                    PollutionManager.AddPollutedTiles(PollutionManagerHelper.tempPollutionDetails, false);
+                    PM_Pollution.ClearAllPollution();
+                    PM_Pollution.AddPollutedTiles(PollutionManagerHelper.tempPollutionDetails, false);
                 }
                 
-                CaravanManager.ClearAllCaravans();
+                PM_Caravans.ClearAllCaravans();
                 CaravanManagerH.SetAllPlayerCaravans();
             }
         }

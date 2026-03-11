@@ -2,14 +2,13 @@
 using GameClient.Hooks.Synchronous;
 using GameClient.Managers;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using RimWorld;
 using RimWorld.Planet;
 using Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using Verse;
 using static Shared.CommonEnumerators;
@@ -19,7 +18,6 @@ namespace GameClient.WorldObjects
     public class RTSettlement : MapParent
     {
         private string nameInt;
-
         private Material cachedMat;
 
         public override string Label => nameInt ?? base.Label;
@@ -28,8 +26,8 @@ namespace GameClient.WorldObjects
 
         public string Name
         {
-            get { return nameInt; }
-            set { nameInt = value; }
+            get => nameInt;
+            set => nameInt = value;
         }
 
         public override Material Material
@@ -38,8 +36,11 @@ namespace GameClient.WorldObjects
             {
                 if (cachedMat == null)
                 {
-                    cachedMat = MaterialPool.MatFrom(base.Faction.def.settlementTexturePath,
-                        ShaderDatabase.WorldOverlayTransparentLit, base.Faction.Color, 3550);
+                    cachedMat = MaterialPool.MatFrom(
+                        base.Faction.def.settlementTexturePath,
+                        ShaderDatabase.WorldOverlayTransparentLit,
+                        base.Faction.Color,
+                        3550);
                 }
 
                 return cachedMat;
@@ -63,28 +64,27 @@ namespace GameClient.WorldObjects
 
                     Action r1 = delegate
                     {
-                        GoodwillManager.TryRequestGoodwill(Goodwill.Enemy,
-                        GoodwillTarget.Settlement);
+                        PM_Goodwills.TryRequestGoodwill(Goodwill.Enemy, GoodwillTarget.Settlement);
                     };
 
                     Action r2 = delegate
                     {
-                        GoodwillManager.TryRequestGoodwill(Goodwill.Neutral,
-                        GoodwillTarget.Settlement);
+                        PM_Goodwills.TryRequestGoodwill(Goodwill.Neutral, GoodwillTarget.Settlement);
                     };
 
                     Action r3 = delegate
                     {
-                        GoodwillManager.TryRequestGoodwill(Goodwill.Ally,
-                        GoodwillTarget.Settlement);
+                        PM_Goodwills.TryRequestGoodwill(Goodwill.Ally, GoodwillTarget.Settlement);
                     };
 
-                    RT_Dialog_Buttons d1 = new RT_Dialog_Buttons("Change Goodwill", "Set settlement's goodwill to",
+                    DLG_Buttons d1 = new DLG_Buttons(
+                        "Change Goodwill",
+                        "Set settlement's goodwill to",
                         new string[] { "Enemy", "Neutral", "Ally" },
                         new Action[] { r1, r2, r3 },
                         null);
 
-                    RT_Dialog_Base.PushNewDialog(d1);
+                    DLG_Base.PushNewDialog(d1);
                 }
             };
 
@@ -99,10 +99,15 @@ namespace GameClient.WorldObjects
 
                     if (SessionHandler.CurrentActionValues.EnableFactions)
                     {
-                        if (SessionHandler.ChosenSettlement.Faction == SessionHandler.GuildFaction) GuildManager.OnFactionOpenOnMember();
-                        else GuildManager.OnFactionOpenOnNonMember();
+                        if (SessionHandler.ChosenSettlement.Faction == SessionHandler.GuildFaction)
+                            PM_Guilds.OnFactionOpenOnMember();
+                        else
+                            PM_Guilds.OnFactionOpenOnNonMember();
                     }
-                    else RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                    else
+                    {
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                    }
                 }
             };
 
@@ -116,7 +121,7 @@ namespace GameClient.WorldObjects
                     SessionHandler.ChosenSettlement = this;
 
                     Dialog_FormCaravan d1 = new Dialog_FormCaravan(this.Map, mapAboutToBeRemoved: true);
-                    RT_Dialog_Base.PushNewDialog(d1);
+                    DLG_Base.PushNewDialog(d1);
                 }
             };
 
@@ -132,11 +137,19 @@ namespace GameClient.WorldObjects
                     if (SessionHandler.CurrentActionValues.AidAction.IsEnabled)
                     {
                         List<string> pawnNames = new List<string>();
-                        foreach (Pawn pawn in RimworldManager.GetAllSettlementsPawns(Faction.OfPlayer, false)) pawnNames.Add(pawn.LabelCapNoCount);
-                        RT_Dialog_Base.PushNewDialog(new RT_Dialog_ListingWithButton("Aid menu", "Select the pawn you want to send for aid",
-                            pawnNames.ToArray(), AidManager.SendAidRequest));
+                        foreach (Pawn pawn in RimworldManager.GetAllSettlementsPawns(Faction.OfPlayer, false))
+                            pawnNames.Add(pawn.LabelCapNoCount);
+
+                        DLG_Base.PushNewDialog(new DLG_ListingWithButton(
+                            "Aid menu",
+                            "Select the pawn you want to send for aid",
+                            pawnNames.ToArray(),
+                            PM_Aids.SendAidRequest));
                     }
-                    else RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                    else
+                    {
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                    }
                 }
             };
 
@@ -149,8 +162,10 @@ namespace GameClient.WorldObjects
                 {
                     SessionHandler.ChosenSettlement = this;
 
-                    if (SessionHandler.CurrentActionValues.EventAction.IsEnabled) EventManager.ShowEventMenu();
-                    else RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                    if (SessionHandler.CurrentActionValues.EventAction.IsEnabled)
+                        PM_Events.ShowEventMenu();
+                    else
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
                 }
             };
 
@@ -163,8 +178,7 @@ namespace GameClient.WorldObjects
                 {
                     SessionHandler.ChosenSettlement = this;
 
-                    ActivityManager.RequestActivity(ActivityType.Zoom,
-                        SessionHandler.ChosenSettlement.Tile);
+                    PM_Activities.RequestActivity(ActivityType.Zoom, SessionHandler.ChosenSettlement.Tile);
                 }
             };
 
@@ -176,7 +190,7 @@ namespace GameClient.WorldObjects
                 action = delegate
                 {
                     SessionHandler.ChosenSettlement = this;
-                    SettlementManager.RegenSettlement(SessionHandler.ChosenSettlement);
+                    PM_Settlements.RegenSettlement(SessionHandler.ChosenSettlement);
                 }
             };
 
@@ -192,7 +206,33 @@ namespace GameClient.WorldObjects
                 }
             };
 
+            Command_Action command_Wealth = new Command_Action
+            {
+                defaultLabel = "Wealth",
+                defaultDesc = "Shows the selected settlement's wealth",
+                icon = ContentFinder<Texture2D>.Get("Commands/Wealth"),
+                action = delegate
+                {
+                    SessionHandler.ChosenSettlement = this;
+                    PM_Information.AskForWealth();
+                }
+            };
+
+            Command_Action command_Info = new Command_Action
+            {
+                defaultLabel = "Info",
+                defaultDesc = "Shows whether this player is online",
+                icon = ContentFinder<Texture2D>.Get("Commands/Info"),
+                action = delegate
+                {
+                    SessionHandler.ChosenSettlement = this;
+                    PM_Information.AskForInformation();
+                }
+            };
+
             gizmos.Add(command_Stats);
+            gizmos.Add(command_Info);
+            gizmos.Add(command_Wealth);
             gizmos.Add(command_Goodwill);
             gizmos.Add(command_Event);
             gizmos.Add(command_Aid);
@@ -248,8 +288,7 @@ namespace GameClient.WorldObjects
                     SessionHandler.ChosenSettlement = this;
                     SessionHandler.ChosenCaravan = caravan;
 
-                    ActivityManager.RequestActivity(ActivityType.Raid,
-                        SessionHandler.ChosenSettlement.Tile);
+                    PM_Activities.RequestActivity(ActivityType.Raid, SessionHandler.ChosenSettlement.Tile);
                 }
             };
 
@@ -265,25 +304,21 @@ namespace GameClient.WorldObjects
 
                     if (!SessionHandler.CurrentActionValues.EnableTrading)
                     {
-                        RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
                         return;
                     }
 
+                    Settlement settlement = Find.World.worldObjects.Settlements.First(fetch => fetch.Faction != Faction.OfPlayer);
+                    Pawn negotiator = RimworldManager.GetIfSocialPawnInCaravan(SessionHandler.ChosenCaravan);
+
+                    if (negotiator != null)
+                    {
+                        SessionHandler.LastTradeStep = CommonEnumerators.TradeMode.Sending;
+                        Find.WindowStack.Add(new Dialog_Trade(negotiator, settlement));
+                    }
                     else
                     {
-                        Settlement settlement = Find.World.worldObjects.Settlements.First(fetch => fetch.Faction != Faction.OfPlayer);
-                        Pawn negotiator = RimworldManager.GetIfSocialPawnInCaravan(SessionHandler.ChosenCaravan);
-
-                        if (negotiator != null)
-                        {
-                            SessionHandler.LastTradeStep = CommonEnumerators.TradeMode.Sending;
-                            Find.WindowStack.Add(new Dialog_Trade(negotiator, settlement));
-                        }
-
-                        else
-                        {
-                            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("ERROR", new string[] { "You do not have any pawn capable of trading!" }));
-                        }
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "You do not have any pawn capable of trading!" }));
                     }
                 }
             };

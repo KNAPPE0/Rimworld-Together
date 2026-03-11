@@ -2,6 +2,7 @@
 using GameClient.Defs;
 using GameClient.Managers;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using GameClient.WorldObjects;
 using HarmonyLib;
 using RimWorld;
@@ -32,10 +33,10 @@ namespace GameClient.Patches.Pages
                     ___factions.Add(RTFactionDefOf.RTEnemy);
                     ___factions.Add(RTFactionDefOf.RTFaction);
 
-                    WorldManager.SetValuesFromGame(___seedString, ___planetCoverage, ___rainfall,
+                    PM_World.SetValuesFromGame(___seedString, ___planetCoverage, ___rainfall,
                         ___temperature, ___population, ___landmarkDensity, ___factions, ___pollution);
 
-                    WorldManager.GenerateNormalWorld();
+                    PM_World.GenerateNormalWorld();
                 }
 
                 return true;
@@ -53,7 +54,7 @@ namespace GameClient.Patches.Pages
             else
             {
                 __instance.Close();
-                WorldManager.GenerateNormalWorld();
+                PM_World.GenerateNormalWorld();
                 return false;
             }
         }

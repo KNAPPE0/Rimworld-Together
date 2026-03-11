@@ -1,5 +1,6 @@
 ﻿using GameClient.Managers;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using HarmonyLib;
 using RimWorld;
 using RimWorld.Planet;
@@ -20,7 +21,7 @@ namespace GameClient.Patches
         [HarmonyPostfix]
         public static void DoPost(Map map)
         {
-            SettlementManager.AbandonSettlement(map.Tile);
+            PM_Settlements.AbandonSettlement(map.Tile);
         }
     }
 
@@ -31,8 +32,8 @@ namespace GameClient.Patches
         public static void DoPost(Gravship gravship)
         {
             Map map = Find.WorldObjects.MapParentAt(gravship.destinationTile)?.Map;
-            SettlementManager.SendNewPlayerSettlement(map.Tile);
-            SaveManager.ForceSave();
+            PM_Settlements.SendNewPlayerSettlement(map.Tile);
+            PM_Saves.ForceSave();
         }
     }
 
@@ -43,8 +44,8 @@ namespace GameClient.Patches
         public static void DoPost(Gravship gravship)
         {
             Map map = Find.WorldObjects.MapParentAt(gravship.destinationTile)?.Map;
-            SettlementManager.SendNewPlayerSettlement(map.Tile);
-            SaveManager.ForceSave();
+            PM_Settlements.SendNewPlayerSettlement(map.Tile);
+            PM_Saves.ForceSave();
         }
     }
 }

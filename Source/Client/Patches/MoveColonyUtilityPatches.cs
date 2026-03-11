@@ -11,6 +11,7 @@ using Verse;
 using TCPNetwork.Packets;
 using GameClient.Hooks.TCPNetwork;
 using TCPNetwork;
+using GameClient.PacketManagers;
 
 namespace GameClient.Patches
 {
@@ -53,7 +54,7 @@ namespace GameClient.Patches
             [HarmonyPostfix]
             public static void Postfix(PlanetTile tile)
             {
-                SettlementManager.SendNewPlayerSettlement(tile);
+                PM_Settlements.SendNewPlayerSettlement(tile);
             }
 
             private static void RemovePreviousSettlements(List<PlanetTile> settlementsToRemove)

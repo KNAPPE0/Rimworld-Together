@@ -8,6 +8,7 @@ using static Shared.CommonEnumerators;
 using GameClient.Misc;
 using GameClient.Dialogs;
 using System;
+using GameClient.PacketManagers;
 
 namespace GameClient.Patches
 {
@@ -17,10 +18,10 @@ namespace GameClient.Patches
         [HarmonyPostfix]
         public static void ModifyPost(Game __instance)
         {
-            SettlementManager.SendNewPlayerSettlement(__instance.CurrentMap.Tile);
+            PM_Settlements.SendNewPlayerSettlement(__instance.CurrentMap.Tile);
 
-            if (!SessionHandler.IsGeneratingFreshWorld) SaveManager.ForceSave();
-            else ModManager.OpenModManagerMenu(true);
+            if (!SessionHandler.IsGeneratingFreshWorld) PM_Saves.ForceSave();
+            else PM_Mods.OpenModManagerMenu(true);
 
             SessionHandler.IsReadyToPlay = true;
 

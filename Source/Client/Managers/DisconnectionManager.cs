@@ -1,5 +1,6 @@
 using GameClient.Dialogs;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 using Verse;
 using static RimWorld.PsychicRitualRoleDef;
 
@@ -11,15 +12,15 @@ namespace GameClient.Managers
         {
             if (Current.ProgramState != ProgramState.Entry && !SessionHandler.IsExiting)
             {
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_YesNo("Connection lost. Save game?",
-                    delegate { SaveManager.ForceSave(); DisconnectToMenu(); }, delegate { DisconnectToMenu(); }));
+                DLG_Base.PushNewDialog(new DLG_YesNo("Connection lost. Save game?",
+                    delegate { PM_Saves.ForceSave(); DisconnectToMenu(); }, delegate { DisconnectToMenu(); }));
             }
             else DisconnectToMenu();
         }
 
         public static void DisconnectToMenu()
         {
-            RT_Dialog_Wait.Instance.Close();
+            DLG_Wait.Instance.Close();
 
             if (Current.ProgramState != ProgramState.Entry)
             {

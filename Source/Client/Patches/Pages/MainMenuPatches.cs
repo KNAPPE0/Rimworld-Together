@@ -8,6 +8,7 @@ using GameClient.Managers;
 using System.Collections.Generic;
 using System.Linq;
 using GameClient.Misc;
+using GameClient.PacketManagers;
 
 namespace GameClient.Patches.Pages
 {
@@ -44,7 +45,7 @@ namespace GameClient.Patches.Pages
                     optList.Insert(0, new ListableOption("Play Together", delegate
                     {
                         if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected) return;
-                        else if (!LoginManagerH.CheckIfLoginIsValid()) LoginManager.PromptCreateAccount(false);
+                        else if (!LoginManagerH.CheckIfLoginIsValid()) PM_Login.PromptCreateAccount(false);
                         else ConnectionManager.ShowWelcomeDialogs();
                     }));
                 }
@@ -68,8 +69,8 @@ namespace GameClient.Patches.Pages
                 if (Widgets.ButtonText(new Rect(buttonLocation.x, buttonLocation.y, buttonSize.x, buttonSize.y), ""))
                 {
                     if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected) return true;
-                    else if (!LoginManagerH.CheckIfLoginIsValid()) LoginManager.PromptCreateAccount(true);
-                    else LoginManager.QuickConnectUser();
+                    else if (!LoginManagerH.CheckIfLoginIsValid()) PM_Login.PromptCreateAccount(true);
+                    else PM_Login.QuickConnectUser();
                 }
             }
 

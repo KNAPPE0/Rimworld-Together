@@ -1,11 +1,11 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using GameClient.Managers;
-using GameClient.Misc;
+using GameClient.PacketManagers;
 using GameClient.WorldObjects;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
-using static Shared.CommonEnumerators;
 
 namespace GameClient.Patches.Tabs
 {
@@ -129,7 +129,7 @@ namespace GameClient.Patches.Tabs
             Rect plusRect = new Rect(right - gwW, y, gwW, h);
             right -= gwW + 6f;
 
-            Rect labelRect = new Rect(row.x + 8f, row.y + 4f, (right - (row.x + 8f)), row.height - 8f);
+            Rect labelRect = new Rect(row.x + 8f, row.y + 4f, right - (row.x + 8f), row.height - 8f);
             Widgets.LabelEllipses(labelRect, $"{name}  |  Tile {tile}");
 
             if (Widgets.ButtonText(focusRect, "Focus"))
@@ -145,7 +145,7 @@ namespace GameClient.Patches.Tabs
                 if (world != null)
                 {
                     SessionHandler.ChosenSettlement = world;
-                    GoodwillManager.TryRequestGoodwill(Goodwill.Enemy, GoodwillTarget.Settlement);
+                    PM_Goodwills.TryRequestGoodwill(CommonEnumerators.Goodwill.Enemy, CommonEnumerators.GoodwillTarget.Settlement);
                 }
             }
 
@@ -155,7 +155,7 @@ namespace GameClient.Patches.Tabs
                 if (world != null)
                 {
                     SessionHandler.ChosenSettlement = world;
-                    GoodwillManager.TryRequestGoodwill(Goodwill.Neutral, GoodwillTarget.Settlement);
+                    PM_Goodwills.TryRequestGoodwill(CommonEnumerators.Goodwill.Neutral, CommonEnumerators.GoodwillTarget.Settlement);
                 }
             }
 
@@ -165,7 +165,7 @@ namespace GameClient.Patches.Tabs
                 if (world != null)
                 {
                     SessionHandler.ChosenSettlement = world;
-                    GoodwillManager.TryRequestGoodwill(Goodwill.Ally, GoodwillTarget.Settlement);
+                    PM_Goodwills.TryRequestGoodwill(CommonEnumerators.Goodwill.Ally, CommonEnumerators.GoodwillTarget.Settlement);
                 }
             }
 

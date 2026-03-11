@@ -1,5 +1,6 @@
 ﻿using GameClient.Core.Configs;
 using GameClient.Managers;
+using GameClient.PacketManagers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace GameClient.Misc
         {
             float defaultMargin = 8.0f;
             float lineHeight = defaultMargin;
-            string toDisplay = $"Latency: {Math.Abs(KeepAliveManager.CurrentPing)} ms";
+            string toDisplay = $"Latency: {Math.Abs(PM_KeepAlive.CurrentPing)} ms";
 
             Vector2 size = Text.CalcSize(toDisplay);
             Vector2 position = new Vector2(UI.screenWidth - size.x - defaultMargin, lineHeight);

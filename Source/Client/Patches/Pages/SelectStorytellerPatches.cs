@@ -40,7 +40,7 @@ namespace GameClient.Patches.Pages
         [HarmonyPrefix]
         public static bool DoPre(Rect rect, Page_SelectStoryteller __instance)
         {
-            if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize, RT_Dialog_Base.RectLocation.BottomLeft), "") || KeyBindingDefOf.Cancel.KeyDownEvent)
+            if (Widgets.ButtonText(DLG_Base.GetRectForLocation(rect, DLG_Base.SmallButtonSize, DLG_Base.RectLocation.BottomLeft), "") || KeyBindingDefOf.Cancel.KeyDownEvent)
             {
                 __instance.Close();
                 Network.ServerEndpoint.Disconnect();
@@ -57,12 +57,12 @@ namespace GameClient.Patches.Pages
                     {
                         GameParameterManager.SetStoryteller(SessionHandler.CurrentStoryteller);
                         GameParameterManager.SetDifficulty(SessionHandler.CurrentDifficulty, true);
-                        RT_Dialog_Base.PushNewDialog(__instance.next);
+                        DLG_Base.PushNewDialog(__instance.next);
                         __instance.Close();
 
                         executedMessage = false;
                     };
-                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", new string[] { "Storyteller will be forced by the server" }, toDo));
+                    DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", new string[] { "Storyteller will be forced by the server" }, toDo));
 
                     executedMessage = true;
                 }
@@ -76,8 +76,8 @@ namespace GameClient.Patches.Pages
         {
             Text.Font = GameFont.Small;
 
-            if (Widgets.ButtonText(RT_Dialog_Base.GetRectForLocation(rect, RT_Dialog_Base.SmallButtonSize,
-                RT_Dialog_Base.RectLocation.BottomLeft), "Disconnect")) { };
+            if (Widgets.ButtonText(DLG_Base.GetRectForLocation(rect, DLG_Base.SmallButtonSize,
+                DLG_Base.RectLocation.BottomLeft), "Disconnect")) { };
         }
     }
 
@@ -89,7 +89,7 @@ namespace GameClient.Patches.Pages
         {
             if (SessionHandler.IsAdmin)
             {
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", new string[] { "Difficulty settings overriden due to being an admin" }));
+                DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", new string[] { "Difficulty settings overriden due to being an admin" }));
                 return true;
             }
 
@@ -101,7 +101,7 @@ namespace GameClient.Patches.Pages
                     GameParameterManager.SetDifficulty(SessionHandler.CurrentDifficulty);
                 };
 
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("MESSAGE", new string[] { "Settings might change to reflect server enforcements" }, toDo));
+                DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", new string[] { "Settings might change to reflect server enforcements" }, toDo));
 
                 return false;
             }

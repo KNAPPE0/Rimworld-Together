@@ -1,4 +1,4 @@
-﻿namespace TCPNetwork.Packets.ServerBrowser
+﻿namespace TCPNetwork.ServerBrowser
 {
     /// <summary>
     /// Used by the client to determine reachability of a server

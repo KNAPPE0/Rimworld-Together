@@ -4,8 +4,8 @@ using Shared;
 using UnityEngine;
 using Verse;
 using Shared.Misc;
-using TCPNetwork.Packets.ServerBrowser;
-using Reachability = TCPNetwork.Packets.ServerBrowser.Reachability;
+using Reachability = TCPNetwork.ServerBrowser.Reachability;
+using TCPNetwork.ServerBrowser;
 
 namespace GameClient.Dialogs
 {

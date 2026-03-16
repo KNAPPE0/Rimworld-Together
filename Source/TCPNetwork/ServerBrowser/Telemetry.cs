@@ -1,7 +1,7 @@
 using System;
 using System.Buffers.Binary;
 
-namespace TCPNetwork.Packets.ServerBrowser;
+namespace TCPNetwork.ServerBrowser;
 
 public record struct Telemetry
 {

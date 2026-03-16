@@ -1,6 +1,6 @@
 ﻿using GameClient.Hooks.TCPNetwork;
 using TCPNetwork;
-using TCPNetwork.Packets.ServerBrowser;
+using TCPNetwork.ServerBrowser;
 using UnityEngine;
 using Verse;
 

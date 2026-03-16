@@ -12,7 +12,7 @@ using System.Text;
 using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
-using TCPNetwork.Packets.ServerBrowser;
+using TCPNetwork.ServerBrowser;
 using static Shared.CommonEnumerators;
 // ReSharper disable FunctionNeverReturns
 

@@ -1,7 +1,7 @@
 ﻿using MessagePack;
 using Shared.Files.Configs.Mods;
 
-namespace TCPNetwork.Packets.ServerBrowser;
+namespace TCPNetwork.ServerBrowser;
 /// <summary>
 /// Do not make sealed, master server inherits this
 /// </summary>

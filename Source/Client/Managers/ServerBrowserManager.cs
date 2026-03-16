@@ -10,6 +10,7 @@ using TCPNetwork;
 using static Shared.CommonEnumerators;
 using Shared.Misc;
 using TCPNetwork.Packets.ServerBrowser;
+using TCPNetwork.ServerBrowser;
 
 namespace GameClient.Managers
 {
@@ -105,7 +106,7 @@ namespace GameClient.Managers
             try
             {
                 byte[] response = Client.DownloadData(ServerBrowserValues.GetServersUrl);
-                AllServersPacket data = Serializer.ConvertBytesToObject<AllServersPacket>(response);
+                PKT_AllServers data = Serializer.ConvertBytesToObject<PKT_AllServers>(response);
                 AllServers = data._serverInfos;
                 TurnOnReachabilityChecks();
             }

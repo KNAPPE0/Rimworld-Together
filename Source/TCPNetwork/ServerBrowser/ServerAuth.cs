@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using MessagePack;
 
 
-namespace TCPNetwork.Packets.ServerBrowser
+namespace TCPNetwork.ServerBrowser
 {
     [MessagePackObject]
     public struct ServerAuth(ulong id, ulong secret) : IEquatable<ServerAuth>

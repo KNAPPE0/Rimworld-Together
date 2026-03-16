@@ -1,4 +1,4 @@
-﻿namespace TCPNetwork.Packets.ServerBrowser;
+﻿namespace TCPNetwork.ServerBrowser;
 
 public class NetworkConfig
 {

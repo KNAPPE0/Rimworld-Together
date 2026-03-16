@@ -3,7 +3,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets
 {
-    public class PKT_Event
+    public class PKT_Event : PKT_Base
     {
         public EventStepMode _stepMode { get; set; } = EventStepMode.Send;
 
@@ -14,10 +14,5 @@ namespace TCPNetwork.Packets
         public EventFile _eventFile { get; set; } = null;
 
         public EventFile[] _eventFiles { get; set; } = null;
-
-        public override string ToString()
-        {
-            return $"EventData:|{_stepMode}|{_fromTile}|{_toTile}|{_eventFile}";
-        }
     }
 }

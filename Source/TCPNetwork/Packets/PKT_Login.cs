@@ -4,8 +4,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets
 {
-
-    public class PKT_Login
+    public class PKT_Login : PKT_Base
     {
         public string _username { get; set; } = string.Empty;
 

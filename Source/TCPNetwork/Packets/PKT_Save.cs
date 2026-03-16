@@ -9,7 +9,7 @@ using static TCPNetwork.Packets.PKT_Synchronous;
 
 namespace TCPNetwork.Packets
 {
-    public class PKT_Save
+    public class PKT_Save : PKT_Base
     {
         public SaveStepMode _stepMode { get; set; } = SaveStepMode.Send;
 

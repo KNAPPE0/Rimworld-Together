@@ -3,8 +3,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets
 {
-
-    public class PKT_PlayerGuild
+    public class PKT_PlayerGuild : PKT_Base
     {
         public GuildStepMode _stepMode { get; set; } = GuildStepMode.Create;
 

@@ -2,15 +2,10 @@
 
 namespace TCPNetwork.Packets
 {
-    public class PKT_Command
+    public class PKT_Command : PKT_Base
     {
         public CommandMode _commandMode { get; set; } = CommandMode.Op;
 
         public string _details { get; set; } = string.Empty;
-
-        public override string ToString()
-        {
-            return $"CommandData:|{_commandMode}|{_details}";
-        }
     }
 }

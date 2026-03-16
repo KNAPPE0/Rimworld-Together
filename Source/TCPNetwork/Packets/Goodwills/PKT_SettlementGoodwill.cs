@@ -8,7 +8,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets.Goodwills
 {
-    public class PKT_SettlementGoodwill
+    public class PKT_SettlementGoodwill : PKT_Base
     {
         public int Tile { get; set; } = -1;
 

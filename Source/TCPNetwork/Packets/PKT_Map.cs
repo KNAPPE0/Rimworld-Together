@@ -2,7 +2,7 @@
 
 namespace TCPNetwork.Packets
 {
-    public class PKT_Map
+    public class PKT_Map : PKT_Base
     {
         public int _mapTile { get; set; } = -1;
 

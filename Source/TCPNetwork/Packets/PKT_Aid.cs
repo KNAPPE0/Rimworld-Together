@@ -3,7 +3,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets
 {
-    public class PKT_Aid
+    public class PKT_Aid : PKT_Base
     {
         public AidStepMode _stepMode { get; set; } = AidStepMode.Send;
 

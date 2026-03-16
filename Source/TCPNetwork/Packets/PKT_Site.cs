@@ -3,8 +3,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets
 {
-
-    public class PKT_Site
+    public class PKT_Site : PKT_Base
     {
         public SiteStepMode _stepMode { get; set; } = SiteStepMode.Accept;
 

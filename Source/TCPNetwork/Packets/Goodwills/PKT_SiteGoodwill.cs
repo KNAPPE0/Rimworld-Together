@@ -7,7 +7,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets.Goodwills
 {
-    public class PKT_SiteGoodwill
+    public class PKT_SiteGoodwill : PKT_Base
     {
         public int Tile { get; set; } = -1;
 

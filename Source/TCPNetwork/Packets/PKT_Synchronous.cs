@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace TCPNetwork.Packets
 {
-    public class PKT_Synchronous
+    public class PKT_Synchronous : PKT_Base
     {
         public enum Type { Visit, Raid }
 

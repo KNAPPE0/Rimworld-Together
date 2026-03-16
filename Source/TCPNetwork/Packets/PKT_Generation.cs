@@ -3,7 +3,7 @@ using static Shared.CommonEnumerators;
 
 namespace TCPNetwork.Packets
 {
-    public class GameParameterData
+    public class GameParameterData : PKT_Base
     {
         public GenStepMode _stepMode { get; set; } = GenStepMode.Scenario;
 

@@ -7,7 +7,7 @@ using Shared.Files.Sites;
 
 namespace TCPNetwork.Packets
 {
-    public class PKT_ServerGlobalData
+    public class PKT_ServerGlobalData : PKT_Base
     {
         public string _serverName { get; set; } = null;
 

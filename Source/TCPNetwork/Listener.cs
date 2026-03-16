@@ -48,12 +48,22 @@ namespace TCPNetwork
         public void EnqueuePacket(PacketHeader header, object obj)
         {
             if (IsDisconnecting) return;
+            if (obj == null) return;
+
+            if (!obj.GetType().IsSubclassOf(typeof(PKT_Base)) && obj.GetType() != typeof(PKT_Base))
+            {
+                Printer.Error($"Malforced package {obj.GetType()}");
+                return;
+            }
+
             PacketQueue.Enqueue(new KeyValuePair<byte, byte[]>((byte)header, Serializer.ConvertObjectToBytes(obj)));
         }
 
         public void EnqueuePacket(PacketHeader header, byte[] bytes)
         {
             if (IsDisconnecting) return;
+            if (bytes == null) return;
+
             PacketQueue.Enqueue(new KeyValuePair<byte, byte[]>((byte)header, bytes));
         }
 
@@ -70,7 +80,6 @@ namespace TCPNetwork
 
                     if (Stream.DataAvailable)
                     {
-                        // Read packet header
                         Stream.Read(headerBuffer, 0, sizeof(PacketHeader));
                         PacketHeader header = (PacketHeader)headerBuffer[0];
 
@@ -138,7 +147,6 @@ namespace TCPNetwork
                         else
                             Printer.Message($"[Packet] > Sent packet {(PacketHeader)packetData.Key}", LogImportanceMode.Extreme);
 
-                        // Execute after writing
                         Ruleset.OnWrite?.Invoke(TargetClient);
                     }
                 }
@@ -214,8 +222,9 @@ namespace TCPNetwork
             if (IsDisconnecting) return;
 
             IsDisconnecting = true;
-            Connection.Dispose();
-            Stream.Dispose();
+
+            try { Connection?.Dispose(); } catch { }
+            try { Stream?.Dispose(); } catch { }
 
             Ruleset.OnDisconnect?.Invoke(TargetClient);
         }

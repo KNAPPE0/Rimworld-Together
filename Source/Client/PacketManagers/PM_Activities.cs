@@ -77,16 +77,8 @@ namespace GameClient.PacketManagers
         private static void PrepareMap(MapFile mapFile)
         {
             Map map = null;
-
-            if (SessionHandler.latestActivity == ActivityType.Raid)
-            {
-                map = MapSaveLoader.StringToMap(mapFile, true, true, true, true, true);
-            }
-
-            else if (SessionHandler.latestActivity == ActivityType.Zoom)
-            {
-                map = MapSaveLoader.StringToMap(mapFile, true, true, true, true, false);
-            }
+            if (SessionHandler.latestActivity == ActivityType.Raid) map = MapSaveLoader.StringToMap(mapFile);
+            else if (SessionHandler.latestActivity == ActivityType.Zoom) map = MapSaveLoader.StringToMap(mapFile);
 
             Faction faction;
             if (SessionHandler.latestActivity == ActivityType.Raid) faction = SessionHandler.EnemyFaction;

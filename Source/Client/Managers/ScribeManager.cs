@@ -98,7 +98,6 @@ namespace GameClient.Managers
                 else if (type == SerializableType.Pawn)
                 {
                     Pawn pawn = toLoad as Pawn;
-                    if (pawn.def.CanHaveFaction) pawn.SetFactionDirect(Faction.OfPlayer);
                     if (!enforceID) pawn.thingIDNumber = Find.UniqueIDsManager.GetNextThingID();
                 }
             }

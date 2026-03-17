@@ -35,8 +35,8 @@ namespace Shared.Files.Maps
 
         public List<MapTile> Tiles { get; set; } = new List<MapTile>();
 
-        public List<MapThing> Things { get; set; } = new List<MapThing>();
+        public List<string> Things { get; set; } = new List<string>();
 
-        public List<MapPawn> Pawns { get; set; } = new List<MapPawn>();
+        public List<string> Pawns { get; set; } = new List<string>();
     }
 }

@@ -224,26 +224,14 @@ namespace GameClient.Managers
 
         public static void SetMapFactions(Map map, Faction targetFaction)
         {
-            //We don't wanna change to neutral faction because it's the default one
-
-            if (targetFaction == SessionHandler.NeutralFaction) return;
-            else
+            foreach (Pawn pawn in map.mapPawns.AllPawns.Where(fetch => fetch.Faction == Faction.OfPlayer))
             {
-                foreach (Pawn pawn in map.mapPawns.AllPawns.ToArray())
-                {
-                    if (pawn.Faction == SessionHandler.NeutralFaction)
-                    {
-                        pawn.SetFaction(targetFaction);
-                    }
-                }
+                pawn.SetFaction(targetFaction);
+            }
 
-                foreach (Thing thing in map.listerThings.AllThings.ToArray())
-                {
-                    if (thing.Faction == SessionHandler.NeutralFaction)
-                    {
-                        if (thing.def.CanHaveFaction) thing.SetFaction(targetFaction);
-                    }
-                }
+            foreach (Thing thing in map.listerThings.AllThings.Where(fetch => fetch.Faction == Faction.OfPlayer))
+            {
+                if (thing.def.CanHaveFaction) thing.SetFaction(targetFaction);
             }
         }
 

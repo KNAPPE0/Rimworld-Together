@@ -210,7 +210,7 @@ namespace GameServer.PacketManager
                 throw new Exception($"Non-numeric port for server: {portStr}");
             }
 
-            var id = Hasher.GetServerId(ip, port);
+            var id = GetServerId(ip, port);
             HttpResponseMessage response = await Client.GetAsync(ServerBrowserValues.GetSecretUrl);
             response.EnsureSuccessStatusCode();
             Span<byte> authRaw = await response.Content.ReadAsByteArrayAsync();
@@ -223,7 +223,13 @@ namespace GameServer.PacketManager
 
             Auth.CopyInto(TelemetryBuffer.AsSpan().Slice(0, ServerAuth.PacketSize));
         }
-        
+
+        private static ulong GetServerId(string ip, ushort port)
+        {
+            uint ipv4 = Hasher.GetHashFromIpv4(ip);
+            return ((ulong)ipv4 << 32) | ((ulong)port << 16);
+        }
+
         private static async Task SendServerUpdate()
         {
             try

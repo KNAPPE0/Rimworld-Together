@@ -29,10 +29,10 @@ namespace Shared
     public class OnSynchronousEnd() : Attribute { }
 
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public class OnUpdate() : Attribute { }
+    public class OnSynchronousUpdate() : Attribute { }
 
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public class OnSynchronousUpdate() : Attribute { }
+    public class OnUpdate() : Attribute { }
 
     public enum PacketHeader : byte
     {

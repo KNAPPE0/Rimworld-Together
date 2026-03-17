@@ -14,14 +14,8 @@ namespace Shared
             if (noSpecialChars) return BitConverter.ToString(code).Replace("-", "");
             else return BitConverter.ToString(code);
         }
-
-        public static ulong GetServerId(string ip, ushort port)
-        {
-            uint ipv4 = HashIpv4(ip);
-            return ((ulong)ipv4 << 32) | ((ulong)port << 16);
-        }
         
-        public static uint HashIpv4(string ip)
+        public static uint GetHashFromIpv4(string ip)
         {
             uint result = 0;
             int shift = 24;

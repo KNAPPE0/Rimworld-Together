@@ -348,7 +348,7 @@ namespace GameClient.PacketManagers
                 RimworldManager.RemovePawnFromGame(pawn);
             }
 
-            else if (RimworldManager.CheckIfThingIsHuman(thing) || RimworldManager.CheckIfThingIsAnimal(thing))
+            else if (RimworldManager.CheckIfThingIsPawn(thing))
             {
                 Pawn pawn = thing as Pawn;
 

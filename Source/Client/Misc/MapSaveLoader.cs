@@ -43,6 +43,7 @@ namespace GameClient.Misc
             mapFile.RealPlayTimeSeconds = totalSeconds;
 
             GetMapTerrain(mapFile, map);
+            TogglePollution(OperationType.Get, mapFile, map);
             GetMapThings(mapFile, map);
             GetMapPawns(mapFile, map);
 
@@ -59,6 +60,7 @@ namespace GameClient.Misc
             if (map == null) return null;
 
             SetMapTerrain(mapFile, map);
+            TogglePollution(OperationType.Set, mapFile, map);
             SetMapThings(mapFile, map, enforceIDs);
             SetMapPawns(mapFile, map, enforceIDs);
 
@@ -84,11 +86,16 @@ namespace GameClient.Misc
                         if (terrainDef != null)
                             component.TileString = terrainDef.defName;
 
-                        component.IsPolluted = map.pollutionGrid.IsPolluted(vectorToCheck);
-
-                        RoofDef roofDef = map.roofGrid.RoofAt(vectorToCheck);
-                        if (roofDef != null)
-                            component.RoofString = roofDef.defName;
+                        try
+                        {
+                            RoofDef roofDef = map.roofGrid.RoofAt(vectorToCheck);
+                            if (roofDef != null)
+                                component.RoofString = roofDef.defName;
+                        }
+                        catch (Exception e)
+                        {
+                            Printer.Warning(e.ToString(), LogImportanceMode.Extreme);
+                        }
 
                         mapFile.Tiles.Add(component);
                     }
@@ -142,8 +149,6 @@ namespace GameClient.Misc
                     {
                         MapTile component = mapFile.Tiles[index];
                         IntVec3 vectorToCheck = new IntVec3(x, map.Size.y, z);
-
-                        map.pollutionGrid.SetPolluted(vectorToCheck, component.IsPolluted);
 
                         if (!string.IsNullOrEmpty(component.TileString))
                         {
@@ -402,6 +407,31 @@ namespace GameClient.Misc
             }
 
             return -1;
+        }
+
+        private static void TogglePollution(OperationType type, MapFile mapFile, Map map)
+        {
+            int index = 0;
+
+            for (int z = 0; z < map.Size.z; ++z)
+            {
+                for (int x = 0; x < map.Size.x; ++x)
+                {
+                    IntVec3 vector = new IntVec3(x, map.Size.y, z);
+
+                    if (type == OperationType.Get)
+                    {
+                        mapFile.Pollutions.Add(map.pollutionGrid.IsPolluted(vector));
+                    }
+                    else
+                    {
+                        if (mapFile.Pollutions != null && index < mapFile.Pollutions.Count)
+                            map.pollutionGrid.SetPolluted(vector, mapFile.Pollutions[index]);
+                    }
+
+                    index++;
+                }
+            }
         }
     }
 }

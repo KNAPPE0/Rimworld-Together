@@ -38,5 +38,7 @@ namespace Shared.Files.Maps
         public List<string> Things { get; set; } = new List<string>();
 
         public List<string> Pawns { get; set; } = new List<string>();
+
+        public List<bool> Pollutions { get; set; } = new List<bool>();
     }
 }

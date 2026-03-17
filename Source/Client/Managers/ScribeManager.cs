@@ -109,28 +109,4 @@ namespace GameClient.Managers
             return (T)toLoad;
         }
     }
-
-    public static class ScriberH
-    {
-        public static bool CheckIfThingIsHuman(Thing thing)
-        {
-            try
-            {
-                if (thing.def.defName == "Human") return true;
-                else return false;
-            }
-            catch { return false; }
-        }
-
-        public static bool CheckIfThingIsAnimal(Thing thing)
-        {
-            try
-            {
-                PawnKindDef animal = DefDatabase<PawnKindDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == thing.def.defName);
-                if (animal != null) return true;
-                else return false;
-            }
-            catch { return false; }
-        }
-    }
 }

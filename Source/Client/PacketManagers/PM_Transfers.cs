@@ -337,25 +337,22 @@ namespace GameClient.PacketManagers
 
     public class TransferManagerHelper
     {
-        //Adds desired thing into transfer manifest
-
         public static void AddThingToTransferManifest(Thing thing, int thingCount)
         {
-            if (ScriberH.CheckIfThingIsHuman(thing))
+            if (RimworldManager.CheckIfThingIsCorpse(thing))
             {
-                Pawn pawn = thing as Pawn;
+                Corpse corpse = thing as Corpse;
+                Pawn pawn = corpse.InnerPawn;
 
-                SessionHandler.OutgoingManifest._humans.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Thing));
-
+                SessionHandler.OutgoingManifest._pawns.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Pawn));
                 RimworldManager.RemovePawnFromGame(pawn);
             }
 
-            else if (ScriberH.CheckIfThingIsAnimal(thing))
+            else if (RimworldManager.CheckIfThingIsHuman(thing) || RimworldManager.CheckIfThingIsAnimal(thing))
             {
                 Pawn pawn = thing as Pawn;
 
-                SessionHandler.OutgoingManifest._animals.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Thing));
-
+                SessionHandler.OutgoingManifest._pawns.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Pawn));
                 RimworldManager.RemovePawnFromGame(pawn);
             }
 
@@ -384,14 +381,9 @@ namespace GameClient.PacketManagers
         {
             List<Thing> allTransferedItems = new List<Thing>();
 
-            foreach (string file in transferData._humans)
+            foreach (string file in transferData._pawns)
             {
                 allTransferedItems.Add(ScribeManager.SerializeFromString<Pawn>(file));
-            }
-
-            foreach (string data in transferData._animals)
-            {
-                allTransferedItems.Add((Pawn)ScribeManager.SerializeFromString<Pawn>(data));
             }
 
             foreach (string data in transferData._things)

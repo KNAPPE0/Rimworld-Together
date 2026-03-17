@@ -50,8 +50,14 @@ namespace GameClient.Misc
             return mapFile;
         }
 
-        public static Map StringToMap(MapFile mapFile, bool factionThings, bool nonFactionThings, bool factionPawns, bool nonFactionPawns,
-            bool lessLoot = false, bool enforceIDs = false)
+        public static Map StringToMap(
+            MapFile mapFile,
+            bool factionThings,
+            bool nonFactionThings,
+            bool factionPawns,
+            bool nonFactionPawns,
+            bool lessLoot = false,
+            bool enforceIDs = false)
         {
             Map map = GetOrGenerateMapUtility.GetOrGenerateMap(mapFile.Tile, ValueParser.ArrayToIntVec3(mapFile.Size), null);
             if (map == null) return null;
@@ -101,7 +107,7 @@ namespace GameClient.Misc
         private static void GetMapThings(MapFile mapFile, Map map)
         {
             Thing[] allThings = map.listerThings.AllThings
-                .Where(fetch => !ScriberH.CheckIfThingIsHuman(fetch) && !ScriberH.CheckIfThingIsAnimal(fetch))
+                .Where(fetch => !IsHumanThing(fetch) && !IsAnimalThing(fetch))
                 .ToArray();
 
             foreach (Thing thing in allThings)
@@ -124,7 +130,7 @@ namespace GameClient.Misc
         private static void GetMapPawns(MapFile mapFile, Map map)
         {
             Thing[] allPawns = map.listerThings.AllThings
-                .Where(fetch => ScriberH.CheckIfThingIsHuman(fetch) || ScriberH.CheckIfThingIsAnimal(fetch))
+                .Where(fetch => IsHumanThing(fetch) || IsAnimalThing(fetch))
                 .ToArray();
 
             foreach (Thing pawn in allPawns)
@@ -467,6 +473,32 @@ namespace GameClient.Misc
             }
 
             return -1;
+        }
+
+        private static bool IsHumanThing(Thing thing)
+        {
+            if (thing == null) return false;
+
+            if (thing is Pawn pawn)
+                return pawn.RaceProps != null && pawn.RaceProps.Humanlike;
+
+            if (thing is Corpse corpse && corpse.InnerPawn != null)
+                return corpse.InnerPawn.RaceProps != null && corpse.InnerPawn.RaceProps.Humanlike;
+
+            return false;
+        }
+
+        private static bool IsAnimalThing(Thing thing)
+        {
+            if (thing == null) return false;
+
+            if (thing is Pawn pawn)
+                return pawn.RaceProps != null && pawn.RaceProps.Animal;
+
+            if (thing is Corpse corpse && corpse.InnerPawn != null)
+                return corpse.InnerPawn.RaceProps != null && corpse.InnerPawn.RaceProps.Animal;
+
+            return false;
         }
     }
 }

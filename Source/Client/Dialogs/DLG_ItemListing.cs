@@ -99,7 +99,9 @@ namespace GameClient.Dialogs
         {
             if (thing == null) return;
 
-            if (index % 2 == 0) Widgets.DrawAltRect(row);
+            if (index % 2 == 0)
+                Widgets.DrawAltRect(row);
+
             Widgets.DrawHighlightIfMouseover(row);
 
             Text.Font = GameFont.Small;
@@ -107,11 +109,14 @@ namespace GameClient.Dialogs
 
             string itemName = thing.LabelShort ?? "Unknown";
             if (itemName.Length > 1) itemName = char.ToUpper(itemName[0]) + itemName.Substring(1);
-            else itemName = itemName.ToUpper();
+            else itemName = itemName.ToUpperInvariant();
 
-            if (ScriberH.CheckIfThingIsHuman(thing)) Widgets.Label(textRect, $"[Human] {itemName}");
-            else if (ScriberH.CheckIfThingIsAnimal(thing)) Widgets.Label(textRect, $"[Animal] {itemName}");
-            else Widgets.Label(textRect, $"[Item] {itemName} (x{thing.stackCount}) ({thing.HitPoints} HP)");
+            if (IsHumanThing(thing))
+                Widgets.Label(textRect, $"[Human] {itemName}");
+            else if (IsAnimalThing(thing))
+                Widgets.Label(textRect, $"[Animal] {itemName}");
+            else
+                Widgets.Label(textRect, $"[Item] {itemName} (x{thing.stackCount}) ({thing.HitPoints} HP)");
         }
 
         private void Accept()
@@ -151,7 +156,6 @@ namespace GameClient.Dialogs
             else if (TransferMode == TransferMode.Pod)
             {
                 PM_Transfers.GetTransferedItemsToSettlement(ListedThings);
-
                 Close();
             }
         }
@@ -160,6 +164,32 @@ namespace GameClient.Dialogs
         {
             PM_Transfers.RejectRequest(TransferMode);
             Close();
+        }
+
+        private static bool IsHumanThing(Thing thing)
+        {
+            if (thing == null) return false;
+
+            if (thing is Pawn pawn)
+                return pawn.RaceProps != null && pawn.RaceProps.Humanlike;
+
+            if (thing is Corpse corpse && corpse.InnerPawn != null)
+                return corpse.InnerPawn.RaceProps != null && corpse.InnerPawn.RaceProps.Humanlike;
+
+            return false;
+        }
+
+        private static bool IsAnimalThing(Thing thing)
+        {
+            if (thing == null) return false;
+
+            if (thing is Pawn pawn)
+                return pawn.RaceProps != null && pawn.RaceProps.Animal;
+
+            if (thing is Corpse corpse && corpse.InnerPawn != null)
+                return corpse.InnerPawn.RaceProps != null && corpse.InnerPawn.RaceProps.Animal;
+
+            return false;
         }
     }
 }

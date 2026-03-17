@@ -211,7 +211,7 @@ namespace GameClient.Managers
             else
             {
                 if (includeAnimals) return map.mapPawns.AllPawns.Where(fetch => fetch.Faction == faction).ToArray();
-                else return map.mapPawns.AllPawns.Where(fetch => fetch.Faction == faction && !ScriberH.CheckIfThingIsAnimal(fetch)).ToArray();
+                else return map.mapPawns.AllPawns.Where(fetch => fetch.Faction == faction && !RimworldManager.CheckIfThingIsAnimal(fetch)).ToArray();
             }
         }
 
@@ -288,6 +288,25 @@ namespace GameClient.Managers
             }
 
             return pawns;
+        }
+
+        public static bool CheckIfThingIsHuman(Thing thing)
+        {
+            if (thing.def.defName == "Human") return true;
+            else return false;
+        }
+
+        public static bool CheckIfThingIsAnimal(Thing thing)
+        {
+            PawnKindDef animal = DefDatabase<PawnKindDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == thing.def.defName);
+            if (animal != null) return true;
+            else return false;
+        }
+
+        public static bool CheckIfThingIsCorpse(Thing thing)
+        {
+            if (thing is Corpse corpse) return true;
+            else return false;
         }
     }
 }

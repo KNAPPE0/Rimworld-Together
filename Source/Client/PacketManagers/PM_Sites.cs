@@ -220,7 +220,7 @@ namespace GameClient.PacketManagers
 
             Action selectWorker = delegate
             {
-                Pawn toSend = SessionHandler.ChosenCaravan.PawnsListForReading.Where(fetch => ScriberH.CheckIfThingIsHuman(fetch)).ToList()
+                Pawn toSend = SessionHandler.ChosenCaravan.PawnsListForReading.Where(fetch => RimworldManager.CheckIfThingIsHuman(fetch)).ToList()
                     [DLG_ListingWithButton.DialogButtonListingResultInt];
 
                 PKT_Site siteData = new PKT_Site();
@@ -254,7 +254,7 @@ namespace GameClient.PacketManagers
             if (file.WorkerString == null)
             {
                 List<string> contents = new List<string>();
-                foreach (Pawn pawn in SessionHandler.ChosenCaravan.PawnsListForReading.Where(fetch => ScriberH.CheckIfThingIsHuman(fetch)))
+                foreach (Pawn pawn in SessionHandler.ChosenCaravan.PawnsListForReading.Where(fetch => RimworldManager.CheckIfThingIsHuman(fetch)))
                 {
                     contents.Add(pawn.LabelCap);
                 }

@@ -52,7 +52,7 @@ namespace TCPNetwork
 
             if (!obj.GetType().IsSubclassOf(typeof(PKT_Base)) && obj.GetType() != typeof(PKT_Base))
             {
-                Printer.Error($"Malforced package {obj.GetType()}");
+                Printer.Error($"Malformed package {obj.GetType()}");
                 return;
             }
 

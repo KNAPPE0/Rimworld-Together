@@ -21,7 +21,9 @@ namespace GameClient.Patches
                 if (SessionHandler.IsSavingGame) return false;
                 if (SessionHandler.SynchronousMap != null) return false;
 
+                SessionHandler.IsExiting = true;
                 SessionHandler.IsSavingGame = true;
+                Find.MainTabsRoot.EscapeCurrentTab(playSound: false);
 
                 GameParameterManager.SetScenario(SessionHandler.CurrentScenario);
                 GameParameterManager.SetStoryteller(SessionHandler.CurrentStoryteller);
@@ -51,7 +53,7 @@ namespace GameClient.Patches
 
                     DLG_Wait.Instance.Close();
             }
-            catch (Exception e) { Printer.Error($"{e}"); }
+            catch (Exception e) { Printer.Error(e); }
 
             SessionHandler.IsSavingGame = false;
 

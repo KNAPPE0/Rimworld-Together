@@ -79,7 +79,7 @@ namespace GameClient.PacketManagers
             DLG_Base.PushNewDialog(d1);
         }
 
-        public static void ShowEventTweakerMenu()
+        public static void OpenEventManagerMenu()
         {
             string title = "Event Manager";
             string description = "Configure the availability of each event";

@@ -13,7 +13,7 @@ namespace GameClient.Managers
 {
     public static class DifficultyManager
     {
-        public static void OpenDifficultyMenu()
+        public static void OpenDifficultyManagerMenu()
         {
             string description = "Do you want to enforce the current difficulty?";
             Action actionYes = delegate

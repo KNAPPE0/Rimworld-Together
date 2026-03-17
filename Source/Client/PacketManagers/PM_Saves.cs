@@ -55,11 +55,17 @@ namespace GameClient.PacketManagers
 
                 MainThreadHandler.Instance.Enqueue(delegate
                 {
-                    FieldInfo fTicksSinceSave = AccessTools.Field(typeof(Autosaver), "ticksSinceSave");
-                    fTicksSinceSave.SetValue(Current.Game.autosaver, 0);
+                    ResetAutosaveTicks();
                     GameDataSaveLoader.SaveGame(CustomSaveName);
                 });
             });
+        }
+
+        private static void ResetAutosaveTicks()
+        {
+            FieldInfo fTicksSinceSave = AccessTools.Field(typeof(Autosaver), "ticksSinceSave");
+            if (fTicksSinceSave != null && Current.Game != null && Current.Game.autosaver != null)
+                fTicksSinceSave.SetValue(Current.Game.autosaver, 0);
         }
 
         public static void RequestResetSave()
@@ -179,11 +185,12 @@ namespace GameClient.PacketManagers
 
             byte[] saveBytes = GZip.DecompressBytes(data._fileBytes);
             File.WriteAllBytes(TempSaveFilePath, saveBytes);
-            File.Delete(CommonValues.DefaultSaveFormat);
 
             if (data._forceUseSave || !File.Exists(SaveFilePath))
             {
-                File.Delete(SaveFilePath);
+                if (File.Exists(SaveFilePath))
+                    File.Delete(SaveFilePath);
+
                 File.Move(TempSaveFilePath, SaveFilePath);
             }
             else

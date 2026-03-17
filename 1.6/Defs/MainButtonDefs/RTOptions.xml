@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+  <MainButtonDef>
+    <defName>Options</defName>
+    <label>options</label>
+    <description>Opens the options menu</description>
+    <tabWindowClass>GameClient.Tabs.TAB_Options</tabWindowClass>
+    <order>101</order>
+    <defaultHotKey>Clear</defaultHotKey>
+    <validWithoutMap>true</validWithoutMap>
+    <minimized>True</minimized>
+    <iconPath>UI/Options</iconPath>
+  </MainButtonDef>
+</Defs>

@@ -1,5 +1,4 @@
-﻿using Shared.Files.Maps;
-using Shared.Files.Synchronous;
+﻿using Shared.Files.Synchronous;
 using System;
 using System.Collections.Generic;
 using System.Linq;

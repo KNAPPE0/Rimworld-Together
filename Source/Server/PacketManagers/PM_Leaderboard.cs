@@ -1,7 +1,6 @@
 using GameServer.Core;
 using Shared;
 using Shared.Files;
-using Shared.Files.Maps;
 using System;
 using System.Collections.Generic;
 using System.IO;

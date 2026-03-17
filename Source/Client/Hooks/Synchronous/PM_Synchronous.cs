@@ -5,7 +5,7 @@ using GameClient.Misc;
 using RimWorld;
 using RimWorld.Planet;
 using Shared;
-using Shared.Files.Maps;
+using Shared.Files;
 using Shared.Files.Synchronous;
 using Shared.Misc;
 using System;

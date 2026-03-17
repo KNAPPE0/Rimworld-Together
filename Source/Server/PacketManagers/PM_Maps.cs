@@ -236,16 +236,16 @@ namespace GameServer.PacketManager
             stats.RealPlayTimeInteractingSeconds = mapFile.RealPlayTimeInteractingSeconds >= 0 ? mapFile.RealPlayTimeInteractingSeconds : -1;
             stats.LastSavedUtcTicks = savedTicksFallback > 0 ? savedTicksFallback : DateTime.UtcNow.Ticks;
 
-            stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Count : -1;
-            stats.NonFactionThingCount = mapFile.NonFactionThings != null ? mapFile.NonFactionThings.Count : -1;
+            stats.FactionThingCount = mapFile.Things != null ? mapFile.Things.Count : -1;
+            stats.NonFactionThingCount = -1;
 
-            stats.FactionHumanCount = mapFile.FactionHumans != null ? mapFile.FactionHumans.Count : -1;
-            stats.NonFactionHumanCount = mapFile.NonFactionHumans != null ? mapFile.NonFactionHumans.Count : -1;
+            stats.FactionHumanCount = -1;
+            stats.NonFactionHumanCount = -1;
 
-            stats.FactionAnimalCount = mapFile.FactionAnimals != null ? mapFile.FactionAnimals.Count : -1;
-            stats.NonFactionAnimalCount = mapFile.NonFactionAnimals != null ? mapFile.NonFactionAnimals.Count : -1;
+            stats.FactionAnimalCount = -1;
+            stats.NonFactionAnimalCount = -1;
 
-            stats.ColonistCount = stats.FactionHumanCount;
+            stats.ColonistCount = -1;
 
             TryBackfillFromSettlement(tile, stats);
 

@@ -1,7 +1,7 @@
 ﻿using Shared.Files.Configs.Mods;
 using System.Collections.Generic;
 
-namespace Shared.Files.Maps
+namespace Shared.Files
 {
     public class MapFile
     {
@@ -33,11 +33,13 @@ namespace Shared.Files.Maps
 
         public ModsConfigFile Mods { get; set; } = new ModsConfigFile();
 
-        public List<MapTile> Tiles { get; set; } = new List<MapTile>();
+        public List<string> Tiles { get; set; } = new List<string>();
 
         public List<string> Things { get; set; } = new List<string>();
 
         public List<string> Pawns { get; set; } = new List<string>();
+
+        public List<string> Roofs { get; set; } = new List<string>();
 
         public List<bool> Pollutions { get; set; } = new List<bool>();
     }

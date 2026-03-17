@@ -3,7 +3,6 @@ using GameClient.Managers;
 using RimWorld;
 using RimWorld.Planet;
 using Shared.Files;
-using Shared.Files.Maps;
 using Shared.Misc;
 using System;
 using System.Linq;
@@ -42,10 +41,11 @@ namespace GameClient.Misc
             mapFile.RealPlayTimeInteractingSeconds = interactingSeconds;
             mapFile.RealPlayTimeSeconds = totalSeconds;
 
-            GetMapTerrain(mapFile, map);
+            ToggleTerrain(OperationType.Get, mapFile, map);
             TogglePollution(OperationType.Get, mapFile, map);
-            GetMapThings(mapFile, map);
-            GetMapPawns(mapFile, map);
+            ToggleRoofs(OperationType.Get, mapFile, map);
+            ToggleMapPawns(OperationType.Get, mapFile, map);
+            ToggleMapThings(OperationType.Get, mapFile, map);
 
             return mapFile;
         }
@@ -59,10 +59,11 @@ namespace GameClient.Misc
 
             if (map == null) return null;
 
-            SetMapTerrain(mapFile, map);
+            ToggleTerrain(OperationType.Set, mapFile, map);
             TogglePollution(OperationType.Set, mapFile, map);
-            SetMapThings(mapFile, map, enforceIDs);
-            SetMapPawns(mapFile, map, enforceIDs);
+            ToggleRoofs(OperationType.Set, mapFile, map);
+            ToggleMapPawns(OperationType.Set, mapFile, map, enforceIDs);
+            ToggleMapThings(OperationType.Set, mapFile, map, enforceIDs);
 
             ToggleWeather(OperationType.Set, mapFile, map);
             RegenerateRoofGrid(map);
@@ -71,73 +72,15 @@ namespace GameClient.Misc
             return map;
         }
 
-        private static void GetMapTerrain(MapFile mapFile, Map map)
+        private static void ToggleWeather(OperationType type, MapFile file, Map map)
         {
-            for (int z = 0; z < map.Size.z; ++z)
-            {
-                for (int x = 0; x < map.Size.x; ++x)
-                {
-                    try
-                    {
-                        MapTile component = new MapTile();
-                        IntVec3 vectorToCheck = new IntVec3(x, map.Size.y, z);
-
-                        TerrainDef terrainDef = map.terrainGrid.TerrainAt(vectorToCheck);
-                        if (terrainDef != null)
-                            component.TileString = terrainDef.defName;
-
-                        try
-                        {
-                            RoofDef roofDef = map.roofGrid.RoofAt(vectorToCheck);
-                            if (roofDef != null)
-                                component.RoofString = roofDef.defName;
-                        }
-                        catch (Exception e)
-                        {
-                            Printer.Warning(e.ToString(), LogImportanceMode.Extreme);
-                        }
-
-                        mapFile.Tiles.Add(component);
-                    }
-                    catch (Exception e)
-                    {
-                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
-                    }
-                }
-            }
+            if (type == OperationType.Set)
+                map.weatherManager.TransitionTo(DefDatabase<WeatherDef>.AllDefs.ToList()[file.WeatherByte]);
+            else
+                file.WeatherByte = (byte)DefDatabase<WeatherDef>.AllDefs.FirstIndexOf(fetch => fetch == map.weatherManager.curWeather);
         }
 
-        private static void GetMapThings(MapFile mapFile, Map map)
-        {
-            foreach (Thing thing in map.listerThings.AllThings.Where(fetch => !RimworldManager.CheckIfThingIsPawn(fetch)).ToArray())
-            {
-                try
-                {
-                    mapFile.Things.Add(ScribeManager.SerializeToString(thing, ScribeManager.SerializableType.Thing));
-                }
-                catch (Exception e)
-                {
-                    Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
-                }
-            }
-        }
-
-        private static void GetMapPawns(MapFile mapFile, Map map)
-        {
-            foreach (Thing pawn in map.listerThings.AllThings.Where(fetch => RimworldManager.CheckIfThingIsPawn(fetch)).ToArray())
-            {
-                try
-                {
-                    mapFile.Pawns.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Pawn));
-                }
-                catch (Exception e)
-                {
-                    Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
-                }
-            }
-        }
-
-        private static void SetMapTerrain(MapFile mapFile, Map map)
+        private static void ToggleTerrain(OperationType type, MapFile file, Map map)
         {
             int index = 0;
 
@@ -147,19 +90,21 @@ namespace GameClient.Misc
                 {
                     try
                     {
-                        MapTile component = mapFile.Tiles[index];
-                        IntVec3 vectorToCheck = new IntVec3(x, map.Size.y, z);
+                        IntVec3 vector = new IntVec3(x, map.Size.y, z);
 
-                        if (!string.IsNullOrEmpty(component.TileString))
+                        if (type == OperationType.Get)
                         {
-                            TerrainDef terrainToUse = DefDatabase<TerrainDef>.AllDefs.First(fetch => fetch.defName == component.TileString);
-                            map.terrainGrid.SetTerrain(vectorToCheck, terrainToUse);
+                            TerrainDef terrain = map.terrainGrid.TerrainAt(vector);
+                            file.Tiles.Add(terrain != null ? terrain.defName : null);
                         }
-
-                        if (!string.IsNullOrEmpty(component.RoofString))
+                        else
                         {
-                            RoofDef roofToUse = DefDatabase<RoofDef>.AllDefs.First(fetch => fetch.defName == component.RoofString);
-                            map.roofGrid.SetRoof(vectorToCheck, roofToUse);
+                            if (file.Tiles != null && index < file.Tiles.Count && !string.IsNullOrEmpty(file.Tiles[index]))
+                            {
+                                TerrainDef terrainToUse = DefDatabase<TerrainDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == file.Tiles[index]);
+                                if (terrainToUse != null)
+                                    map.terrainGrid.SetTerrain(vector, terrainToUse);
+                            }
                         }
                     }
                     catch (Exception e)
@@ -172,34 +117,137 @@ namespace GameClient.Misc
             }
         }
 
-        private static void SetMapThings(MapFile mapFile, Map map, bool enforceIDs)
+        private static void TogglePollution(OperationType type, MapFile file, Map map)
         {
-            foreach (string str in mapFile.Things)
+            int index = 0;
+
+            for (int z = 0; z < map.Size.z; ++z)
             {
-                try
+                for (int x = 0; x < map.Size.x; ++x)
                 {
-                    Thing thing = ScribeManager.SerializeFromString<Thing>(str, ScribeManager.SerializableType.Thing, enforceIDs);
-                    RimworldManager.PlaceThingIntoMap(thing, map, thing.Position);
-                }
-                catch (Exception e)
-                {
-                    Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    try
+                    {
+                        IntVec3 vector = new IntVec3(x, map.Size.y, z);
+
+                        if (type == OperationType.Get)
+                        {
+                            file.Pollutions.Add(map.pollutionGrid.IsPolluted(vector));
+                        }
+                        else
+                        {
+                            if (file.Pollutions != null && index < file.Pollutions.Count)
+                                map.pollutionGrid.SetPolluted(vector, file.Pollutions[index]);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    }
+
+                    index++;
                 }
             }
         }
 
-        private static void SetMapPawns(MapFile mapFile, Map map, bool enforceIDs)
+        private static void ToggleRoofs(OperationType type, MapFile file, Map map)
         {
-            foreach (string str in mapFile.Pawns)
+            int index = 0;
+
+            for (int z = 0; z < map.Size.z; ++z)
             {
-                try
+                for (int x = 0; x < map.Size.x; ++x)
                 {
-                    Pawn pawn = ScribeManager.SerializeFromString<Pawn>(str, ScribeManager.SerializableType.Pawn, enforceIDs);
-                    RimworldManager.PlaceThingIntoMap(pawn, map, pawn.PositionHeld);
+                    try
+                    {
+                        IntVec3 vector = new IntVec3(x, map.Size.y, z);
+
+                        if (type == OperationType.Get)
+                        {
+                            RoofDef roof = map.roofGrid.RoofAt(vector);
+                            file.Roofs.Add(roof != null ? roof.defName : null);
+                        }
+                        else
+                        {
+                            if (file.Roofs != null && index < file.Roofs.Count && !string.IsNullOrEmpty(file.Roofs[index]))
+                            {
+                                RoofDef roofToUse = DefDatabase<RoofDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == file.Roofs[index]);
+                                if (roofToUse != null)
+                                    map.roofGrid.SetRoof(vector, roofToUse);
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    }
+
+                    index++;
                 }
-                catch (Exception e)
+            }
+        }
+
+        private static void ToggleMapThings(OperationType type, MapFile file, Map map, bool enforceIDs = false)
+        {
+            if (type == OperationType.Get)
+            {
+                foreach (Thing thing in map.listerThings.AllThings.Where(fetch => !RimworldManager.CheckIfThingIsPawn(fetch)).ToArray())
                 {
-                    Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    try
+                    {
+                        file.Things.Add(ScribeManager.SerializeToString(thing, ScribeManager.SerializableType.Thing));
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    }
+                }
+            }
+            else
+            {
+                foreach (string str in file.Things)
+                {
+                    try
+                    {
+                        Thing thing = ScribeManager.SerializeFromString<Thing>(str, ScribeManager.SerializableType.Thing, enforceIDs);
+                        RimworldManager.PlaceThingIntoMap(thing, map, thing.Position);
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    }
+                }
+            }
+        }
+
+        private static void ToggleMapPawns(OperationType type, MapFile file, Map map, bool enforceIDs = false)
+        {
+            if (type == OperationType.Get)
+            {
+                foreach (Thing pawn in map.listerThings.AllThings.Where(fetch => RimworldManager.CheckIfThingIsPawn(fetch)).ToArray())
+                {
+                    try
+                    {
+                        file.Pawns.Add(ScribeManager.SerializeToString(pawn, ScribeManager.SerializableType.Pawn));
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    }
+                }
+            }
+            else
+            {
+                foreach (string str in file.Pawns)
+                {
+                    try
+                    {
+                        Pawn pawn = ScribeManager.SerializeFromString<Pawn>(str, ScribeManager.SerializableType.Pawn, enforceIDs);
+                        RimworldManager.PlaceThingIntoMap(pawn, map, pawn.PositionHeld);
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning(e.ToString(), LogImportanceMode.Verbose);
+                    }
                 }
             }
         }
@@ -219,14 +267,6 @@ namespace GameClient.Misc
             FloodFillerFog.FloodUnfog(MapGenerator.PlayerStartSpot, map);
 
             pawn.Destroy();
-        }
-
-        private static void ToggleWeather(OperationType type, MapFile mapFile, Map map)
-        {
-            if (type == OperationType.Set)
-                map.weatherManager.TransitionTo(DefDatabase<WeatherDef>.AllDefs.ToList()[mapFile.WeatherByte]);
-            else
-                mapFile.WeatherByte = (byte)DefDatabase<WeatherDef>.AllDefs.FirstIndexOf(fetch => fetch == map.weatherManager.curWeather);
         }
 
         private static string GetFactionNameSafe()
@@ -407,31 +447,6 @@ namespace GameClient.Misc
             }
 
             return -1;
-        }
-
-        private static void TogglePollution(OperationType type, MapFile mapFile, Map map)
-        {
-            int index = 0;
-
-            for (int z = 0; z < map.Size.z; ++z)
-            {
-                for (int x = 0; x < map.Size.x; ++x)
-                {
-                    IntVec3 vector = new IntVec3(x, map.Size.y, z);
-
-                    if (type == OperationType.Get)
-                    {
-                        mapFile.Pollutions.Add(map.pollutionGrid.IsPolluted(vector));
-                    }
-                    else
-                    {
-                        if (mapFile.Pollutions != null && index < mapFile.Pollutions.Count)
-                            map.pollutionGrid.SetPolluted(vector, mapFile.Pollutions[index]);
-                    }
-
-                    index++;
-                }
-            }
         }
     }
 }

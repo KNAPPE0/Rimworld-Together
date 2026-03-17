@@ -2,10 +2,10 @@
 using TCPNetwork.Packets;
 using Shared;
 using GameClient.Misc;
-using Shared.Files.Maps;
 using GameClient.Hooks.TCPNetwork;
 using TCPNetwork;
 using TCPNetwork.Files.Client;
+using Shared.Files;
 
 namespace GameClient.PacketManagers
 {

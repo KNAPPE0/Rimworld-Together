@@ -1,4 +1,4 @@
-﻿using Shared.Files.Maps;
+﻿using Shared.Files;
 
 namespace TCPNetwork.Packets
 {

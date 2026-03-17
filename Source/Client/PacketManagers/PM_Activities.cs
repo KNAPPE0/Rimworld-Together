@@ -9,11 +9,11 @@ using Shared;
 using System.Reflection;
 using Verse;
 using static Shared.CommonEnumerators;
-using Shared.Files.Maps;
 using GameClient.Hooks.TCPNetwork;
 using TCPNetwork;
 using GameClient.Managers;
 using TCPNetwork.Files.Client;
+using Shared.Files;
 
 namespace GameClient.PacketManagers
 {

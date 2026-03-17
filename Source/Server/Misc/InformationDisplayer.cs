@@ -16,8 +16,6 @@ namespace GameServer.Misc
 
         public static void DisplaySaveGame(ServerClient client) { Printer.Message($"[Save game] > {client.UserFile.Username}"); }
 
-        public static void DisplayLoadGame(ServerClient client) { Printer.Message($"[Load game] > {client.UserFile.Username}"); }
-
         public static void DisplaySaveMap(ServerClient client) { Printer.Message($"[Save Map] > {client.UserFile.Username}"); }
 
         public static void DisplaySetMods(ServerClient client) { Printer.Warning($"[Set mods] > {client.UserFile.Username}"); }
@@ -26,11 +24,7 @@ namespace GameServer.Misc
 
         public static void DisplaySetEvents(ServerClient client) { Printer.Warning($"[Set events] > {client.UserFile.Username}"); }
 
-        public static void DisplayRemoveMap(string value) { Printer.Message($"[Remove map] > {value}"); }
-
         public static void DisplayChatMap(string label, string message) { Printer.Message($"[Chat - {label}] > {message}"); }
-
-        public static void DisplaySiteTick() { Printer.Warning($"[Tick] > Sites", LogImportanceMode.Verbose); }
 
         public static void DisplayAddSettlement(string value) { Printer.Message($"[Add settlement] > {value}"); }
 
@@ -47,12 +41,6 @@ namespace GameServer.Misc
         public static void DisplayAddRoad(string value, string value2) { Printer.Message($"[Add road] > {value} - {value2}"); }
 
         public static void DisplayRemoveRoad(string value, string value2) { Printer.Message($"[Remove road] > {value} - {value2}"); }
-
-        public static void DisplayAddCaravan(string value) { Printer.Message($"[Add caravan] > {value}"); }
-
-        public static void DisplayRemoveCaravan(string value) { Printer.Message($"[Remove caravan] > {value}"); }
-
-        public static void DisplayMoveCaravan(string value) { Printer.Message($"[Move caravan] > {value}", LogImportanceMode.Verbose); }
 
         public static void DisplayServerBackup(string value) { Printer.Warning($"[Server backup] > {value}"); }
 

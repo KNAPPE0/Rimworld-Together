@@ -52,7 +52,7 @@ namespace GameServer.Misc
 
         public static void DisplayModMismatch(string value) { Printer.Warning($"[Mod mismatch] > {value}"); }
 
-        public static void DisplayVersionMismatch(ServerClient client) { Printer.Warning($"[Version mismatch] > {client.UserFile.Username}"); }
+        public static void DisplayVersionMismatch(ServerClient client) { Printer.Warning($"[Version mismatch] > {client.CurrentIP}"); }
 
         public static void DisplaySetScenario(string value) { Printer.Warning($"[Set scenario] > {value}"); }
 

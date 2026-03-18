@@ -51,8 +51,6 @@ namespace GameClient.Patches.Pages
                 if (executedMessage) return true;
                 else
                 {
-                    Printer.Warning(3);
-
                     Action toDo = delegate
                     {
                         GameParameterManager.SetStoryteller(SessionHandler.CurrentStoryteller);

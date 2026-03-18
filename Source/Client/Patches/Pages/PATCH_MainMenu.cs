@@ -44,7 +44,8 @@ namespace GameClient.Patches.Pages
                 {
                     optList.Insert(0, new ListableOption("Play Together", delegate
                     {
-                        if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected) return;
+                        if (!HarmonyHandler.CheckForModCollision()) return;
+                        else if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected) return;
                         else if (!LoginManagerH.CheckIfLoginIsValid()) PM_Login.PromptCreateAccount(false);
                         else ConnectionManager.ShowWelcomeDialogs();
                     }));
@@ -68,7 +69,8 @@ namespace GameClient.Patches.Pages
                 Vector2 buttonLocation = new Vector2(rect.x - 50f, rect.y);
                 if (Widgets.ButtonText(new Rect(buttonLocation.x, buttonLocation.y, buttonSize.x, buttonSize.y), ""))
                 {
-                    if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected) return true;
+                    if (!HarmonyHandler.CheckForModCollision()) return true;
+                    else if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected) return true;
                     else if (!LoginManagerH.CheckIfLoginIsValid()) PM_Login.PromptCreateAccount(true);
                     else PM_Login.QuickConnectUser();
                 }

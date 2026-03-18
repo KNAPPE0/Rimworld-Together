@@ -32,9 +32,10 @@ namespace GameClient.Core
                 OptionsProfileSessionManager.Bootstrap();
 
                 HarmonyHandler.EnableStartPatches();
+                MethodGatherer.CacheAllMethods(AssemblyType.Client);
+                MethodGatherer.CacheAllPackets(AssemblyType.Client);
 
                 CreateUnityDispatcher();
-                MethodGatherer.CacheAllMethods(AssemblyType.Client);
             }
         }
 

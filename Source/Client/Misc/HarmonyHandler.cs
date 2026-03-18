@@ -1,4 +1,5 @@
 ﻿using GameClient.Core;
+using GameClient.Dialogs;
 using HarmonyLib;
 using Shared;
 using Shared.Misc;
@@ -27,8 +28,6 @@ namespace GameClient.Misc
         {
             if (Instance == null) Instance = new Harmony(HarmonyMainID);
             Instance.PatchAllUncategorized(Assembly.GetExecutingAssembly());
-
-            CheckForModCollision();
         }
 
         [OnSessionEnd]
@@ -45,9 +44,11 @@ namespace GameClient.Misc
 
         private static PatchClassProcessor CreateClassProcessor(Type type) { return new PatchClassProcessor(Instance, type); }
 
-        private static void CheckForModCollision()
+        public static bool CheckForModCollision()
         {
-            List<string> CollidingMods = new List<string>();
+            EnableMainPatches();
+
+            List<string> collidingMods = new List<string>();
 
             foreach (MethodBase method in Instance.GetPatchedMethods())
             {
@@ -57,7 +58,7 @@ namespace GameClient.Misc
                 {
                     if (patch.owner != HarmonyMainID && patch.owner != HarmonyStartID)
                     {
-                        if (!CollidingMods.Contains(patch.owner)) CollidingMods.Add(patch.owner);
+                        if (!collidingMods.Contains(patch.owner)) collidingMods.Add(patch.owner);
                     }
                 }
 
@@ -65,20 +66,20 @@ namespace GameClient.Misc
                 {
                     if (patch.owner != HarmonyMainID && patch.owner != HarmonyStartID)
                     {
-                        if (!CollidingMods.Contains(patch.owner)) CollidingMods.Add(patch.owner);
+                        if (!collidingMods.Contains(patch.owner)) collidingMods.Add(patch.owner);
                     }
                 }
             }
 
-            if (CollidingMods.Count == 0) Printer.Warning("No colliding mods were found");
+            DisableMainPatches();
+
+            if (collidingMods.Count == 0) return true;
             else
             {
-                Printer.Warning($"{CollidingMods.Count} colliding mods were found!");
-                foreach (string str in CollidingMods)
-                {
-                    if (str == HarmonyStartID) continue;
-                    else Printer.Warning($"Mod '{str}' is colliding with RimWorld Together! This may cause issues!");
-                }
+                string title = "Problematic mods found";
+                string description = "The following mods might cause issues during gameplay";
+                DLG_Base.PushNewDialog(new DLG_Listing(title, description, collidingMods.ToArray()));
+                return false;
             }
         }
     }

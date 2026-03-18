@@ -145,6 +145,11 @@ namespace GameClient.PacketManagers
             settlementData._stepMode = SettlementStepMode.Add;
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
+
+            //TODO
+            //Find a way to enable this
+            //Async map generation will break saving the map at this step
+            //PM_Saves.ForceSave();
         }
 
         public static void AbandonSettlement(int settlementTile)
@@ -154,7 +159,6 @@ namespace GameClient.PacketManagers
             settlementData._stepMode = SettlementStepMode.Remove;
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
-
             PM_Saves.ForceSave();
         }
 

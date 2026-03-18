@@ -129,7 +129,6 @@ namespace GameClient.Managers
 
             PM_World.SendWorld();
             PM_Events.SendExistingEventsToServer();
-            PM_Saves.ForceSave();
 
             DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", 
                 new string[] { "Some configurations might require a server restart to apply" }));

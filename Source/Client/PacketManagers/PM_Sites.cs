@@ -233,7 +233,6 @@ namespace GameClient.PacketManagers
                 toSend.Destroy();
 
                 Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, siteData);
-
                 PM_Saves.ForceSave();
             };
 
@@ -247,8 +246,6 @@ namespace GameClient.PacketManagers
                 siteData._file.Tile = SessionHandler.ChosenSite.Tile;
 
                 Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, siteData);
-
-                PM_Saves.ForceSave();
             };
 
             if (file.WorkerString == null)

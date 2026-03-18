@@ -104,8 +104,6 @@ namespace GameClient.PacketManagers
             RimworldManager.GenerateLetter("Received aid",
                 "You have received aid from a player! The pawn should come to help soon",
                 LetterDefOf.PositiveEvent);
-
-            PM_Saves.ForceSave();
         }
 
         private static void RejectAid(PKT_Aid data)

@@ -21,8 +21,6 @@ namespace GameClient.Patches
         public static void ModifyPost(Caravan caravan)
         {
             PM_Settlements.SendNewPlayerSettlement(caravan.Tile);
-
-            PM_Saves.ForceSave();
         }
     }
 
@@ -33,8 +31,6 @@ namespace GameClient.Patches
         public static void ModifyPost(Map map)
         {
             PM_Settlements.SendNewPlayerSettlement(map.Tile);
-
-            PM_Saves.ForceSave();
         }
     }
 

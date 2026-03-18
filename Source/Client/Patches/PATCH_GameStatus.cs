@@ -19,12 +19,9 @@ namespace GameClient.Patches
         public static void ModifyPost(Game __instance)
         {
             PM_Settlements.SendNewPlayerSettlement(__instance.CurrentMap.Tile);
-
-            if (!SessionHandler.IsGeneratingFreshWorld) PM_Saves.ForceSave();
-            else PM_Mods.OpenModManagerMenu(true);
-
             SessionHandler.IsReadyToPlay = true;
 
+            if (SessionHandler.IsGeneratingFreshWorld) PM_Mods.OpenModManagerMenu(true);
             MainThreadHandler.Instance.DoOnStartMethods();
         }
     }
@@ -36,13 +33,7 @@ namespace GameClient.Patches
         public static void GetIDFromExistingGame()
         {
             PlanetManager.BuildPlanet();
-
-            GameParameterManager.SetScenario(SessionHandler.CurrentScenario);
-            GameParameterManager.SetStoryteller(SessionHandler.CurrentStoryteller);
-            GameParameterManager.SetDifficulty(SessionHandler.CurrentDifficulty);
-
             SessionHandler.IsReadyToPlay = true;
-
             MainThreadHandler.Instance.DoOnStartMethods();
         }
     }

@@ -21,7 +21,6 @@ namespace GameClient.Patches
                 if (SessionHandler.IsSavingGame) return false;
                 if (SessionHandler.SynchronousMap != null) return false;
 
-                SessionHandler.IsExiting = true;
                 SessionHandler.IsSavingGame = true;
                 Find.MainTabsRoot.EscapeCurrentTab(playSound: false);
 

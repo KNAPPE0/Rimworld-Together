@@ -31,9 +31,8 @@ namespace GameClient.Patches
         [HarmonyPostfix]
         public static void DoPost(Gravship gravship)
         {
-            Map map = Find.WorldObjects.MapParentAt(gravship.destinationTile)?.Map;
-            PM_Settlements.SendNewPlayerSettlement(map.Tile);
-            PM_Saves.ForceSave();
+            PM_Settlements.SendNewPlayerSettlement(gravship.destinationTile);
+            //PM_Saves.ForceSave();
         }
     }
 
@@ -43,9 +42,8 @@ namespace GameClient.Patches
         [HarmonyPostfix]
         public static void DoPost(Gravship gravship)
         {
-            Map map = Find.WorldObjects.MapParentAt(gravship.destinationTile)?.Map;
-            PM_Settlements.SendNewPlayerSettlement(map.Tile);
-            PM_Saves.ForceSave();
+            PM_Settlements.SendNewPlayerSettlement(gravship.destinationTile);
+            //PM_Saves.ForceSave();
         }
     }
 }

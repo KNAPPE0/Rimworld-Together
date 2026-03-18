@@ -280,9 +280,13 @@ namespace GameClient.Managers
 
         public static bool CheckIfThingIsPawn(Thing thing)
         {
-            PawnKindDef pawn = DefDatabase<PawnKindDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == thing.def.defName);
-            if (pawn != null || thing.def.defName == "Human") return true;
-            else return false;
+            try
+            {
+                PawnKindDef pawn = DefDatabase<PawnKindDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == thing.def.defName);
+                if (pawn != null || thing.def.defName == "Human") return true;
+                else return false;
+            }
+            catch { return false; }
         }
 
         public static bool CheckIfThingIsHuman(Pawn pawn) { return !pawn.IsAnimal; }

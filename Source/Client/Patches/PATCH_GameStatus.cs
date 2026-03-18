@@ -23,6 +23,7 @@ namespace GameClient.Patches
 
             if (SessionHandler.IsGeneratingFreshWorld) PM_Mods.OpenModManagerMenu(true);
             MainThreadHandler.Instance.DoOnStartMethods();
+            PM_Saves.ForceSave();
         }
     }
 

@@ -19,7 +19,8 @@ namespace GameClient.Dialogs
 
         public DLG_ServerListing()
         {
-            if (!GetServers()) FailedToFetchServers = true;
+            if (!GetServers())
+                FailedToFetchServers = true;
 
             Instance = this;
             Title = "Server Browser";
@@ -31,11 +32,11 @@ namespace GameClient.Dialogs
 
         private bool GetServers()
         {
-            ServerBrowserManager.GetAllServersAvailable();
-
+            bool ok = ServerBrowserManager.GetAllServersAvailable();
             var servers = ServerBrowserManager.AllServers;
 
-            if (servers == null || servers.Length == 0) return false;
+            if (!ok || servers == null || servers.Length == 0)
+                return false;
 
             Printer.Warning($"Found {servers.Count()} servers in the server browser", CommonEnumerators.LogImportanceMode.Verbose);
             return true;
@@ -45,7 +46,16 @@ namespace GameClient.Dialogs
         {
             if (FailedToFetchServers)
             {
-                PushNewDialog(new DLG_Message("Server Browser", new[] { "Server browser is currently empty" }));
+                string msg = string.IsNullOrWhiteSpace(ServerBrowserManager.LastBrowserError)
+                    ? "The server browser could not be loaded right now."
+                    : ServerBrowserManager.LastBrowserError;
+
+                PushNewDialog(new DLG_Message("Server Browser", new[]
+                {
+                    msg,
+                    "Please try again in a moment."
+                }));
+
                 Close();
                 return;
             }
@@ -81,19 +91,26 @@ namespace GameClient.Dialogs
         private void FillMainRect(Rect mainRect)
         {
             var servers = ServerBrowserManager.AllServers
-                .ToList()
+                .Where(x => x != null)
                 .OrderByDescending(x => x._currentPlayerCount)
                 .Where(x => x.Reachability == Reachability.Reachable && x._version == CommonValues.ExecutableVersion)
                 .ToArray();
 
             float rowH = 34f;
-            float height = 6f + servers.Length * rowH;
+            float height = Mathf.Max(6f + servers.Length * rowH, mainRect.height);
 
             Rect viewRect = new Rect(0f, 0f, mainRect.width - GenUI.ScrollBarWidth, height);
 
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
             try
             {
+                if (servers.Length == 0)
+                {
+                    Rect emptyRect = new Rect(0f, 8f, viewRect.width, 28f);
+                    Widgets.Label(emptyRect, "<color=grey>No reachable servers found for your current version.</color>");
+                    return;
+                }
+
                 float y = 0f;
                 float yMin = ScrollPosition.y - rowH;
                 float yMax = ScrollPosition.y + mainRect.height;
@@ -119,14 +136,15 @@ namespace GameClient.Dialogs
         {
             if (server == null) return;
 
-            if (index % 2 == 0) Widgets.DrawAltRect(row);
+            if (index % 2 == 0)
+                Widgets.DrawAltRect(row);
+
             Widgets.DrawHighlightIfMouseover(row);
 
             Rect inner = row.ContractedBy(6f, 4f);
 
             float btnW = 90f;
             Rect btn = new Rect(inner.xMax - btnW, inner.y, btnW, inner.height);
-
             Rect labelRect = new Rect(inner.x, inner.y, inner.width - btnW - 8f, inner.height);
 
             Text.Font = GameFont.Small;

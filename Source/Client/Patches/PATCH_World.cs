@@ -46,7 +46,7 @@ namespace GameClient.Patches
                 icon = ContentFinder<Texture2D>.Get("Commands/Leaderboard"),
                 action = delegate
                 {
-                    if (SessionHandler.CurrentActionValues.EnableLeaderboard) PM_Leaderboard.Ask();
+                    if (SessionHandler.CurrentActionValues.EnableLeaderboard) PM_Leaderboard.OpenLeaderboardDialog(true);
                     else DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
                 }
             };

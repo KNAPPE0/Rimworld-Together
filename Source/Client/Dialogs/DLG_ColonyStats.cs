@@ -1,4 +1,5 @@
-﻿using Shared.Files;
+﻿using GameClient.PacketManagers;
+using Shared.Files;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,7 +7,7 @@ using Verse;
 
 namespace GameClient.Dialogs
 {
-    public class RT_Dialog_ColonyStats : RT_Dialog_Base
+    public class DLG_ColonyStats : DLG_Base
     {
         public override Vector2 InitialSize => new Vector2(560f, 460f);
 
@@ -28,7 +29,7 @@ namespace GameClient.Dialogs
 
         private const float OuterPadding = 10f;
 
-        public RT_Dialog_ColonyStats(MapStatsFile stats, bool? isOnline, string settlementLabel = null)
+        public DLG_ColonyStats(MapStatsFile stats, bool? isOnline, string settlementLabel = null)
         {
             Title = "Colony Stats";
             _stats = stats;
@@ -139,7 +140,7 @@ namespace GameClient.Dialogs
             if (Widgets.ButtonText(refreshBtn, "Refresh"))
             {
                 Close();
-                GameClient.Managers.StatisticalManager.AskForStats();
+                PM_Statistical.AskForStats();
             }
 
             if (Widgets.ButtonText(okBtn, "OK"))

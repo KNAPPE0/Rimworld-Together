@@ -1,8 +1,8 @@
 ﻿using GameServer.Hooks.TCPNetwork;
-using GameServer.Managers;
+using GameServer.PacketManagers;
 using Shared;
 using Shared.Files;
-using Shared.Files.Maps;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 
@@ -27,7 +27,7 @@ namespace GameServer.PacketManager
                     break;
 
                 case PKT_Information.InfoStepMode.Stats:
-                    StatisticalManager.SendStats(client, data);
+                    PM_Statistical.SendStats(client, data);
                     break;
 
                 case PKT_Information.InfoStepMode.Leaderboard:

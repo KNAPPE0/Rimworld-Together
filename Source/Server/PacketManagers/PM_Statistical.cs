@@ -1,27 +1,29 @@
+using GameServer.Hooks.TCPNetwork;
+using GameServer.PacketManager;
 using Shared;
 using Shared.Files;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 
-namespace GameServer.Managers
+namespace GameServer.PacketManagers
 {
-    public static class StatisticalManager
+    public static class PM_Statistical
     {
-        public static void SendStats(ServerClient client, InformationData data)
+        public static void SendStats(ServerClient client, PKT_Information data)
         {
             try
             {
                 string username = string.Empty;
 
                 SettlementFile settlementToFind = null;
-                try { settlementToFind = SettlementManager.GetSettlementFileFromTile(data._settlementTile); }
+                try { settlementToFind = PM_Settlements.GetSettlementFileFromTile(data._settlementTile); }
                 catch { }
 
                 if (settlementToFind != null)
                 {
                     username = settlementToFind.Username ?? string.Empty;
 
-                    ServerClient clientToFind = ServerNetwork.Instance.GetConnectedClientFromUsername(username);
+                    ServerClient clientToFind = ServerNetwork.GetConnectedClientFromUsername(username);
                     data._isPlayerOnline = clientToFind != null;
                 }
                 else
@@ -30,7 +32,7 @@ namespace GameServer.Managers
                 }
 
                 MapStatsFile stats = null;
-                try { stats = MapManager.GetOrCreateMapStatsFromTile(data._settlementTile); }
+                try { stats = PM_Maps.GetOrCreateMapStatsFromTile(data._settlementTile); }
                 catch { }
 
                 if (stats == null)

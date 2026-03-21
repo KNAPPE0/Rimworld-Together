@@ -6,6 +6,7 @@ using Shared;
 using Shared.Files;
 using System.Collections.Generic;
 using System.IO;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
@@ -63,7 +64,7 @@ namespace GameServer.PacketManager
             {
                 if (cClient == client) continue;
 
-                settlementData._settlementFile.Goodwill = GoodwillManager.GetSettlementGoodwill(cClient, settlementFile);
+                settlementData._settlementFile.Goodwill = PM_Goodwills.GetSettlementGoodwill(cClient, settlementFile);
                 cClient.Listener.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
             }
 

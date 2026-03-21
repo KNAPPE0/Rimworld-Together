@@ -42,5 +42,19 @@ namespace Shared.Files
         public List<string> Roofs { get; set; } = new List<string>();
 
         public List<bool> Pollutions { get; set; } = new List<bool>();
+
+        public int ColonistCount { get; set; } = -1;
+
+        public int FactionHumanCount { get; set; } = -1;
+
+        public int NonFactionHumanCount { get; set; } = -1;
+
+        public int FactionAnimalCount { get; set; } = -1;
+
+        public int NonFactionAnimalCount { get; set; } = -1;
+
+        public int FactionThingCount { get; set; } = -1;
+
+        public int NonFactionThingCount { get; set; } = -1;
     }
 }

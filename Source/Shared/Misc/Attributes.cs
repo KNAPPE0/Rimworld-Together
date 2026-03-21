@@ -61,7 +61,7 @@ namespace Shared
         ConsoleManager,
         GlobalDataManager,
         ResponseShortcutManager,
-        RecountManager,
+        PM_Recount,
         InformationManager,
         SPlayerDraft,
         SPlayerWeather,
@@ -73,6 +73,6 @@ namespace Shared
         SPlayerHediff,
         SPlayerPosition,
         SPlayerDestroy,
-        LeaderboardManager,
+        PM_Leaderboard,
     }
 }

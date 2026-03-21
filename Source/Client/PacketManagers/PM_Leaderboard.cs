@@ -3,6 +3,7 @@ using Shared;
 using Shared.Files;
 using System;
 using TCPNetwork;
+using TCPNetwork.Packets;
 using Verse;
 
 namespace GameClient.PacketManagers
@@ -14,8 +15,8 @@ namespace GameClient.PacketManagers
         private static bool _requestInFlight;
         private static int _lastRequestMs;
 
-        public static InformationData.LeaderboardSortMode CurrentSort { get; private set; } = InformationData.LeaderboardSortMode.WealthExact;
-        public static InformationData.LeaderboardOrder CurrentOrder { get; private set; } = InformationData.LeaderboardOrder.Desc;
+        public static PKT_Information.LeaderboardSortMode CurrentSort { get; private set; } = PKT_Information.LeaderboardSortMode.WealthExact;
+        public static PKT_Information.LeaderboardOrder CurrentOrder { get; private set; } = PKT_Information.LeaderboardOrder.Desc;
 
         public static int CurrentLimit { get; private set; } = 10;
         public static int CurrentOffset { get; private set; } = 0;
@@ -29,6 +30,11 @@ namespace GameClient.PacketManagers
 
             if (requestFresh)
                 AskForLeaderboard(CurrentSort, CurrentOrder, CurrentLimit, CurrentOffset);
+        }
+
+        public static void AskForLeaderboard()
+        {
+            AskForLeaderboard(CurrentSort, CurrentOrder, CurrentLimit, CurrentOffset);
         }
 
         private static void TryOpenDialog()
@@ -62,8 +68,8 @@ namespace GameClient.PacketManagers
             if (cmd != "/lb" && cmd != "/leaderboard")
                 return false;
 
-            InformationData.LeaderboardSortMode sort = CurrentSort;
-            InformationData.LeaderboardOrder order = CurrentOrder;
+            PKT_Information.LeaderboardSortMode sort = CurrentSort;
+            PKT_Information.LeaderboardOrder order = CurrentOrder;
             int limit = CurrentLimit;
 
             for (int i = 1; i < parts.Length; i++)
@@ -72,13 +78,13 @@ namespace GameClient.PacketManagers
 
                 if (token == "asc" || token == "a")
                 {
-                    order = InformationData.LeaderboardOrder.Asc;
+                    order = PKT_Information.LeaderboardOrder.Asc;
                     continue;
                 }
 
                 if (token == "desc" || token == "d")
                 {
-                    order = InformationData.LeaderboardOrder.Desc;
+                    order = PKT_Information.LeaderboardOrder.Desc;
                     continue;
                 }
 
@@ -99,47 +105,47 @@ namespace GameClient.PacketManagers
             return true;
         }
 
-        private static InformationData.LeaderboardSortMode ParseSort(string token, InformationData.LeaderboardSortMode fallback)
+        private static PKT_Information.LeaderboardSortMode ParseSort(string token, PKT_Information.LeaderboardSortMode fallback)
         {
             switch (token)
             {
                 case "wealth":
                 case "w":
-                    return InformationData.LeaderboardSortMode.Wealth;
+                    return PKT_Information.LeaderboardSortMode.Wealth;
 
                 case "exact":
                 case "wealthexact":
                 case "wx":
-                    return InformationData.LeaderboardSortMode.WealthExact;
+                    return PKT_Information.LeaderboardSortMode.WealthExact;
 
                 case "colonists":
                 case "cols":
                 case "c":
-                    return InformationData.LeaderboardSortMode.Colonists;
+                    return PKT_Information.LeaderboardSortMode.Colonists;
 
                 case "playtime":
                 case "time":
                 case "pt":
-                    return InformationData.LeaderboardSortMode.PlaytimeTicks;
+                    return PKT_Information.LeaderboardSortMode.PlaytimeTicks;
 
                 case "days":
                 case "dys":
-                    return InformationData.LeaderboardSortMode.Days;
+                    return PKT_Information.LeaderboardSortMode.Days;
 
                 case "settlement":
                 case "community":
                 case "colony":
                 case "name":
-                    return InformationData.LeaderboardSortMode.SettlementName;
+                    return PKT_Information.LeaderboardSortMode.SettlementName;
 
                 case "faction":
                 case "fac":
-                    return InformationData.LeaderboardSortMode.FactionName;
+                    return PKT_Information.LeaderboardSortMode.FactionName;
 
                 case "lastsaved":
                 case "saved":
                 case "last":
-                    return InformationData.LeaderboardSortMode.LastSavedUtcTicks;
+                    return PKT_Information.LeaderboardSortMode.LastSavedUtcTicks;
 
                 default:
                     return fallback;
@@ -147,8 +153,8 @@ namespace GameClient.PacketManagers
         }
 
         public static void AskForLeaderboard(
-            InformationData.LeaderboardSortMode sort,
-            InformationData.LeaderboardOrder order,
+            PKT_Information.LeaderboardSortMode sort,
+            PKT_Information.LeaderboardOrder order,
             int limit,
             int offset)
         {
@@ -169,17 +175,19 @@ namespace GameClient.PacketManagers
             CurrentLimit = limit;
             CurrentOffset = offset;
 
-            InformationData data = new InformationData();
-            data._stepMode = InformationData.InfoStepMode.Leaderboard;
-            data._leaderboardSort = sort;
-            data._leaderboardOrder = order;
-            data._leaderboardLimit = limit;
-            data._leaderboardOffset = offset;
+            PKT_Information data = new PKT_Information
+            {
+                _stepMode = PKT_Information.InfoStepMode.Leaderboard,
+                _leaderboardSort = sort,
+                _leaderboardOrder = order,
+                _leaderboardLimit = limit,
+                _leaderboardOffset = offset
+            };
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.InformationManager, data);
         }
 
-        public static void ReceiveLeaderboard(InformationData data)
+        public static void ReceiveLeaderboard(PKT_Information data)
         {
             _requestInFlight = false;
 

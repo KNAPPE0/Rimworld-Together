@@ -4,6 +4,8 @@ using System.Linq;
 using GameClient.Managers;
 using UnityEngine;
 using Verse;
+using RimWorld.Planet;
+using GameClient.PacketManagers;
 
 namespace GameClient.Tabs
 {
@@ -29,7 +31,7 @@ namespace GameClient.Tabs
         {
             Rect outer = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(Pad);
 
-            string title = $"Players Online [{RecountManager.CurrentPlayers}]";
+            string title = $"Players Online [{PM_Recount.CurrentPlayers}]";
 
             Text.Font = GameFont.Medium;
             Rect titleRect = new Rect(outer.x, outer.y, outer.width, 28f);
@@ -47,7 +49,7 @@ namespace GameClient.Tabs
 
         private void DrawList(Rect mainRect)
         {
-            List<string> players = RecountManager.CurrentPlayerNames?.ToList() ?? new List<string>();
+            List<string> players = PM_Recount.CurrentPlayerNames?.ToList() ?? new List<string>();
             players.Sort(StringComparer.OrdinalIgnoreCase);
 
             float viewH = Mathf.Max(mainRect.height, 6f + players.Count * RowH);

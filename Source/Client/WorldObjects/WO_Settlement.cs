@@ -202,7 +202,7 @@ namespace GameClient.WorldObjects
                 action = delegate
                 {
                     SessionHandler.ChosenSettlement = this;
-                    StatisticalManager.AskForStats();
+                    PM_Statistical.AskForStats();
                 }
             };
 

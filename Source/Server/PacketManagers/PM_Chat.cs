@@ -10,13 +10,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
 
 namespace GameServer.PacketManager
 {
-    public static class PM_Chat
+    public class PM_Chat : PM_Base
     {
         private static readonly Semaphore LogSemaphore = new Semaphore(1, 1);
         private static readonly Semaphore CommandSemaphore = new Semaphore(1, 1);
@@ -40,19 +41,30 @@ namespace GameServer.PacketManager
         };
 
         [HandlesPacket(PacketHeader.ChatManager)]
-        public static void Receive(ServerClient client, byte[] bytes, PacketHeader header)
+        public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
+            if (client == null || bytes == null || bytes.Length == 0)
+                return;
+
             PKT_Chat data = Serializer.ConvertBytesToObject<PKT_Chat>(bytes);
+            if (data == null)
+                return;
 
-            string msg = data?._message ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(msg)) return;
+            string msg = data._message ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(msg))
+                return;
 
-            if (msg.StartsWith("/")) ExecuteChatCommand(client, msg.Split(' '));
-            else BroadcastChatMessage(client, msg);
+            if (msg.StartsWith("/"))
+                ExecuteChatCommand(client, msg.Split(' '));
+            else
+                BroadcastChatMessage(client, msg);
         }
 
         private static void ExecuteChatCommand(ServerClient client, string[] command)
         {
+            if (client == null || command == null || command.Length == 0)
+                return;
+
             CommandSemaphore.WaitOne();
 
             try
@@ -69,11 +81,8 @@ namespace GameServer.PacketManager
                     toFind.CommandAction.Invoke();
                 }
 
-                string chatCommand = "";
-                for (int i = 0; i < command.Length; i++) chatCommand += command[i] + " ";
-                chatCommand = chatCommand.TrimEnd();
-
-                ChatManagerHelper.ShowChatInConsole(client.UserFile.Username, chatCommand);
+                string chatCommand = string.Join(" ", command).Trim();
+                ChatManagerHelper.ShowChatInConsole(client.UserFile?.Username ?? "Unknown", chatCommand);
             }
             finally
             {
@@ -83,6 +92,9 @@ namespace GameServer.PacketManager
 
         private static void BroadcastChatMessage(ServerClient client, string message)
         {
+            if (client == null || client.UserFile == null || string.IsNullOrWhiteSpace(message))
+                return;
+
             PKT_Chat chatData = new PKT_Chat();
             chatData._username = client.UserFile.Username;
             chatData._message = message;
@@ -99,6 +111,9 @@ namespace GameServer.PacketManager
 
         public static void BroadcastDiscordMessage(string client, string message)
         {
+            if (string.IsNullOrWhiteSpace(client) || string.IsNullOrWhiteSpace(message))
+                return;
+
             PKT_Chat chatData = new PKT_Chat();
             chatData._username = client;
             chatData._message = message;
@@ -113,6 +128,9 @@ namespace GameServer.PacketManager
 
         public static void BroadcastConsoleMessage(string message)
         {
+            if (string.IsNullOrWhiteSpace(message))
+                return;
+
             PKT_Chat chatData = new PKT_Chat();
             chatData._username = SystemName;
             chatData._message = message;
@@ -127,6 +145,9 @@ namespace GameServer.PacketManager
 
         public static void BroadcastServerNotification(string message)
         {
+            if (string.IsNullOrWhiteSpace(message))
+                return;
+
             PKT_Chat chatData = new PKT_Chat();
             chatData._username = NotificationName;
             chatData._message = message;
@@ -141,6 +162,9 @@ namespace GameServer.PacketManager
 
         public static void SendConsoleMessage(ServerClient client, string message)
         {
+            if (client == null || string.IsNullOrWhiteSpace(message))
+                return;
+
             PKT_Chat chatData = new PKT_Chat();
             chatData._username = SystemName;
             chatData._message = message;
@@ -152,6 +176,9 @@ namespace GameServer.PacketManager
 
         public static void SendServerMessage(ServerClient client, string message)
         {
+            if (client == null || string.IsNullOrWhiteSpace(message))
+                return;
+
             PKT_Chat chatData = new PKT_Chat();
             chatData._username = NotificationName;
             chatData._message = message;
@@ -168,15 +195,14 @@ namespace GameServer.PacketManager
             try
             {
                 StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.Append($"[{DateTime.Now:HH:mm:ss}] | [" + username + "]: " + message);
+                stringBuilder.Append($"[{DateTime.Now:HH:mm:ss}] | [{username}]: {message}");
                 stringBuilder.Append(Environment.NewLine);
 
                 DateTime dateTime = DateTime.Now.Date;
-                string nowFileName = (dateTime.Year + "-" + dateTime.Month.ToString("D2") + "-" + dateTime.Day.ToString("D2")).ToString();
-                string nowFullPath = Master.ChatLogsPath + Path.DirectorySeparatorChar + nowFileName + ".txt";
+                string nowFileName = $"{dateTime.Year}-{dateTime.Month:D2}-{dateTime.Day:D2}";
+                string nowFullPath = Path.Combine(Master.ChatLogsPath, nowFileName + ".txt");
 
                 File.AppendAllText(nowFullPath, stringBuilder.ToString());
-                stringBuilder.Clear();
             }
             finally
             {
@@ -194,20 +220,23 @@ namespace GameServer.PacketManager
 
         public static CommandBase GetCommandFromName(string commandName)
         {
-            return ChatCommands.commands.ToArray().FirstOrDefault(x => x.Prefix == commandName);
+            return ChatCommands.commands.FirstOrDefault(x => x.Prefix == commandName);
         }
 
         public static string GetUsernameFromMention(string mention)
         {
-            return mention.Replace("@", "");
+            return string.IsNullOrWhiteSpace(mention) ? string.Empty : mention.Replace("@", "");
         }
 
         public static void ShowChatInConsole(string username, string message, bool fromDiscord = false)
         {
-            if (!Master.ServerConfig.DisplayChatInConsole) return;
+            if (!Master.ServerConfig.DisplayChatInConsole)
+                return;
 
-            if (fromDiscord) Printer.Message($"[Discord] > {username} > {message}");
-            else InformationDisplayer.DisplayChatMap(username, message);
+            if (fromDiscord)
+                Printer.Message($"[Discord] > {username} > {message}");
+            else
+                InformationDisplayer.DisplayChatMap(username, message);
         }
     }
 }

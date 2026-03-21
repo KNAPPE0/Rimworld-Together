@@ -11,6 +11,8 @@ namespace GameClient.Dialogs
         private string CurrentMessage { get; set; }
         private string[] Messages { get; set; }
         private int Index { get; set; } = 0;
+        private Vector2 _msgScroll = Vector2.zero;
+
         public DLG_Message(string title, string[] messages, Action onConfirm = null)
         {
             Title = string.IsNullOrEmpty(title) ? "Message" : title;

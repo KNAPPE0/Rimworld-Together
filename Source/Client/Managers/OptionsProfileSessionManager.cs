@@ -1,5 +1,6 @@
 using GameClient;
 using GameClient.Dialogs;
+using GameClient.Hooks.TCPNetwork;
 using GameClient.Misc;
 using Shared;
 using Shared.Misc;
@@ -9,6 +10,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using TCPNetwork;
 using TCPNetwork.Packets;
 using Verse;
 using static Shared.CommonEnumerators;
@@ -109,15 +111,15 @@ namespace GameClient.Managers
             {
                 if (isManual) Interlocked.Exchange(ref PendingManualRequest, 1);
 
-                if (ClientNetwork.Instance?.ClientListener == null) return;
+                if (Network.ServerEndpoint == null) return;
 
-                ModConfigData req = new ModConfigData
+                PKT_ModConfig req = new PKT_ModConfig
                 {
                     _requestOptionsProfile = true,
                     _stepMode = ModConfigStepMode.Send
                 };
 
-                ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.ModManager, req);
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.ModManager, req);
             }
             catch (Exception e)
             {
@@ -131,13 +133,13 @@ namespace GameClient.Managers
             {
                 if (!SessionHandler.IsAdmin)
                 {
-                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Error", new[] { "Admin only." }));
+                    DLG_Base.PushNewDialog(new DLG_Message("Error", new[] { "Admin only." }));
                     return;
                 }
 
-                if (ClientNetwork.Instance?.ClientListener == null)
+                if (Network.ServerEndpoint == null)
                 {
-                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Error", new[] { "Not connected." }));
+                    DLG_Base.PushNewDialog(new DLG_Message("Error", new[] { "Not connected." }));
                     return;
                 }
 
@@ -151,7 +153,7 @@ namespace GameClient.Managers
 
                 for (int i = 0; i < chunks.Count; i++)
                 {
-                    ModConfigData part = new ModConfigData
+                    PKT_ModConfig part = new PKT_ModConfig
                     {
                         _uploadOptionsProfile = true,
                         _stepMode = ModConfigStepMode.Send,
@@ -162,20 +164,20 @@ namespace GameClient.Managers
                         _chunkBytes = chunks[i]
                     };
 
-                    ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.ModManager, part);
+                    Network.ServerEndpoint.EnqueuePacket(PacketHeader.ModManager, part);
                 }
 
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Profile",
+                DLG_Base.PushNewDialog(new DLG_Message("Profile",
                     new[] { "Published server options profile.", $"Hash: {hash}", $"Chunks: {chunks.Count}" }));
             }
             catch (Exception e)
             {
                 Printer.Warning($"[OptionsProfile] PublishCurrentConfigProfileToServer failed: {e}");
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Error", new[] { "Failed to publish. Check logs." }));
+                DLG_Base.PushNewDialog(new DLG_Message("Error", new[] { "Failed to publish. Check logs." }));
             }
         }
 
-        public static void ReceiveOptionsProfilePacket(ModConfigData data)
+        public static void ReceiveOptionsProfilePacket(PKT_ModConfig data)
         {
             if (data == null) return;
 
@@ -185,7 +187,7 @@ namespace GameClient.Managers
 
                 if (wasManual)
                 {
-                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Profile",
+                    DLG_Base.PushNewDialog(new DLG_Message("Profile",
                         new[] { "Server has no options profile set yet.", "Ask an admin to publish one." }));
                 }
 
@@ -226,7 +228,7 @@ namespace GameClient.Managers
                 string computed = ConfigProfileUtility.Sha256Hex(full);
                 if (!string.Equals(computed, buffer.Hash, StringComparison.OrdinalIgnoreCase))
                 {
-                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Error",
+                    DLG_Base.PushNewDialog(new DLG_Message("Error",
                         new[] { "Options profile download failed (hash mismatch)." }));
                     return;
                 }
@@ -269,7 +271,7 @@ namespace GameClient.Managers
             {
                 if (!Directory.Exists(BackupPath))
                 {
-                    RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Profile", new[] { "No backup found." }));
+                    DLG_Base.PushNewDialog(new DLG_Message("Profile", new[] { "No backup found." }));
                     return;
                 }
 
@@ -279,13 +281,13 @@ namespace GameClient.Managers
                 ClearSessionState();
                 SafeDeleteDirectory(BackupPath);
 
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Profile",
+                DLG_Base.PushNewDialog(new DLG_Message("Profile",
                     new[] { "Restored personal configs.", "Soft reload attempted. Some mods may still need a restart." }));
             }
             catch (Exception e)
             {
                 Printer.Warning($"[OptionsProfile] RestorePersonalConfigsManual failed: {e}");
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Error", new[] { "Restore failed. Check logs." }));
+                DLG_Base.PushNewDialog(new DLG_Message("Error", new[] { "Restore failed. Check logs." }));
             }
         }
 
@@ -334,7 +336,7 @@ namespace GameClient.Managers
 
                 StartWatcher();
 
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Profile",
+                DLG_Base.PushNewDialog(new DLG_Message("Profile",
                     new[]
                     {
                         "Server options profile applied.",
@@ -345,7 +347,7 @@ namespace GameClient.Managers
             catch (Exception e)
             {
                 Printer.Warning($"[OptionsProfile] ApplyEnforcedProfile failed: {e}");
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Error", new[] { "Failed to apply options profile. Check logs." }));
+                DLG_Base.PushNewDialog(new DLG_Message("Error", new[] { "Failed to apply options profile. Check logs." }));
             }
         }
 

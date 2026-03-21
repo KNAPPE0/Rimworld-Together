@@ -22,7 +22,7 @@ namespace GameServer.Managers
             playerRecountData._currentPlayerCount = ServerNetwork.GetConnectedClients().Count();
             foreach (ServerClient client in ServerNetwork.GetConnectedClients()) playerRecountData._currentPlayerNames.Add(client.UserFile.Username);
 
-            ServerNetwork.SendPacketToAllClients(PacketHeader.RecountManager, playerRecountData);
+            ServerNetwork.SendPacketToAllClients(PacketHeader.PM_Recount, playerRecountData);
         }
 
         public static void BanPlayerFromName(string username)

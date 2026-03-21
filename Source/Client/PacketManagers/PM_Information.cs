@@ -26,12 +26,12 @@ namespace GameClient.PacketManagers
                     ReceiveWealth(data);
                     break;
 
-                case InformationData.InfoStepMode.Stats:
-                    StatisticalManager.ReceiveStats(data);
+                case PKT_Information.InfoStepMode.Stats:
+                    PM_Statistical.ReceiveStats(data);
                     break;
 
-                case InformationData.InfoStepMode.Leaderboard:
-                    LeaderboardManager.ReceiveLeaderboard(data);
+                case PKT_Information.InfoStepMode.Leaderboard:
+                    PM_Leaderboard.ReceiveLeaderboard(data);
                     break;
             }
         }

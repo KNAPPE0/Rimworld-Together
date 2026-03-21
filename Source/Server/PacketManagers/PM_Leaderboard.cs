@@ -1,4 +1,4 @@
-using GameServer.Core;
+﻿using GameServer.Core;
 using Shared;
 using Shared.Files;
 using System;
@@ -274,92 +274,20 @@ namespace GameServer.PacketManager
                             continue;
                     }
 
-                    TryUpsertFromMapSaveUnsafe(file, tile);
+                    MapStatsFile stats = PM_Maps.GetOrCreateMapStatsFromTile(tile);
+                    if (stats == null) continue;
+
+                    if (IsTombstonedAndNotNewerUnsafe(stats.Tile, stats.LastSavedUtcTicks))
+                        continue;
+
+                    TryClearTombstoneIfNewerUnsafe(stats.Tile, stats.LastSavedUtcTicks);
+                    UpsertEntryUnsafe(stats, true);
                 }
             }
             catch { }
 
             SchedulePersist();
             PersistTombstonesUnsafe();
-        }
-
-        private static void TryUpsertFromMapSaveUnsafe(string file, int tileFromName)
-        {
-            if (string.IsNullOrWhiteSpace(file) || !File.Exists(file)) return;
-
-            long fileTicks = 0;
-            try { fileTicks = File.GetLastWriteTimeUtc(file).Ticks; } catch { }
-
-            if (IsTombstonedAndNotNewerUnsafe(tileFromName, fileTicks))
-                return;
-
-            MapFile map = null;
-            try { map = Serializer.FileBytesToObject<MapFile>(file); } catch { }
-
-            if (map == null)
-                return;
-
-            MapStatsFile stats = BuildStatsFromMapFile(map, tileFromName, file);
-            TryWriteStatsCacheFileIfMissing(stats);
-            UpsertEntryUnsafe(stats, true);
-        }
-
-        private static MapStatsFile BuildStatsFromMapFile(MapFile mapFile, int tileFromName, string sourcePath)
-        {
-            MapStatsFile stats = new MapStatsFile();
-
-            int tile = mapFile.Tile >= 0 ? mapFile.Tile : tileFromName;
-            stats.Tile = tile;
-
-            stats.Username = mapFile.Username ?? string.Empty;
-            stats.SettlementName = mapFile.SettlementName ?? string.Empty;
-            stats.FactionName = mapFile.FactionName ?? string.Empty;
-
-            stats.Wealth = mapFile.Wealth;
-            stats.WealthExact = mapFile.WealthExact >= 0 ? mapFile.WealthExact : -1;
-
-            stats.GameTicks = mapFile.GameTicks;
-            stats.RealPlayTimeSeconds = mapFile.RealPlayTimeSeconds >= 0 ? mapFile.RealPlayTimeSeconds : -1;
-            stats.RealPlayTimeInteractingSeconds = mapFile.RealPlayTimeInteractingSeconds >= 0 ? mapFile.RealPlayTimeInteractingSeconds : -1;
-
-            long savedTicks = mapFile.LastSavedUtcTicks;
-            if (savedTicks <= 0)
-            {
-                try { savedTicks = File.GetLastWriteTimeUtc(sourcePath).Ticks; }
-                catch { savedTicks = DateTime.UtcNow.Ticks; }
-            }
-            stats.LastSavedUtcTicks = savedTicks;
-
-            stats.FactionThingCount = mapFile.FactionThings != null ? mapFile.FactionThings.Count : -1;
-            stats.NonFactionThingCount = mapFile.NonFactionThings != null ? mapFile.NonFactionThings.Count : -1;
-            stats.FactionHumanCount = mapFile.FactionHumans != null ? mapFile.FactionHumans.Count : -1;
-            stats.NonFactionHumanCount = mapFile.NonFactionHumans != null ? mapFile.NonFactionHumans.Count : -1;
-            stats.FactionAnimalCount = mapFile.FactionAnimals != null ? mapFile.FactionAnimals.Count : -1;
-            stats.NonFactionAnimalCount = mapFile.NonFactionAnimals != null ? mapFile.NonFactionAnimals.Count : -1;
-
-            stats.ColonistCount = stats.FactionHumanCount;
-
-            TryBackfillFromSettlement(tile, stats);
-
-            return stats;
-        }
-
-        private static void TryBackfillFromSettlement(int tile, MapStatsFile stats)
-        {
-            try
-            {
-                SettlementFile sf = PM_Settlements.GetSettlementFileFromTile(tile);
-                if (sf == null) return;
-
-                if (string.IsNullOrWhiteSpace(stats.Username))
-                    stats.Username = sf.Username ?? string.Empty;
-
-                if (string.IsNullOrWhiteSpace(stats.SettlementName) && !string.IsNullOrWhiteSpace(sf.Name))
-                    stats.SettlementName = sf.Name;
-            }
-            catch
-            {
-            }
         }
 
         private static void TryUpsertFromStatsLikeFileUnsafe(string file, bool preferNewer)
@@ -472,6 +400,14 @@ namespace GameServer.PacketManager
                     EntriesByTile[candidate.Tile] = candidate;
                     return;
                 }
+
+                bool existingColonistsBad = existing.ColonistCount < 0;
+                bool candidateColonistsGood = candidate.ColonistCount >= 0;
+                if (existingColonistsBad && candidateColonistsGood)
+                {
+                    EntriesByTile[candidate.Tile] = candidate;
+                    return;
+                }
             }
         }
 
@@ -571,31 +507,6 @@ namespace GameServer.PacketManager
             catch
             {
                 try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { }
-            }
-        }
-
-        private static void TryWriteStatsCacheFileIfMissing(MapStatsFile stats)
-        {
-            try
-            {
-                string mapsPath = Master.MapsPath;
-                if (string.IsNullOrWhiteSpace(mapsPath)) return;
-                if (!Directory.Exists(mapsPath)) return;
-
-                string dir = Path.Combine(mapsPath, StatsCacheFolderName);
-                Directory.CreateDirectory(dir);
-
-                string path = Path.Combine(dir, stats.Tile.ToString());
-                if (File.Exists(path)) return;
-
-                string tmp = path + ".tmp";
-
-                string json = JsonSerializer.Serialize(stats, JsonOptions);
-                File.WriteAllText(tmp, json);
-                File.Move(tmp, path, true);
-            }
-            catch
-            {
             }
         }
 

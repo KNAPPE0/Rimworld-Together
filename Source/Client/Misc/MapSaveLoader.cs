@@ -1,5 +1,6 @@
 using GameClient.Defs;
 using GameClient.Managers;
+using GameClient.PacketManagers;
 using RimWorld;
 using RimWorld.Planet;
 using Shared.Files;
@@ -41,6 +42,8 @@ namespace GameClient.Misc
             mapFile.RealPlayTimeInteractingSeconds = interactingSeconds;
             mapFile.RealPlayTimeSeconds = totalSeconds;
 
+            CacheMapStats(mapFile, map);
+
             ToggleTerrain(OperationType.Get, mapFile, map);
             TogglePollution(OperationType.Get, mapFile, map);
             ToggleRoofs(OperationType.Get, mapFile, map);
@@ -70,6 +73,76 @@ namespace GameClient.Misc
             RegenerateFog(map);
 
             return map;
+        }
+
+        private static void CacheMapStats(MapFile file, Map map)
+        {
+            file.ColonistCount = 0;
+            file.FactionHumanCount = 0;
+            file.NonFactionHumanCount = 0;
+            file.FactionAnimalCount = 0;
+            file.NonFactionAnimalCount = 0;
+            file.FactionThingCount = 0;
+            file.NonFactionThingCount = 0;
+
+            try
+            {
+                if (map?.mapPawns?.AllPawns != null)
+                {
+                    foreach (Pawn pawn in map.mapPawns.AllPawns)
+                    {
+                        if (pawn == null || pawn.Destroyed)
+                            continue;
+
+                        bool isPlayerFaction = pawn.Faction == Faction.OfPlayer;
+                        bool isHuman = RimworldManager.CheckIfThingIsHuman(pawn);
+                        bool isAnimal = RimworldManager.CheckIfThingIsAnimal(pawn);
+
+                        if (pawn.IsColonist)
+                            file.ColonistCount++;
+
+                        if (isHuman)
+                        {
+                            if (isPlayerFaction) file.FactionHumanCount++;
+                            else file.NonFactionHumanCount++;
+                        }
+                        else if (isAnimal)
+                        {
+                            if (isPlayerFaction) file.FactionAnimalCount++;
+                            else file.NonFactionAnimalCount++;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"Failed caching pawn stats: {e}", LogImportanceMode.Verbose);
+            }
+
+            try
+            {
+                if (map?.listerThings?.AllThings != null)
+                {
+                    foreach (Thing thing in map.listerThings.AllThings)
+                    {
+                        if (thing == null || thing.Destroyed)
+                            continue;
+
+                        if (RimworldManager.CheckIfThingIsPawn(thing))
+                            continue;
+
+                        if (RimworldManager.CheckIfThingIsCorpse(thing))
+                            continue;
+
+                        if (thing.Faction == Faction.OfPlayer) file.FactionThingCount++;
+                        else file.NonFactionThingCount++;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"Failed caching thing stats: {e}", LogImportanceMode.Verbose);
+            }
         }
 
         private static void ToggleWeather(OperationType type, MapFile file, Map map)
@@ -397,7 +470,7 @@ namespace GameClient.Misc
                 {
                     try
                     {
-                        RT_MapPlaytimeComponent comp = map.GetComponent<RT_MapPlaytimeComponent>();
+                        MapPlaytimeComponent comp = map.GetComponent<MapPlaytimeComponent>();
                         if (comp != null)
                             interacting = comp.TotalSeconds;
                     }

@@ -15,7 +15,7 @@ namespace Shared.Files.Configs.Mods
 
         public bool HasProfile => ZipBytes != null && ZipBytes.Length > 0;
 
-        public override void Save()
+        public void Save()
         {
             try { Serializer.SerializeToFile(SavePath, this); }
             catch (Exception e) { throw new Exception(e.ToString()); }

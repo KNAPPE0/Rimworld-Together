@@ -15,7 +15,7 @@ namespace GameClient.PacketManagers
 
         public static List<string> CurrentPlayerNames { get; private set; }
 
-        [HandlesPacket(PacketHeader.RecountManager)]
+        [HandlesPacket(PacketHeader.PM_Recount)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header) { SetServerPlayers(bytes); }
 
         public static void SetServerPlayers(byte[] bytes)

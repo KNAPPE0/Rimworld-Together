@@ -1,14 +1,14 @@
-﻿using GameClient.Managers;
+﻿using GameClient.PacketManagers;
 using Shared.Files;
 using System;
 using System.Collections.Generic;
+using TCPNetwork.Packets;
 using UnityEngine;
 using Verse;
-using TCPNetwork.Packets;
 
 namespace GameClient.Dialogs
 {
-    public class RT_Dialog_Leaderboard : RT_Dialog_Base
+    public class DLG_Leaderboard : DLG_Base
     {
         public override Vector2 InitialSize => new Vector2(980f, 560f);
 
@@ -28,9 +28,9 @@ namespace GameClient.Dialogs
         private struct SortOption
         {
             public string Label;
-            public InformationData.LeaderboardSortMode Mode;
+            public PKT_Information.LeaderboardSortMode Mode;
 
-            public SortOption(string label, InformationData.LeaderboardSortMode mode)
+            public SortOption(string label, PKT_Information.LeaderboardSortMode mode)
             {
                 Label = label;
                 Mode = mode;
@@ -39,11 +39,11 @@ namespace GameClient.Dialogs
 
         private static readonly List<SortOption> SortOptions = new List<SortOption>
         {
-            new SortOption("Wealth", InformationData.LeaderboardSortMode.WealthExact),
-            new SortOption("Colonists", InformationData.LeaderboardSortMode.Colonists),
-            new SortOption("Playtime", InformationData.LeaderboardSortMode.PlaytimeTicks),
-            new SortOption("Days", InformationData.LeaderboardSortMode.Days),
-            new SortOption("Last Saved", InformationData.LeaderboardSortMode.LastSavedUtcTicks),
+            new SortOption("Wealth", PKT_Information.LeaderboardSortMode.WealthExact),
+            new SortOption("Colonists", PKT_Information.LeaderboardSortMode.Colonists),
+            new SortOption("Playtime", PKT_Information.LeaderboardSortMode.PlaytimeTicks),
+            new SortOption("Days", PKT_Information.LeaderboardSortMode.Days),
+            new SortOption("Last Saved", PKT_Information.LeaderboardSortMode.LastSavedUtcTicks),
         };
 
         private struct ColumnLayout
@@ -58,19 +58,19 @@ namespace GameClient.Dialogs
             public float Time;
         }
 
-        public RT_Dialog_Leaderboard()
+        public DLG_Leaderboard()
         {
             Title = "Leaderboard";
             closeOnAccept = false;
             closeOnCancel = false;
 
-            if (LeaderboardManager.Entries == null || LeaderboardManager.Entries.Length == 0)
+            if (PM_Leaderboard.Entries == null || PM_Leaderboard.Entries.Length == 0)
             {
-                LeaderboardManager.AskForLeaderboard(
-                    LeaderboardManager.CurrentSort,
-                    LeaderboardManager.CurrentOrder,
-                    LeaderboardManager.CurrentLimit,
-                    LeaderboardManager.CurrentOffset);
+                PM_Leaderboard.AskForLeaderboard(
+                    PM_Leaderboard.CurrentSort,
+                    PM_Leaderboard.CurrentOrder,
+                    PM_Leaderboard.CurrentLimit,
+                    PM_Leaderboard.CurrentOffset);
             }
         }
 
@@ -96,7 +96,7 @@ namespace GameClient.Dialogs
                 return;
             }
 
-            LeaderboardEntryFile[] entries = LeaderboardManager.Entries ?? Array.Empty<LeaderboardEntryFile>();
+            LeaderboardEntryFile[] entries = PM_Leaderboard.Entries ?? Array.Empty<LeaderboardEntryFile>();
 
             float viewW = Mathf.Max(1f, inner.width - 16f);
             float viewH = Mathf.Max(inner.height, HeaderRowHeight + 2f + (entries.Length * RowHeight) + 10f);
@@ -141,7 +141,7 @@ namespace GameClient.Dialogs
 
                         Widgets.DrawHighlightIfMouseover(row);
 
-                        int rank = LeaderboardManager.CurrentOffset + i + 1;
+                        int rank = PM_Leaderboard.CurrentOffset + i + 1;
                         DrawEntryRow(row, cols, entries[i], rank);
 
                         if (Widgets.ButtonInvisible(row))
@@ -211,9 +211,9 @@ namespace GameClient.Dialogs
 
             Rect topBtn = new Rect(x, y, topW, btnH);
 
-            string sortLabel = $"Sort: {FriendlySort(LeaderboardManager.CurrentSort)}";
-            string orderLabel = $"Order: {FriendlyOrder(LeaderboardManager.CurrentOrder)}";
-            string topLabel = $"Top: {LeaderboardManager.CurrentLimit}";
+            string sortLabel = $"Sort: {FriendlySort(PM_Leaderboard.CurrentSort)}";
+            string orderLabel = $"Order: {FriendlyOrder(PM_Leaderboard.CurrentOrder)}";
+            string topLabel = $"Top: {PM_Leaderboard.CurrentLimit}";
 
             if (Widgets.ButtonText(sortBtn, sortLabel))
                 OpenSortMenu();
@@ -229,11 +229,11 @@ namespace GameClient.Dialogs
                 _selectedIndex = -1;
                 _scroll = Vector2.zero;
 
-                LeaderboardManager.AskForLeaderboard(
-                    LeaderboardManager.CurrentSort,
-                    LeaderboardManager.CurrentOrder,
-                    LeaderboardManager.CurrentLimit,
-                    LeaderboardManager.CurrentOffset);
+                PM_Leaderboard.AskForLeaderboard(
+                    PM_Leaderboard.CurrentSort,
+                    PM_Leaderboard.CurrentOrder,
+                    PM_Leaderboard.CurrentLimit,
+                    PM_Leaderboard.CurrentOffset);
             }
         }
 
@@ -243,8 +243,8 @@ namespace GameClient.Dialogs
 
             foreach (SortOption opt in SortOptions)
             {
-                InformationData.LeaderboardSortMode mode = opt.Mode;
-                bool isCurrent = FriendlySort(mode) == FriendlySort(LeaderboardManager.CurrentSort);
+                PKT_Information.LeaderboardSortMode mode = opt.Mode;
+                bool isCurrent = FriendlySort(mode) == FriendlySort(PM_Leaderboard.CurrentSort);
                 string label = isCurrent ? $"✓ {opt.Label}" : opt.Label;
 
                 opts.Add(new FloatMenuOption(label, () =>
@@ -252,10 +252,10 @@ namespace GameClient.Dialogs
                     _selectedIndex = -1;
                     _scroll = Vector2.zero;
 
-                    LeaderboardManager.AskForLeaderboard(
+                    PM_Leaderboard.AskForLeaderboard(
                         mode,
-                        LeaderboardManager.CurrentOrder,
-                        LeaderboardManager.CurrentLimit,
+                        PM_Leaderboard.CurrentOrder,
+                        PM_Leaderboard.CurrentLimit,
                         0);
                 }));
             }
@@ -267,18 +267,18 @@ namespace GameClient.Dialogs
         {
             List<FloatMenuOption> opts = new List<FloatMenuOption>();
 
-            bool isDesc = LeaderboardManager.CurrentOrder == InformationData.LeaderboardOrder.Desc;
-            bool isAsc = LeaderboardManager.CurrentOrder == InformationData.LeaderboardOrder.Asc;
+            bool isDesc = PM_Leaderboard.CurrentOrder == PKT_Information.LeaderboardOrder.Desc;
+            bool isAsc = PM_Leaderboard.CurrentOrder == PKT_Information.LeaderboardOrder.Asc;
 
             opts.Add(new FloatMenuOption(isDesc ? "✓ High → Low" : "High → Low", () =>
             {
                 _selectedIndex = -1;
                 _scroll = Vector2.zero;
 
-                LeaderboardManager.AskForLeaderboard(
-                    LeaderboardManager.CurrentSort,
-                    InformationData.LeaderboardOrder.Desc,
-                    LeaderboardManager.CurrentLimit,
+                PM_Leaderboard.AskForLeaderboard(
+                    PM_Leaderboard.CurrentSort,
+                    PKT_Information.LeaderboardOrder.Desc,
+                    PM_Leaderboard.CurrentLimit,
                     0);
             }));
 
@@ -287,10 +287,10 @@ namespace GameClient.Dialogs
                 _selectedIndex = -1;
                 _scroll = Vector2.zero;
 
-                LeaderboardManager.AskForLeaderboard(
-                    LeaderboardManager.CurrentSort,
-                    InformationData.LeaderboardOrder.Asc,
-                    LeaderboardManager.CurrentLimit,
+                PM_Leaderboard.AskForLeaderboard(
+                    PM_Leaderboard.CurrentSort,
+                    PKT_Information.LeaderboardOrder.Asc,
+                    PM_Leaderboard.CurrentLimit,
                     0);
             }));
 
@@ -305,16 +305,16 @@ namespace GameClient.Dialogs
             foreach (int l in limits)
             {
                 int captured = l;
-                bool isCurrent = LeaderboardManager.CurrentLimit == captured;
+                bool isCurrent = PM_Leaderboard.CurrentLimit == captured;
 
                 opts.Add(new FloatMenuOption(isCurrent ? $"✓ {captured}" : captured.ToString(), () =>
                 {
                     _selectedIndex = -1;
                     _scroll = Vector2.zero;
 
-                    LeaderboardManager.AskForLeaderboard(
-                        LeaderboardManager.CurrentSort,
-                        LeaderboardManager.CurrentOrder,
+                    PM_Leaderboard.AskForLeaderboard(
+                        PM_Leaderboard.CurrentSort,
+                        PM_Leaderboard.CurrentOrder,
                         captured,
                         0);
                 }));
@@ -325,8 +325,8 @@ namespace GameClient.Dialogs
 
         private void DrawFooter(Rect rect, LeaderboardEntryFile[] entriesOnScreen)
         {
-            int total = LeaderboardManager.Total;
-            int offset = LeaderboardManager.CurrentOffset;
+            int total = PM_Leaderboard.Total;
+            int offset = PM_Leaderboard.CurrentOffset;
             int count = entriesOnScreen?.Length ?? 0;
 
             int start = total <= 0 ? 0 : Math.Min(total, offset + 1);
@@ -375,28 +375,26 @@ namespace GameClient.Dialogs
 
             Text.Anchor = TextAnchor.UpperLeft;
 
-            bool canPrev = LeaderboardManager.CanPagePrev();
-            bool canNext = LeaderboardManager.CanPageNext();
+            bool canPrev = PM_Leaderboard.CanPagePrev();
+            bool canNext = PM_Leaderboard.CanPageNext();
 
             GUI.color = canPrev ? Color.white : Color.gray;
             if (Widgets.ButtonText(prevBtn, "Prev") && canPrev)
             {
                 _selectedIndex = -1;
-                LeaderboardManager.PrevPage();
+                PM_Leaderboard.PrevPage();
             }
 
             GUI.color = canNext ? Color.white : Color.gray;
             if (Widgets.ButtonText(nextBtn, "Next") && canNext)
             {
                 _selectedIndex = -1;
-                LeaderboardManager.NextPage();
+                PM_Leaderboard.NextPage();
             }
 
             GUI.color = Color.white;
             if (Widgets.ButtonText(okBtn, "OK"))
-            {
                 Close();
-            }
 
             GUI.color = Color.white;
         }
@@ -566,24 +564,24 @@ namespace GameClient.Dialogs
             TooltipHandler.TipRegion(rect, tip);
         }
 
-        private static string FriendlySort(InformationData.LeaderboardSortMode mode)
+        private static string FriendlySort(PKT_Information.LeaderboardSortMode mode)
         {
-            if (mode == InformationData.LeaderboardSortMode.Wealth || mode == InformationData.LeaderboardSortMode.WealthExact)
+            if (mode == PKT_Information.LeaderboardSortMode.Wealth || mode == PKT_Information.LeaderboardSortMode.WealthExact)
                 return "Wealth";
 
             switch (mode)
             {
-                case InformationData.LeaderboardSortMode.Colonists: return "Colonists";
-                case InformationData.LeaderboardSortMode.PlaytimeTicks: return "Playtime";
-                case InformationData.LeaderboardSortMode.Days: return "Days";
-                case InformationData.LeaderboardSortMode.LastSavedUtcTicks: return "Last Saved";
+                case PKT_Information.LeaderboardSortMode.Colonists: return "Colonists";
+                case PKT_Information.LeaderboardSortMode.PlaytimeTicks: return "Playtime";
+                case PKT_Information.LeaderboardSortMode.Days: return "Days";
+                case PKT_Information.LeaderboardSortMode.LastSavedUtcTicks: return "Last Saved";
                 default: return mode.ToString();
             }
         }
 
-        private static string FriendlyOrder(InformationData.LeaderboardOrder order)
+        private static string FriendlyOrder(PKT_Information.LeaderboardOrder order)
         {
-            return order == InformationData.LeaderboardOrder.Desc ? "High → Low" : "Low → High";
+            return order == PKT_Information.LeaderboardOrder.Desc ? "High → Low" : "Low → High";
         }
 
         private static string FormatWealth(LeaderboardEntryFile e)
@@ -623,9 +621,7 @@ namespace GameClient.Dialogs
 
             if (e.GameTicks < 0) return "?";
 
-            int days = e.GameTicks / 60000;
-            int remainder = e.GameTicks - (days * 60000);
-
+            int remainder = e.GameTicks % 60000;
             int hours2 = remainder / 2500;
             remainder -= hours2 * 2500;
 
@@ -633,7 +629,7 @@ namespace GameClient.Dialogs
             int minutes2 = (int)Math.Round(mins);
 
             if (minutes2 >= 60) { minutes2 = 0; hours2++; }
-            if (hours2 >= 24) { hours2 = 0; days++; }
+            if (hours2 >= 24) hours2 = 0;
 
             return $"{hours2}h {minutes2}m";
         }

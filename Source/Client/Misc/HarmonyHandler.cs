@@ -53,12 +53,14 @@ namespace GameClient.Misc
             foreach (MethodBase method in Instance.GetPatchedMethods())
             {
                 HarmonyLib.Patches patchInfo = Harmony.GetPatchInfo(method);
+                if (patchInfo == null) continue;
 
                 foreach (HarmonyLib.Patch patch in patchInfo.Prefixes)
                 {
                     if (patch.owner != HarmonyMainID && patch.owner != HarmonyStartID)
                     {
-                        if (!collidingMods.Contains(patch.owner)) collidingMods.Add(patch.owner);
+                        if (!collidingMods.Contains(patch.owner))
+                            collidingMods.Add(patch.owner);
                     }
                 }
 
@@ -66,21 +68,22 @@ namespace GameClient.Misc
                 {
                     if (patch.owner != HarmonyMainID && patch.owner != HarmonyStartID)
                     {
-                        if (!collidingMods.Contains(patch.owner)) collidingMods.Add(patch.owner);
+                        if (!collidingMods.Contains(patch.owner))
+                            collidingMods.Add(patch.owner);
                     }
                 }
             }
 
             DisableMainPatches();
 
-            if (collidingMods.Count == 0) return true;
-            else
+            if (collidingMods.Count > 0)
             {
                 string title = "Problematic mods found";
                 string description = "The following mods might cause issues during gameplay";
                 DLG_Base.PushNewDialog(new DLG_Listing(title, description, collidingMods.ToArray()));
-                return false;
             }
+
+            return true;
         }
     }
 }

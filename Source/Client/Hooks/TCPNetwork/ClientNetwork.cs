@@ -6,6 +6,7 @@ using GameClient.Misc;
 using Shared;
 using Shared.Misc;
 using System;
+using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;

@@ -21,38 +21,38 @@ namespace GameServer.Commands
 {
     public static class ConsoleCommands
     {
-        private static readonly CommandBase HelpCommand = new CommandBase("help", 0, "Shows a list of all available commands to use", HelpCommandAction);
-        public static readonly CommandBase BackupCommand = new CommandBase("backup", 0, "Backup the server.", BackupCommandAction);
-        public static readonly CommandBase BackupUserCommand = new CommandBase("backupuser", 1, "Backup the data of a specific user", BackupUserCommandAction);
-        public static readonly CommandBase ListCommand = new CommandBase("list", 0, "Shows all connected players", ListCommandAction);
-        public static readonly CommandBase OpCommand = new CommandBase("op", 1, "Gives admin privileges to the selected player", OpCommandAction);
-        public static readonly CommandBase DeopCommand = new CommandBase("deop", 1, "Removes admin privileges from the selected player", DeopCommandAction);
-        public static readonly CommandBase KickCommand = new CommandBase("kick", 1, "Kicks the selected player (username OR ip)", KickCommandAction);
-        public static readonly CommandBase BanCommand = new CommandBase("ban", 1, "Bans the selected player (username OR ip)", BanCommandAction);
-        public static readonly CommandBase PardonCommand = new CommandBase("pardon", 1, "Pardons the selected player", PardonCommandAction);
-        public static readonly CommandBase DeepListCommand = new CommandBase("deeplist", 0, "Shows a list of all server players", DeepListCommandAction);
-        public static readonly CommandBase BanListCommand = new CommandBase("banlist", 0, "Shows a list of all banned server players", BanListCommandAction);
-        public static readonly CommandBase ReloadCommand = new CommandBase("reload", 0, "Reloads all server resources", ReloadCommandAction);
-        public static readonly CommandBase ModListCommand = new CommandBase("modlist", 0, "Shows all currently loaded mods", ModListCommandAction);
-        public static readonly CommandBase EventCommand = new CommandBase("event", 2, "Sends a command to the selecter players", EventCommandAction);
-        public static readonly CommandBase EventAllCommand = new CommandBase("eventall", 1, "Sends a command to all connected players", EventAllCommandAction);
-        public static readonly CommandBase EventListCommand = new CommandBase("eventlist", 0, "Shows a list of all available events to use", EventListCommandAction);
-        public static readonly CommandBase BroadcastCommand = new CommandBase("broadcast", -1, "Broadcast a message to all connected players", BroadcastCommandAction);
-        public static readonly CommandBase ServerMessageCommand = new CommandBase("chat", -1, "Send a message in chat from the Server", ServerMessageCommandAction);
-        public static readonly CommandBase WhitelistCommand = new CommandBase("whitelist", 0, "Shows all whitelisted players", WhitelistCommandAction);
-        public static readonly CommandBase WhitelistAddCommand = new CommandBase("whitelistadd", 1, "Adds a player to the whitelist", WhitelistAddCommandAction);
-        public static readonly CommandBase WhitelistRemoveCommand = new CommandBase("whitelistremove", 1, "Removes a player from the whitelist", WhitelistRemoveCommandAction);
-        public static readonly CommandBase ForceSaveCommand = new CommandBase("forcesave", 1, "Forces a player to sync their save", ForceSaveCommandAction);
-        public static readonly CommandBase ResetPlayerCommand = new CommandBase("resetplayer", 1, "Resets a player profile from the server", ResetPlayerCommandAction);
-        public static readonly CommandBase PortforwardCommand = new CommandBase("portforward", 0, "will use UPnP to portforward the server", PortForwardCommandAction);
-        public static readonly CommandBase ResetWorldCommand = new CommandBase("resetworld", 0, "Resets all the world related data and stores a backup of it", ResetWorldCommandAction);
-        public static readonly CommandBase QuitCommand = new CommandBase("quit", 0, "Saves all player data and then closes the server", QuitCommandAction);
-        public static readonly CommandBase ForceQuitCommand = new CommandBase("forcequit", 0, "Closes the server without saving player data", ForceQuitCommandAction);
-        public static readonly CommandBase ClearCommand = new CommandBase("clear", 0, "Clears the console output", ClearCommandAction);
-        public static readonly CommandBase DebugGCClearCommand = new CommandBase("debuggcclear", 0, "Forces the garbage collector to collect", ForceGCClearCommandAction);
-        public static readonly CommandBase SiteRewardsCommand = new CommandBase("forcerewards", 0, "Forces every connected user to get site rewards", ForceSiteRewardsCommandAction);
+        private static readonly CommandBase HelpCommand = new CommandBase("help", 0, "Shows a list of all available commands to use", ConsoleCommandActions.HelpCommandAction);
+        public static readonly CommandBase BackupCommand = new CommandBase("backup", 0, "Backup the server.", ConsoleCommandActions.BackupCommandAction);
+        public static readonly CommandBase BackupUserCommand = new CommandBase("backupuser", 1, "Backup the data of a specific user", ConsoleCommandActions.BackupUserCommandAction);
+        public static readonly CommandBase ListCommand = new CommandBase("list", 0, "Shows all connected players", ConsoleCommandActions.ListCommandAction);
+        public static readonly CommandBase OpCommand = new CommandBase("op", 1, "Gives admin privileges to the selected player", ConsoleCommandActions.OpCommandAction); // Add IP option
+        public static readonly CommandBase DeopCommand = new CommandBase("deop", 1, "Removes admin privileges from the selected player", ConsoleCommandActions.DeopCommandAction); // Add IP option
+        public static readonly CommandBase KickCommand = new CommandBase("kick", 1, "Kicks the selected player (username OR ip)", ConsoleCommandActions.KickCommandAction);
+        public static readonly CommandBase BanCommand = new CommandBase("ban", 1, "Bans the selected player (username OR ip)", ConsoleCommandActions.BanCommandAction);
+        public static readonly CommandBase PardonCommand = new CommandBase("pardon", 1, "Pardons the selected player", ConsoleCommandActions.PardonCommandAction);
+        public static readonly CommandBase DeepListCommand = new CommandBase("deeplist", 0, "Shows a list of all server players", ConsoleCommandActions.DeepListCommandAction);
+        public static readonly CommandBase BanListCommand = new CommandBase("banlist", 0, "Shows a list of all banned server players", ConsoleCommandActions.BanListCommandAction);
+        public static readonly CommandBase ReloadCommand = new CommandBase("reload", 0, "Reloads all server resources", ConsoleCommandActions.ReloadCommandAction);
+        public static readonly CommandBase ModListCommand = new CommandBase("modlist", 0, "Shows all currently loaded mods", ConsoleCommandActions.ModListCommandAction);
+        public static readonly CommandBase EventCommand = new CommandBase("event", 2, "Sends a command to the selected player", ConsoleCommandActions.EventCommandAction);
+        public static readonly CommandBase EventAllCommand = new CommandBase("eventall", 1, "Sends a command to all connected players", ConsoleCommandActions.EventAllCommandAction);
+        public static readonly CommandBase EventListCommand = new CommandBase("eventlist", 0, "Shows a list of all available events to use", ConsoleCommandActions.EventListCommandAction);
+        public static readonly CommandBase BroadcastCommand = new CommandBase("broadcast", -1, "Broadcast a message to all connected players", ConsoleCommandActions.BroadcastCommandAction);
+        public static readonly CommandBase ServerMessageCommand = new CommandBase("chat", -1, "Send a message in chat from the Server", ConsoleCommandActions.ServerMessageCommandAction);
+        public static readonly CommandBase WhitelistCommand = new CommandBase("whitelist", 0, "Shows all whitelisted players", ConsoleCommandActions.WhitelistCommandAction);
+        public static readonly CommandBase WhitelistAddCommand = new CommandBase("whitelistadd", 1, "Adds a player to the whitelist", ConsoleCommandActions.WhitelistAddCommandAction);
+        public static readonly CommandBase WhitelistRemoveCommand = new CommandBase("whitelistremove", 1, "Removes a player from the whitelist", ConsoleCommandActions.WhitelistRemoveCommandAction);
+        public static readonly CommandBase ForceSaveCommand = new CommandBase("forcesave", 1, "Forces a player to sync their save", ConsoleCommandActions.ForceSaveCommandAction);
+        public static readonly CommandBase ResetPlayerCommand = new CommandBase("resetplayer", 1, "Resets a player profile from the server", ConsoleCommandActions.ResetPlayerCommandAction);
+        public static readonly CommandBase PortforwardCommand = new CommandBase("portforward", 0, "Will use UPnP to port forward the server", ConsoleCommandActions.PortForwardCommandAction);
+        public static readonly CommandBase ResetWorldCommand = new CommandBase("resetworld", 0, "Resets all the world related data and stores a backup of it", ConsoleCommandActions.ResetWorldCommandAction);
+        public static readonly CommandBase QuitCommand = new CommandBase("quit", 0, "Saves all player data and then closes the server", ConsoleCommandActions.QuitCommandAction);
+        public static readonly CommandBase ForceQuitCommand = new CommandBase("forcequit", 0, "Closes the server without saving player data", ConsoleCommandActions.ForceQuitCommandAction);
+        public static readonly CommandBase ClearCommand = new CommandBase("clear", 0, "Clears the console output", ConsoleCommandActions.ClearCommandAction);
+        public static readonly CommandBase DebugGCClearCommand = new CommandBase("debuggcclear", 0, "Forces the garbage collector to collect", ConsoleCommandActions.ForceGCClearCommandAction); // Doesn't work for shit
+        public static readonly CommandBase SiteRewardsCommand = new CommandBase("forcerewards", 0, "Forces every connected user to get site rewards", ConsoleCommandActions.ForceSiteRewardsCommandAction);
 
-        public static List<CommandBase> Commands = new List<CommandBase>
+        public static readonly List<CommandBase> Commands = new List<CommandBase>
         {
             BackupCommand,
             BackupUserCommand,
@@ -97,10 +97,10 @@ namespace GameServer.Commands
 
         public static void HelpCommandAction()
         {
-            Printer.Title($"List of available commands: [{ConsoleCommands.Commands.Count()}]");
+            Printer.Title($"List of available commands: [{ConsoleCommands.Commands.Count}]");
             Printer.Title("----------------------------------------");
 
-            foreach (CommandBase command in ConsoleCommands.Commands.ToList().OrderBy(fetch => fetch.Prefix))
+            foreach (CommandBase command in ConsoleCommands.Commands.OrderBy(fetch => fetch.Prefix))
                 Printer.Warning($"{command.Prefix} - {command.Description}");
 
             Printer.Title("----------------------------------------");
@@ -167,7 +167,7 @@ namespace GameServer.Commands
         {
             UserFile[] userFiles = UserManagerH.GetAllUserFiles();
 
-            Printer.Title($"Server players: [{userFiles.Count()}]");
+            Printer.Title($"Server players: [{userFiles.Length}]");
             Printer.Title("----------------------------------------");
             foreach (UserFile user in userFiles)
                 Printer.Warning($"{user.Username}");
@@ -268,7 +268,7 @@ namespace GameServer.Commands
         {
             List<UserFile> userFiles = UserManagerH.GetAllUserFiles().ToList().FindAll(x => x.IsBanned);
 
-            Printer.Title($"Banned players: [{userFiles.Count()}]");
+            Printer.Title($"Banned players: [{userFiles.Count}]");
             Printer.Title("----------------------------------------");
             foreach (UserFile user in userFiles) Printer.Warning($"{user.Username} - {user.LatestIP}");
             Printer.Title("----------------------------------------");
@@ -398,7 +398,7 @@ namespace GameServer.Commands
 
         public static void WhitelistCommandAction()
         {
-            Printer.Title($"Whitelisted usernames: [{Master.Whitelist.WhitelistedUsers.Count()}]");
+            Printer.Title($"Whitelisted usernames: [{Master.Whitelist.WhitelistedUsers.Count}]");
             Printer.Title("----------------------------------------");
             foreach (string str in Master.Whitelist.WhitelistedUsers) Printer.Warning($"{str}");
             Printer.Title("----------------------------------------");
@@ -468,7 +468,7 @@ namespace GameServer.Commands
 
         public static void PortForwardCommandAction()
         {
-            if (!Master.ServerConfig.UseUPnP) Printer.Error("Cannot portforward because UPnP is disabled on the server");
+            if (!Master.ServerConfig.UseUPnP) Printer.Error("Cannot port forward because UPnP is disabled on the server");
             else _ = new UPnP();
         }
 

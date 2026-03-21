@@ -39,7 +39,7 @@ namespace TCPNetwork
             PacketHeader.SaveManager,
             PacketHeader.WorldManager,
             PacketHeader.GlobalDataManager,
-            PacketHeader.RecountManager,
+            PacketHeader.PM_Recount,
             PacketHeader.ChatManager,
             PacketHeader.ConsoleManager,
             PacketHeader.ServerBrowserReachability

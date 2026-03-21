@@ -2,10 +2,11 @@
 using GameServer.Misc;
 using Shared;
 using Shared.Files;
-using Shared.Files.Maps;
+using Shared.Misc;
 using System;
 using System.IO;
 using System.Linq;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 
@@ -16,15 +17,31 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.MapManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            PKT_Map data = Serializer.ConvertBytesToObject<PKT_Map>(bytes);
-            if (data == null) return;
+            if (client == null || bytes == null || bytes.Length == 0)
+                return;
+
+            PKT_Map data = null;
+
+            try
+            {
+                data = Serializer.ConvertBytesToObject<PKT_Map>(bytes);
+            }
+            catch
+            {
+                Printer.Warning("[Maps] Failed to deserialize incoming map packet.");
+                return;
+            }
+
+            if (data == null)
+                return;
 
             SaveUserMap(client, data);
         }
 
         public static void SaveUserMap(ServerClient client, PKT_Map data)
         {
-            if (client == null || data == null) return;
+            if (client == null || data == null)
+                return;
 
             Directory.CreateDirectory(Master.MapsPath);
 
@@ -49,10 +66,14 @@ namespace GameServer.PacketManager
                 }
             }
 
-            if (mapFile == null) return;
+            if (mapFile == null)
+                return;
 
-            if (mapFile.Tile < 0 && tile >= 0) mapFile.Tile = tile;
-            if (mapFile.Tile < 0) return;
+            if (mapFile.Tile < 0 && tile >= 0)
+                mapFile.Tile = tile;
+
+            if (mapFile.Tile < 0)
+                return;
 
             mapFile.Username = client.UserFile?.Username ?? mapFile.Username ?? string.Empty;
 
@@ -64,8 +85,8 @@ namespace GameServer.PacketManager
 
         public static void SaveUserMap(ServerClient client, MapFile file)
         {
-            if (client == null || file == null) return;
-            if (file.Tile < 0) return;
+            if (client == null || file == null || file.Tile < 0)
+                return;
 
             Directory.CreateDirectory(Master.MapsPath);
 
@@ -74,7 +95,11 @@ namespace GameServer.PacketManager
                 string mapPath = Path.Combine(Master.MapsPath, file.Tile + CommonValues.DefaultSaveFormat);
                 Serializer.ObjectBytesToFile(mapPath, file);
             }
-            catch { }
+            catch (Exception e)
+            {
+                Printer.Warning($"[Maps] Failed to save map file for tile {file.Tile}: {e}");
+                return;
+            }
 
             TryWriteStatsSnapshot(file);
             InformationDisplayer.DisplaySaveMap(client);
@@ -82,19 +107,22 @@ namespace GameServer.PacketManager
 
         public static void DeleteMapByTile(int tile)
         {
-            if (tile < 0) return;
+            if (tile < 0)
+                return;
 
             try
             {
                 string mapPath = Path.Combine(Master.MapsPath, tile + CommonValues.DefaultSaveFormat);
-                if (File.Exists(mapPath)) File.Delete(mapPath);
+                if (File.Exists(mapPath))
+                    File.Delete(mapPath);
             }
             catch { }
 
             try
             {
                 string statsPath = GetStatsPathForTile(tile);
-                if (File.Exists(statsPath)) File.Delete(statsPath);
+                if (File.Exists(statsPath))
+                    File.Delete(statsPath);
             }
             catch { }
 
@@ -103,13 +131,13 @@ namespace GameServer.PacketManager
                 PM_Leaderboard.RemoveTile(tile);
             }
             catch { }
-
-            InformationDisplayer.DisplayRemoveMap(tile.ToString());
         }
 
         public static string[] GetAllMaps()
         {
-            if (!Directory.Exists(Master.MapsPath)) return Array.Empty<string>();
+            if (!Directory.Exists(Master.MapsPath))
+                return Array.Empty<string>();
+
             return Directory.GetFiles(Master.MapsPath);
         }
 
@@ -122,7 +150,8 @@ namespace GameServer.PacketManager
         public static byte[] GetMapBytesFromTile(int mapTileToGet)
         {
             string path = Path.Combine(Master.MapsPath, mapTileToGet + CommonValues.DefaultSaveFormat);
-            if (!File.Exists(path)) return null;
+            if (!File.Exists(path))
+                return null;
 
             try { return File.ReadAllBytes(path); }
             catch { return null; }
@@ -131,7 +160,8 @@ namespace GameServer.PacketManager
         public static MapFile GetMapFromTile(int mapTileToGet)
         {
             string path = Path.Combine(Master.MapsPath, mapTileToGet + CommonValues.DefaultSaveFormat);
-            if (!File.Exists(path)) return null;
+            if (!File.Exists(path))
+                return null;
 
             try
             {
@@ -142,7 +172,9 @@ namespace GameServer.PacketManager
                 try
                 {
                     byte[] raw = File.ReadAllBytes(path);
-                    if (raw == null || raw.Length == 0) return null;
+                    if (raw == null || raw.Length == 0)
+                        return null;
+
                     return Serializer.ConvertBytesToObject<MapFile>(raw);
                 }
                 catch
@@ -164,7 +196,8 @@ namespace GameServer.PacketManager
             catch { }
 
             MapFile map = GetMapFromTile(mapTileToGet);
-            if (map == null) return null;
+            if (map == null)
+                return null;
 
             long savedTicks = map.LastSavedUtcTicks;
             if (savedTicks <= 0)
@@ -190,7 +223,8 @@ namespace GameServer.PacketManager
         {
             try
             {
-                if (mapFile == null) return;
+                if (mapFile == null)
+                    return;
 
                 long savedTicks = mapFile.LastSavedUtcTicks > 0 ? mapFile.LastSavedUtcTicks : DateTime.UtcNow.Ticks;
 
@@ -204,7 +238,8 @@ namespace GameServer.PacketManager
         {
             try
             {
-                if (stats == null || stats.Tile < 0) return;
+                if (stats == null || stats.Tile < 0)
+                    return;
 
                 if (stats.LastSavedUtcTicks <= 0)
                     stats.LastSavedUtcTicks = DateTime.UtcNow.Ticks;
@@ -236,16 +271,16 @@ namespace GameServer.PacketManager
             stats.RealPlayTimeInteractingSeconds = mapFile.RealPlayTimeInteractingSeconds >= 0 ? mapFile.RealPlayTimeInteractingSeconds : -1;
             stats.LastSavedUtcTicks = savedTicksFallback > 0 ? savedTicksFallback : DateTime.UtcNow.Ticks;
 
-            stats.FactionThingCount = mapFile.Things != null ? mapFile.Things.Count : -1;
-            stats.NonFactionThingCount = -1;
+            stats.ColonistCount = mapFile.ColonistCount >= 0 ? mapFile.ColonistCount : -1;
 
-            stats.FactionHumanCount = -1;
-            stats.NonFactionHumanCount = -1;
+            stats.FactionHumanCount = mapFile.FactionHumanCount >= 0 ? mapFile.FactionHumanCount : -1;
+            stats.NonFactionHumanCount = mapFile.NonFactionHumanCount >= 0 ? mapFile.NonFactionHumanCount : -1;
 
-            stats.FactionAnimalCount = -1;
-            stats.NonFactionAnimalCount = -1;
+            stats.FactionAnimalCount = mapFile.FactionAnimalCount >= 0 ? mapFile.FactionAnimalCount : -1;
+            stats.NonFactionAnimalCount = mapFile.NonFactionAnimalCount >= 0 ? mapFile.NonFactionAnimalCount : -1;
 
-            stats.ColonistCount = -1;
+            stats.FactionThingCount = mapFile.FactionThingCount >= 0 ? mapFile.FactionThingCount : -1;
+            stats.NonFactionThingCount = mapFile.NonFactionThingCount >= 0 ? mapFile.NonFactionThingCount : -1;
 
             TryBackfillFromSettlement(tile, stats);
 
@@ -257,7 +292,8 @@ namespace GameServer.PacketManager
             try
             {
                 SettlementFile sf = PM_Settlements.GetSettlementFileFromTile(tile);
-                if (sf == null) return;
+                if (sf == null)
+                    return;
 
                 if (string.IsNullOrWhiteSpace(stats.Username))
                     stats.Username = sf.Username ?? string.Empty;
@@ -284,6 +320,14 @@ namespace GameServer.PacketManager
             if (file.GameTicks >= 0) return true;
             if (file.RealPlayTimeSeconds >= 0) return true;
             if (file.RealPlayTimeInteractingSeconds >= 0) return true;
+
+            if (file.ColonistCount >= 0) return true;
+            if (file.FactionHumanCount >= 0) return true;
+            if (file.NonFactionHumanCount >= 0) return true;
+            if (file.FactionAnimalCount >= 0) return true;
+            if (file.NonFactionAnimalCount >= 0) return true;
+            if (file.FactionThingCount >= 0) return true;
+            if (file.NonFactionThingCount >= 0) return true;
 
             return false;
         }

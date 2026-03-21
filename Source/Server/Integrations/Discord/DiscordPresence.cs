@@ -1,6 +1,7 @@
 using Discord;
 using Discord.WebSocket;
 using GameServer.Core;
+using GameServer.Hooks.TCPNetwork;
 using Shared.Misc;
 using System;
 using System.Threading;
@@ -121,9 +122,12 @@ namespace GameServer.Integrations.Discord
             int online = 0;
             try
             {
-                online = ServerNetwork.Instance?.GetConnectedClientsSafe()?.Length ?? 0;
+                online = ServerNetwork.GetConnectedClients().Length;
             }
-            catch { online = 0; }
+            catch
+            {
+                online = 0;
+            }
 
             string text = BuildPresenceText(online);
 
@@ -136,7 +140,7 @@ namespace GameServer.Integrations.Discord
             }
             catch { }
         }
-        // Used to have max but dropped cause who gives a frick about knowing the max....
+
         private static string BuildPresenceText(int online)
         {
             if (online <= 0) return "No players online";

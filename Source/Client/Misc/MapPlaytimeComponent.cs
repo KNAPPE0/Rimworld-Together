@@ -3,7 +3,7 @@ using Verse;
 
 namespace GameClient.Misc
 {
-    public class RT_MapPlaytimeComponent : MapComponent
+    public class MapPlaytimeComponent : MapComponent
     {
         private double _totalSeconds = 0;
 
@@ -12,7 +12,7 @@ namespace GameClient.Misc
 
         public double TotalSeconds => _totalSeconds;
 
-        public RT_MapPlaytimeComponent(Map map) : base(map)
+        public MapPlaytimeComponent(Map map) : base(map)
         {
         }
 

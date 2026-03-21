@@ -37,7 +37,7 @@ namespace Shared.Files.Configs
 
         public string DiscordAdminRoleIdsCsv { get; set; } = string.Empty;
 
-        public override void Save()
+        public void Save()
         {
             try { Serializer.SerializeToFile(SavePath, this); }
             catch (Exception e) { throw new Exception(e.ToString()); }

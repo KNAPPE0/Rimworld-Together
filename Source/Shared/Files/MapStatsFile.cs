@@ -7,6 +7,7 @@
         public string Username { get; set; } = string.Empty;
 
         public string SettlementName { get; set; } = string.Empty;
+
         public string FactionName { get; set; } = string.Empty;
 
         public int Wealth { get; set; } = -1;

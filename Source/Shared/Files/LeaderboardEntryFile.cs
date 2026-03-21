@@ -1,5 +1,4 @@
-﻿// Shared - LeaderboardEntryFile.cs
-using System;
+﻿using System;
 
 namespace Shared.Files
 {
@@ -8,7 +7,6 @@ namespace Shared.Files
         public int Tile { get; set; } = -1;
 
         public string Username { get; set; } = string.Empty;
-
         public string SettlementName { get; set; } = string.Empty;
         public string FactionName { get; set; } = string.Empty;
 
@@ -20,7 +18,6 @@ namespace Shared.Files
         public int GameTicks { get; set; } = -1;
 
         public double RealPlayTimeSeconds { get; set; } = -1;
-
         public double RealPlayTimeInteractingSeconds { get; set; } = -1;
 
         public long LastSavedUtcTicks { get; set; } = 0;

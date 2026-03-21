@@ -5,6 +5,7 @@ using GameServer.Managers;
 using GameServer.Misc;
 using Shared;
 using Shared.Misc;
+using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using static Shared.CommonEnumerators;
@@ -71,7 +72,7 @@ namespace GameServer.PacketManager
             PM_Sites.SetSiteInfoForClient(client);
 
             UserManager.SendPlayerRecount();
-            PM_GlobalData.SendServerGlobalData(client);
+            GlobalDataManager.SendServerGlobalData(client);
 
             foreach (string str in PM_Chat.DefaultJoinMessages)
                 PM_Chat.SendConsoleMessage(client, str);

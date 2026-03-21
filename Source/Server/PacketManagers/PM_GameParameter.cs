@@ -16,7 +16,23 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.GameParameterManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            GameParameterData data = Serializer.ConvertBytesToObject<GameParameterData>(bytes);
+            if (client == null || bytes == null || bytes.Length == 0)
+                return;
+
+            GameParameterData data = null;
+
+            try
+            {
+                data = Serializer.ConvertBytesToObject<GameParameterData>(bytes);
+            }
+            catch
+            {
+                Printer.Warning("[GameParameter] Failed to deserialize incoming packet.");
+                return;
+            }
+
+            if (data == null)
+                return;
 
             switch (data._stepMode)
             {
@@ -34,58 +50,127 @@ namespace GameServer.PacketManager
             }
         }
 
-        private static void SetScenario(ServerClient client, byte[] bytes)
+        private static bool BlockIfUnauthorized(ServerClient client, string actionName)
         {
+            if (client == null)
+                return true;
+
+            if (client.UserFile == null)
+            {
+                Printer.Warning($"[GameParameter] Blocked {actionName} change because client user file was null.");
+                return true;
+            }
+
             if (!client.UserFile.IsAdmin && Master.WorldValues != null)
             {
-                UserManager.BanPlayerFromName(client.UserFile.Username);
-                Printer.Warning($"Player {client.UserFile.Username} attempted to set the scenario while not being an admin");
+                ResponseShortcutManager.SendIllegalPacket(client, $"Only admins can change {actionName}.");
+                Printer.Warning($"[GameParameter] User {client.UserFile.Username} attempted to set {actionName} without admin permissions.");
+                return true;
             }
 
-            else
+            return false;
+        }
+
+        private static void SetScenario(ServerClient client, byte[] bytes)
+        {
+            if (BlockIfUnauthorized(client, "scenario"))
+                return;
+
+            if (bytes == null || bytes.Length == 0)
             {
-                ScenarioConfigFile file = Serializer.ConvertBytesToObject<ScenarioConfigFile>(bytes);
-
-                Master.ScenarioValues = file;
-                ScenarioConfigFile.Save(ScenarioConfigFile.SavePath, file);
-                InformationDisplayer.DisplaySetScenario(client.UserFile.Username);
+                Printer.Warning("[GameParameter] Scenario bytes were empty.");
+                return;
             }
+
+            ScenarioConfigFile file = null;
+
+            try
+            {
+                file = Serializer.ConvertBytesToObject<ScenarioConfigFile>(bytes);
+            }
+            catch
+            {
+                Printer.Warning("[GameParameter] Failed to deserialize scenario config.");
+                return;
+            }
+
+            if (file == null)
+            {
+                Printer.Warning("[GameParameter] Scenario config was null after deserialize.");
+                return;
+            }
+
+            Master.ScenarioValues = file;
+            ScenarioConfigFile.Save(ScenarioConfigFile.SavePath, file);
+            InformationDisplayer.DisplaySetScenario(client.UserFile.Username);
         }
 
         private static void SetStoryteller(ServerClient client, byte[] bytes)
         {
-            if (!client.UserFile.IsAdmin && Master.WorldValues != null)
+            if (BlockIfUnauthorized(client, "storyteller"))
+                return;
+
+            if (bytes == null || bytes.Length == 0)
             {
-                UserManager.BanPlayerFromName(client.UserFile.Username);
-                Printer.Warning($"Player {client.UserFile.Username} attempted to set the storyteller while not being an admin");
+                Printer.Warning("[GameParameter] Storyteller bytes were empty.");
+                return;
             }
 
-            else
-            {
-                StorytellerConfigFile file = Serializer.ConvertBytesToObject<StorytellerConfigFile>(bytes);
+            StorytellerConfigFile file = null;
 
-                Master.StorytellerValues = file;
-                StorytellerConfigFile.Save(StorytellerConfigFile.SavePath, file);
-                InformationDisplayer.DisplaySetStoryteller(client.UserFile.Username);
+            try
+            {
+                file = Serializer.ConvertBytesToObject<StorytellerConfigFile>(bytes);
             }
+            catch
+            {
+                Printer.Warning("[GameParameter] Failed to deserialize storyteller config.");
+                return;
+            }
+
+            if (file == null)
+            {
+                Printer.Warning("[GameParameter] Storyteller config was null after deserialize.");
+                return;
+            }
+
+            Master.StorytellerValues = file;
+            StorytellerConfigFile.Save(StorytellerConfigFile.SavePath, file);
+            InformationDisplayer.DisplaySetStoryteller(client.UserFile.Username);
         }
 
         private static void SetDifficulty(ServerClient client, byte[] bytes)
         {
-            if (!client.UserFile.IsAdmin && Master.WorldValues != null)
+            if (BlockIfUnauthorized(client, "difficulty"))
+                return;
+
+            if (bytes == null || bytes.Length == 0)
             {
-                UserManager.BanPlayerFromName(client.UserFile.Username);
-                Printer.Warning($"Player {client.UserFile.Username} attempted to set the difficulty while not being an admin");
+                Printer.Warning("[GameParameter] Difficulty bytes were empty.");
+                return;
             }
 
-            else
-            {
-                DifficultyConfigFile file = Serializer.ConvertBytesToObject<DifficultyConfigFile>(bytes);
+            DifficultyConfigFile file = null;
 
-                Master.DifficultyValues = file;
-                DifficultyConfigFile.Save(DifficultyConfigFile.SavePath, file);
-                InformationDisplayer.DisplaySetDifficulty(client.UserFile.Username);
+            try
+            {
+                file = Serializer.ConvertBytesToObject<DifficultyConfigFile>(bytes);
             }
+            catch
+            {
+                Printer.Warning("[GameParameter] Failed to deserialize difficulty config.");
+                return;
+            }
+
+            if (file == null)
+            {
+                Printer.Warning("[GameParameter] Difficulty config was null after deserialize.");
+                return;
+            }
+
+            Master.DifficultyValues = file;
+            DifficultyConfigFile.Save(DifficultyConfigFile.SavePath, file);
+            InformationDisplayer.DisplaySetDifficulty(client.UserFile.Username);
         }
     }
 }

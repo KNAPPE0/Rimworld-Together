@@ -48,7 +48,7 @@ namespace GameClient.PacketManagers
 
         public static void SendMessage(string messageToSend)
         {
-            if (LeaderboardManager.TryHandleChatCommand(messageToSend))
+            if (PM_Leaderboard.TryHandleChatCommand(messageToSend))
                 return;
 
             RTChatDefSounds.ChatSend.PlayOneShotOnCamera();

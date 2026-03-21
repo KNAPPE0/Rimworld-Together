@@ -14,7 +14,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using TCPNetwork;
 using TCPNetwork.Files.Client;
-using TCPNetwork.Misc;
 using static Shared.CommonEnumerators;
 
 namespace GameServer.Hooks.TCPNetwork
@@ -55,7 +54,7 @@ namespace GameServer.Hooks.TCPNetwork
 
             try
             {
-                if (Master.ChatConfig.DisconnectNotifications && !string.IsNullOrWhiteSpace(username))
+                if (Master.ChatConfig != null && Master.ChatConfig.DisconnectNotifications && !string.IsNullOrWhiteSpace(username))
                     PM_Chat.BroadcastServerNotification($"{username} has left the server!");
             }
             catch { }
@@ -120,9 +119,8 @@ namespace GameServer.Hooks.TCPNetwork
         private void ListenForNewClients()
         {
             TcpClient newTcp = Network.ServerListener.AcceptTcpClient();
-            ServerClient client = new ServerClient(newTcp);
             NetworkRuleset ruleset = new NetworkRuleset(OnConnect, OnDisconnect, OnReadPacket, OnWritePacket);
-            client.Listener = new Listener(client, newTcp, ruleset, Listener.ListenerMode.Server);
+            ServerClient client = new ServerClient(newTcp, ruleset);
 
             try
             {
@@ -240,7 +238,6 @@ namespace GameServer.Hooks.TCPNetwork
             ip = ip.Trim();
 
             try { BannedIps.Add(ip); } catch { }
-
             try { KickByIP(ip); } catch { }
 
             return true;

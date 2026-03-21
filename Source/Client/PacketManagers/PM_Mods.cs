@@ -1,4 +1,6 @@
 ﻿using GameClient.Dialogs;
+using GameClient.Managers;
+using GameClient.Misc;
 using Shared;
 using Shared.Files;
 using Shared.Files.Configs.Mods;
@@ -6,6 +8,8 @@ using Shared.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TCPNetwork;
+using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using Verse;
 using static Shared.CommonEnumerators;

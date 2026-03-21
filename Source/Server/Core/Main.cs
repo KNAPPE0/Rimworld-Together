@@ -1,18 +1,20 @@
-using GameServer.Managers;
+using GameServer.Hooks.Shared;
+using GameServer.Hooks.TCPNetwork;
 using GameServer.Integrations.Discord;
+using GameServer.Managers;
+using GameServer.PacketManager;
 using Shared;
+using Shared.Files;
 using Shared.Files.Actions;
 using Shared.Files.Configs;
 using Shared.Files.Configs.Mods;
 using Shared.Files.Guilds;
-using System.Globalization;
-using System.Reflection;
 using Shared.Misc;
+using System;
+using System.Globalization;
+using System.IO;
+using System.Threading.Tasks;
 using static Shared.CommonEnumerators;
-using GameServer.Hooks.TCPNetwork;
-using GameServer.Hooks.Shared;
-using Shared.Files;
-using GameServer.PacketManager;
 
 namespace GameServer.Core
 {
@@ -30,8 +32,7 @@ namespace GameServer.Core
 
             if (!File.Exists(ServerConfigFile.SavePath))
             {
-                Printer.Error("If this is your first time installing Rimworld Together, please take a look at our wiki > " +
-                    "https://rimworldtogether.wiki.gg/");
+                Printer.Error("If this is your first time installing Rimworld Together, please take a look at our wiki > https://rimworldtogether.wiki.gg/");
             }
 
             MethodGatherer.CacheAllMethods(AssemblyType.Server);
@@ -44,7 +45,8 @@ namespace GameServer.Core
 
             DiscordBridge.TryStart();
 
-            while (true) ConsoleManager.ListenForServerCommands();
+            while (true)
+                ConsoleManager.ListenForServerCommands();
         }
 
         public static void SetPaths()
@@ -60,7 +62,6 @@ namespace GameServer.Core
             WhitelistConfigFile.SavePath = Path.Combine(Master.ConfigsPath, "WhitelistConfig.json");
             BackupsConfigFile.SavePath = Path.Combine(Master.ConfigsPath, "BackupConfig.json");
             ChatConfigFile.SavePath = Path.Combine(Master.ConfigsPath, "ChatConfig.json");
-            LeaderboardFile.SavePath = Path.Combine(Master.AssetsPath, "Leaderboard.json");
 
             CommonValues.ServerUsersPath = Master.UsersPath;
             CommonValues.ServerSitesPath = Master.SitesPath;
@@ -101,16 +102,16 @@ namespace GameServer.Core
         public static void LoadResources()
         {
             Printer.Title($"Server version {CommonValues.ExecutableVersion}");
-            Printer.Title($"Loading all necessary resources");
-            Printer.Title($"----------------------------------------");
+            Printer.Title("Loading all necessary resources");
+            Printer.Title("----------------------------------------");
 
             LoadFiles();
             EventManagerH.LoadAllEvents();
-            
+
             GC.Collect();
             GC.WaitForPendingFinalizers();
             Printer.Warning($"{GC.GetTotalAllocatedBytes() / 1024 / 1024}MB in allocation after resource loading", LogImportanceMode.Verbose);
-            Printer.Title($"----------------------------------------", LogImportanceMode.Verbose);
+            Printer.Title("----------------------------------------", LogImportanceMode.Verbose);
         }
 
         private static void LoadFiles()
@@ -126,13 +127,11 @@ namespace GameServer.Core
             Master.ChatConfig = (ChatConfigFile)ChatConfigFile.Load<ChatConfigFile>(ChatConfigFile.SavePath);
             Master.WorldValues = (PlanetConfigFile)PlanetConfigFile.Load<PlanetConfigFile>(PlanetConfigFile.SavePath, true, false);
             Master.ServerBrowserConfig = (ServerBrowserConfigFile)ServerBrowserConfigFile.Load<ServerBrowserConfigFile>(ServerBrowserConfigFile.SavePath);
-            Master.LeaderboardFile = (LeaderboardFile)LeaderboardFile.Load<LeaderboardFile>(LeaderboardFile.SavePath);
         }
 
         public static void ChangeTitle()
         {
-            Console.Title = $"RimWorld Together {CommonValues.ExecutableVersion} - " +
-                $"Players [{ServerNetwork.GetConnectedClients().Length}/{Master.ServerConfig.MaxPlayers}]";
+            Console.Title = $"RimWorld Together {CommonValues.ExecutableVersion} - Players [{ServerNetwork.GetConnectedClients().Length}/{Master.ServerConfig.MaxPlayers}]";
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GameClient.Managers;
+using GameClient.PacketManagers;
 using RimWorld;
 using Shared;
 using UnityEngine;
@@ -60,8 +61,8 @@ namespace GameClient.Tabs
             windowRect.width = RequestedTabSize.x;
             windowRect.height = RequestedTabSize.y;
 
-            float x = ChatManager.ChatBoxPosition.x;
-            float y = ChatManager.ChatBoxPosition.y;
+            float x = PM_Chat.ChatBoxPosition.x;
+            float y = PM_Chat.ChatBoxPosition.y;
 
             windowRect.x = Mathf.Clamp(x, 0f, UI.screenWidth - windowRect.width);
             windowRect.y = Mathf.Clamp(y, 0f, UI.screenHeight - windowRect.height);
@@ -79,8 +80,8 @@ namespace GameClient.Tabs
         {
             base.PostOpen();
 
-            ChatManager.IsChatTabOpen = true;
-            ChatManager.ToggleChatIcon(false);
+            PM_Chat.IsChatTabOpen = true;
+            PM_Chat.ToggleChatIcon(false);
 
             _pendingFocusInput = true;
         }
@@ -88,7 +89,7 @@ namespace GameClient.Tabs
         public override void PostClose()
         {
             base.PostClose();
-            ChatManager.IsChatTabOpen = false;
+            PM_Chat.IsChatTabOpen = false;
         }
 
         public override void DoWindowContents(Rect rect)
@@ -103,8 +104,8 @@ namespace GameClient.Tabs
                 (Event.current.type == EventType.KeyDown || Event.current.rawType == EventType.KeyDown) &&
                 Event.current.keyCode == KeyCode.Escape;
 
-            ChatManager.ChatBoxPosition.x = windowRect.x;
-            ChatManager.ChatBoxPosition.y = windowRect.y;
+            PM_Chat.ChatBoxPosition.x = windowRect.x;
+            PM_Chat.ChatBoxPosition.y = windowRect.y;
 
             Rect inner = rect.ContractedBy(Pad);
 
@@ -159,9 +160,9 @@ namespace GameClient.Tabs
             float cbW = Mathf.Clamp(size.x + 40f, 110f, 160f);
             Rect cbRect = new Rect(inner.xMax - cbW, inner.y + 2f, cbW, inner.height - 4f);
 
-            bool auto = ChatManager.ChatAutoscroll;
+            bool auto = PM_Chat.ChatAutoscroll;
             Widgets.CheckboxLabeled(cbRect, pinText, ref auto, placeCheckboxNearText: true);
-            ChatManager.ChatAutoscroll = auto;
+            PM_Chat.ChatAutoscroll = auto;
 
             TooltipHandler.TipRegion(resetBtn, "Return to the position the window opened at.");
             TooltipHandler.TipRegion(defaultBtn, "Return to the original default position.");
@@ -175,17 +176,17 @@ namespace GameClient.Tabs
             windowRect.x = clampedX;
             windowRect.y = clampedY;
 
-            ChatManager.ChatBoxPosition.x = windowRect.x;
-            ChatManager.ChatBoxPosition.y = windowRect.y;
+            PM_Chat.ChatBoxPosition.x = windowRect.x;
+            PM_Chat.ChatBoxPosition.y = windowRect.y;
         }
 
         private void DrawLeftPanel(Rect rect)
         {
             Rect inner = rect.ContractedBy(6f);
 
-            string playersLabel = RecountManager.CurrentPlayers == 1
+            string playersLabel = PM_Recount.CurrentPlayers == 1
                 ? "1 Player Online"
-                : $"{RecountManager.CurrentPlayers} Players Online";
+                : $"{PM_Recount.CurrentPlayers} Players Online";
 
             Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.MiddleLeft;
@@ -196,7 +197,7 @@ namespace GameClient.Tabs
 
             Rect listRect = new Rect(inner.x, inner.y + 28f, inner.width, inner.height - 28f);
 
-            List<string> ordered = RecountManager.CurrentPlayerNames?.ToList() ?? new List<string>();
+            List<string> ordered = PM_Recount.CurrentPlayerNames?.ToList() ?? new List<string>();
             ordered.Sort(StringComparer.OrdinalIgnoreCase);
 
             float viewH = Mathf.Max(listRect.height, 6f + ordered.Count * PlayerRowH);
@@ -231,10 +232,10 @@ namespace GameClient.Tabs
                             string who = ordered[i];
                             if (!string.IsNullOrWhiteSpace(who))
                             {
-                                if (!string.IsNullOrWhiteSpace(ChatManager.CurrentChatInput) && !ChatManager.CurrentChatInput.EndsWith(" "))
-                                    ChatManager.CurrentChatInput += " ";
+                                if (!string.IsNullOrWhiteSpace(PM_Chat.CurrentChatInput) && !PM_Chat.CurrentChatInput.EndsWith(" "))
+                                    PM_Chat.CurrentChatInput += " ";
 
-                                ChatManager.CurrentChatInput += $"@{who} ";
+                                PM_Chat.CurrentChatInput += $"@{who} ";
                                 _pendingFocusInput = true;
                             }
                         }
@@ -269,7 +270,7 @@ namespace GameClient.Tabs
             Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.UpperLeft;
 
-            string[] messages = ChatManager.ChatMessageCache?.ToArray() ?? Array.Empty<string>();
+            string[] messages = PM_Chat.ChatMessageCache?.ToArray() ?? Array.Empty<string>();
 
             float scrollBarReserve = 16f;
             float viewW = mainRect.width - scrollBarReserve;
@@ -315,10 +316,10 @@ namespace GameClient.Tabs
             bool countChanged = currentCount != _lastChatCount;
             _lastChatCount = currentCount;
 
-            if (ChatManager.ChatAutoscroll && (ChatManager.ShouldScrollChat || countChanged))
+            if (PM_Chat.ChatAutoscroll && (PM_Chat.ShouldScrollChat || countChanged))
             {
                 _scrollChat.y = float.MaxValue;
-                ChatManager.ShouldScrollChat = false;
+                PM_Chat.ShouldScrollChat = false;
             }
         }
 
@@ -330,12 +331,12 @@ namespace GameClient.Tabs
             Rect textRect = new Rect(rect.x, rect.y, rect.width - SendBtnW - 6f, rect.height);
 
             GUI.SetNextControlName(ChatInputControlName);
-            string input = Widgets.TextField(textRect, ChatManager.CurrentChatInput ?? string.Empty);
+            string input = Widgets.TextField(textRect, PM_Chat.CurrentChatInput ?? string.Empty);
 
             if (input.Length <= 512)
-                ChatManager.CurrentChatInput = input;
+                PM_Chat.CurrentChatInput = input;
 
-            if (!inputFocused && string.IsNullOrWhiteSpace(ChatManager.CurrentChatInput))
+            if (!inputFocused && string.IsNullOrWhiteSpace(PM_Chat.CurrentChatInput))
             {
                 Color old = GUI.color;
                 GUI.color = new Color(1f, 1f, 1f, 0.35f);
@@ -364,13 +365,13 @@ namespace GameClient.Tabs
 
         private void TrySendChatInput()
         {
-            string msg = ChatManager.CurrentChatInput;
+            string msg = PM_Chat.CurrentChatInput;
 
             if (string.IsNullOrWhiteSpace(msg))
                 return;
 
-            ChatManager.SendMessage(msg.Trim());
-            ChatManager.CurrentChatInput = "";
+            PM_Chat.SendMessage(msg.Trim());
+            PM_Chat.CurrentChatInput = "";
         }
     }
 }

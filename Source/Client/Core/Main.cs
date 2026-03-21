@@ -1,6 +1,7 @@
 ﻿using GameClient.Core.Configs;
 using GameClient.Files;
 using GameClient.Hooks.Shared;
+using GameClient.Managers;
 using GameClient.Misc;
 using Shared;
 using Shared.Misc;

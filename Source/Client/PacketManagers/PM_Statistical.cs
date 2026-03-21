@@ -4,10 +4,12 @@ using Shared;
 using Shared.Files;
 using System;
 using GameClient.Misc;
+using GameClient.Hooks.TCPNetwork;
+using TCPNetwork;
 
-namespace GameClient.Managers
+namespace GameClient.PacketManagers
 {
-    public static class StatisticalManager
+    public static class PM_Statistical
     {
         private const int RequestTimeoutMs = 10000;
 
@@ -18,32 +20,32 @@ namespace GameClient.Managers
         {
             int now = Environment.TickCount;
 
-            if (_statsRequestInFlight && (now - _lastStatsRequestMs) < RequestTimeoutMs)
+            if (_statsRequestInFlight && now - _lastStatsRequestMs < RequestTimeoutMs)
                 return;
 
             _statsRequestInFlight = true;
             _lastStatsRequestMs = now;
 
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Wait("Waiting for server"));
+            DLG_Base.PushNewDialog(new DLG_Wait("Waiting for server"));
 
-            InformationData data = new InformationData();
-            data._stepMode = InformationData.InfoStepMode.Stats;
+            PKT_Information data = new PKT_Information();
+            data._stepMode = PKT_Information.InfoStepMode.Stats;
             data._settlementTile = SessionHandler.ChosenSettlement.Tile;
 
-            ClientNetwork.Instance.ClientListener.EnqueuePacket(PacketHeader.InformationManager, data);
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.InformationManager, data);
         }
 
-        public static void ReceiveStats(InformationData data)
+        public static void ReceiveStats(PKT_Information data)
         {
             _statsRequestInFlight = false;
 
-            if (RT_Dialog_Wait.Instance != null) RT_Dialog_Wait.Instance.Close();
+            if (DLG_Wait.Instance != null) DLG_Wait.Instance.Close();
 
             MapStatsFile stats = data._settlementStats;
 
             if (stats == null)
             {
-                RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Colony Stats", new string[]
+                DLG_Base.PushNewDialog(new DLG_Message("Colony Stats", new string[]
                 {
                     "No stats were found for this settlement (has it been saved yet?)."
                 }));
@@ -58,7 +60,7 @@ namespace GameClient.Managers
             }
             catch { }
 
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_ColonyStats(stats, data._isPlayerOnline, settlementName));
+            DLG_Base.PushNewDialog(new DLG_ColonyStats(stats, data._isPlayerOnline, settlementName));
         }
 
         [OnUpdate]
@@ -67,13 +69,13 @@ namespace GameClient.Managers
             if (!_statsRequestInFlight) return;
 
             int now = Environment.TickCount;
-            if ((now - _lastStatsRequestMs) < RequestTimeoutMs) return;
+            if (now - _lastStatsRequestMs < RequestTimeoutMs) return;
 
             _statsRequestInFlight = false;
 
-            if (RT_Dialog_Wait.Instance != null) RT_Dialog_Wait.Instance.Close();
+            if (DLG_Wait.Instance != null) DLG_Wait.Instance.Close();
 
-            RT_Dialog_Base.PushNewDialog(new RT_Dialog_Message("Colony Stats", new string[]
+            DLG_Base.PushNewDialog(new DLG_Message("Colony Stats", new string[]
             {
                 "The server did not respond in time.",
                 "Try again in a moment (or the settlement may not have been saved yet)."

@@ -7,6 +7,7 @@ using Shared;
 using GameClient.Managers;
 using Shared.Files.Sites;
 using Shared.Misc;
+using GameClient.PacketManagers;
 
 namespace GameClient.Dialogs
 {
@@ -28,7 +29,7 @@ namespace GameClient.Dialogs
             Instance = this;
             SitePartDef = thingChosen;
             Title = thingChosen?.label ?? "Site";
-            ConfigFile = SiteManager.SiteValues.Where(f => f.DefName == thingChosen.defName).FirstOrDefault();
+            ConfigFile = PM_Sites.SiteValues.Where(f => f.DefName == thingChosen.defName).FirstOrDefault();
 
             if (ConfigFile == null)
             {
@@ -106,7 +107,7 @@ namespace GameClient.Dialogs
                     Rect btn = new Rect(row.xMax - 100f, row.y, 100f, row.height);
                     if (Widgets.ButtonText(btn, "Choose"))
                     {
-                        SiteManager.RequestSiteChangeConfig(ConfigFile, kv.Key.defName);
+                        PM_Sites.RequestSiteChangeConfig(ConfigFile, kv.Key.defName);
                         DLG_SiteMenu.Instance?.Close();
                         DLG_SiteMenuConfig.Instance?.Close();
                         break;

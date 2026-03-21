@@ -1,21 +1,12 @@
-﻿using GameServer.Core;
-using GameServer.Hooks.TCPNetwork;
+﻿using GameServer.Hooks.TCPNetwork;
 using GameServer.Managers;
 using GameServer.PacketManager;
 using Shared;
 using Shared.Files;
 using Shared.Misc;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Threading.Tasks;
 using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
-using static Shared.CommonEnumerators;
 
 namespace GameServer.Hooks.Synchronous
 {
@@ -49,61 +40,78 @@ namespace GameServer.Hooks.Synchronous
         private static void TryStartSynchronousSession(ServerClient client, PKT_Synchronous data)
         {
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(data._toTile);
+            if (settlement == null)
+            {
+                ResponseShortcutManager.SendUnavailablePacket(client);
+                return;
+            }
+
             ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
 
-            if (toFind == null) ResponseShortcutManager.SendUnavailablePacket(client);
+            if (toFind == null)
+            {
+                ResponseShortcutManager.SendUnavailablePacket(client);
+            }
             else
             {
-                PKT_Synchronous _ = new PKT_Synchronous();
-                _._stepMode = PKT_Synchronous.StepMode.Ask;
-                _._fromTile = PM_Settlements.GetSettlementFileFromUsername(client.UserFile.Username).Tile;
-                _._username = client.UserFile.Username;
-                _._toTile = data._toTile;
-                _._party = data._party;
-                _._type = data._type;
+                PKT_Synchronous request = new PKT_Synchronous();
+                request._stepMode = PKT_Synchronous.StepMode.Ask;
+                request._fromTile = PM_Settlements.GetSettlementFileFromUsername(client.UserFile.Username).Tile;
+                request._username = client.UserFile.Username;
+                request._toTile = data._toTile;
+                request._party = data._party;
+                request._type = data._type;
 
-                toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
+                toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, request);
             }
         }
 
         private static void AcceptSynchronousSession(ServerClient client, PKT_Synchronous data)
         {
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(data._toTile);
-            ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
+            if (settlement == null) return;
 
-            PKT_Synchronous _ = new PKT_Synchronous();
-            _._stepMode = PKT_Synchronous.StepMode.Accept;
-            _._fromTile = data._fromTile;
-            _._toTile = data._toTile;
-            _._contents = PM_Maps.GetMapFromTile(data._fromTile);
-            _._party = data._party;
-            _._type = data._type;
+            ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
+            if (toFind == null) return;
+
+            PKT_Synchronous accept = new PKT_Synchronous();
+            accept._stepMode = PKT_Synchronous.StepMode.Accept;
+            accept._fromTile = data._fromTile;
+            accept._toTile = data._toTile;
+            accept._contents = PM_Maps.GetMapBytesFromTile(data._fromTile);
+            accept._party = data._party;
+            accept._type = data._type;
 
             client.SynchronousClient = toFind;
             toFind.SynchronousClient = client;
 
-            toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
+            toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, accept);
         }
 
         private static void RejectSynchronousSession(ServerClient client, PKT_Synchronous data)
         {
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(data._toTile);
+            if (settlement == null) return;
+
             ServerClient toFind = ServerNetwork.GetConnectedClientFromUsername(settlement.Username);
+            if (toFind == null) return;
 
-            PKT_Synchronous _ = new PKT_Synchronous();
-            _._stepMode = PKT_Synchronous.StepMode.Reject;
-            _._fromTile = data._fromTile;
-            _._toTile = data._toTile;
+            PKT_Synchronous reject = new PKT_Synchronous();
+            reject._stepMode = PKT_Synchronous.StepMode.Reject;
+            reject._fromTile = data._fromTile;
+            reject._toTile = data._toTile;
 
-            toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
+            toFind.Listener.EnqueuePacket(PacketHeader.SynchronousManager, reject);
         }
 
         private static void StartSynchronousSession(ServerClient client, PKT_Synchronous data)
         {
-            PKT_Synchronous _ = new PKT_Synchronous();
-            _._stepMode = PKT_Synchronous.StepMode.Start;
+            if (client?.SynchronousClient?.Listener == null) return;
 
-            client.SynchronousClient.Listener.EnqueuePacket(PacketHeader.SynchronousManager, _);
+            PKT_Synchronous start = new PKT_Synchronous();
+            start._stepMode = PKT_Synchronous.StepMode.Start;
+
+            client.SynchronousClient.Listener.EnqueuePacket(PacketHeader.SynchronousManager, start);
         }
 
         [HandlesPacket(PacketHeader.SPlayerDraft)]

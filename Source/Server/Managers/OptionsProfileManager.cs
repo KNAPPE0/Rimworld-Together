@@ -99,7 +99,7 @@ namespace GameServer.Managers
             {
                 Printer.Warning($"[OptionsProfile] {SafeClientLabel(client)} requested profile, but none is available.", LogImportanceMode.Verbose);
 
-                ModConfigData none = new ModConfigData
+                PKT_ModConfig none = new PKT_ModConfig
                 {
                     _isOptionsProfileChunk = true,
                     _noOptionsProfileAvailable = true
@@ -120,7 +120,7 @@ namespace GameServer.Managers
 
             for (int i = 0; i < chunks.Count; i++)
             {
-                ModConfigData packet = new ModConfigData
+                PKT_ModConfig packet = new PKT_ModConfig
                 {
                     _isOptionsProfileChunk = true,
                     _optionsProfileHash = CurrentProfile.ProfileHash,
@@ -134,7 +134,7 @@ namespace GameServer.Managers
             }
         }
 
-        public static void HandleAdminUploadChunk(ServerClient client, ModConfigData data)
+        public static void HandleAdminUploadChunk(ServerClient client, PKT_ModConfig data)
         {
             if (client == null || data == null) return;
 

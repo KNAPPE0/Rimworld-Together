@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using GameServer.Managers;
+using GameServer.PacketManager;
 using Shared.Misc;
 using System;
 using System.Collections.Concurrent;
@@ -259,7 +260,7 @@ namespace GameServer.Integrations.Discord
                     var msg = SanitizeGameTextFromDiscord(raw, content);
                     if (msg.Length > 5000) msg = msg.Substring(0, 5000);
 
-                    ChatManager.BroadcastDiscordMessage(name, msg);
+                    PM_Chat.BroadcastDiscordMessage(name, msg);
                     return;
                 }
 

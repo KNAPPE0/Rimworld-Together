@@ -30,6 +30,7 @@ namespace GameClient.Patches
 
                 string filePath = GenFilePaths.FilePathForSavedGame(fileName);
                 PM_Saves.LatestSavePath = filePath;
+
                 try
                 {
                     SafeSaver.Save(filePath, "savegame", delegate
@@ -38,9 +39,13 @@ namespace GameClient.Patches
                         Game target = Current.Game;
                         Scribe_Deep.Look(ref target, "game");
                     }, Find.GameInfo.permadeathMode);
+
                     ___lastSaveTick = Find.TickManager.TicksGame;
                 }
-                catch (Exception e) { Printer.Error("Exception while saving game: " + e); }
+                catch (Exception e)
+                {
+                    Printer.Error("Exception while saving game: " + e);
+                }
 
                 if (SessionHandler.CurrentNetworkState == ClientNetworkState.Connected)
                 {
@@ -51,11 +56,14 @@ namespace GameClient.Patches
                     PM_Saves.SendSaveToServer();
 
                     DLG_Wait.Instance.Close();
+                }
             }
-            catch (Exception e) { Printer.Error(e); }
+            catch (Exception e)
+            {
+                Printer.Error(e);
+            }
 
             SessionHandler.IsSavingGame = false;
-
             return false;
         }
     }

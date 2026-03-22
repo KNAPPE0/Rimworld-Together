@@ -10,6 +10,7 @@ using TCPNetwork;
 using TCPNetwork.Files.Client;
 using TCPNetwork.Packets;
 using TCPNetwork.ServerBrowser;
+using static Shared.CommonEnumerators;
 // ReSharper disable FunctionNeverReturns
 
 namespace GameServer.PacketManager

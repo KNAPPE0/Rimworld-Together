@@ -4,6 +4,7 @@ using GameClient.Hooks.TCPNetwork;
 using GameClient.Managers;
 using GameClient.Misc;
 using Shared;
+using Shared.Misc;
 using System;
 using System.Collections.Generic;
 using TCPNetwork;
@@ -20,68 +21,116 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.LoginManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            PKT_Login data = Serializer.ConvertBytesToObject<PKT_Login>(bytes);
+            PKT_Login data = null;
+
+            try
+            {
+                data = Serializer.ConvertBytesToObject<PKT_Login>(bytes);
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"[Login] Failed to deserialize login response: {e}");
+                ShowDialog("ERROR", new string[]
+                {
+                    "Failed to read the server login response.",
+                    "Please try joining again."
+                });
+                return;
+            }
+
+            if (data == null)
+            {
+                ShowDialog("ERROR", new string[]
+                {
+                    "The server returned an empty login response.",
+                    "Please try joining again."
+                });
+                return;
+            }
 
             switch (data._tryResponse)
             {
                 case LoginResponse.Invalid:
-                    DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "Login details are invalid!", "Please try again or reset your account!" }));
+                    ShowDialog("ERROR", new string[]
+                    {
+                        "Login details are invalid!",
+                        "Please try again or reset your account."
+                    });
                     break;
 
                 case LoginResponse.Ban:
-                    DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "You are banned from this server!" }));
+                    ShowDialog("ERROR", new string[]
+                    {
+                        "You are banned from this server!"
+                    });
                     break;
 
                 case LoginResponse.Duplicate:
-                    DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "You connected from another place!" }));
+                    ShowDialog("ERROR", new string[]
+                    {
+                        "You connected from another place!"
+                    });
                     break;
 
                 case LoginResponse.Mods:
-                    ModManagerH.GetConflictingMods(data);
+                    CloseWaitDialogIfOpen();
+                    ModManagerH.ShowConflictingModsDialog(data);
                     break;
 
                 case LoginResponse.Full:
-                    DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "Server is full!" }));
+                    ShowDialog("ERROR", new string[]
+                    {
+                        "Server is full!"
+                    });
                     break;
 
                 case LoginResponse.Whitelist:
-                    DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "Server is whitelisted!" }));
+                    ShowDialog("ERROR", new string[]
+                    {
+                        "Server is whitelisted!"
+                    });
                     break;
 
                 case LoginResponse.Version:
-                    DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { $"Mod version mismatch! Expected version '{data._extraDetails[0]}'" }));
+                    ShowDialog("ERROR", new string[]
+                    {
+                        $"Mod version mismatch! Expected version '{SafeGetExtra(data, 0, "unknown")}'"
+                    });
                     break;
 
                 case LoginResponse.NoWorld:
-                    DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { $"Server is currently being set up! Join again later!" }));
+                    ShowDialog("ERROR", new string[]
+                    {
+                        "Server is currently being set up!",
+                        "Join again later."
+                    });
                     break;
             }
         }
 
         public static void UseLoginData()
         {
-            if (SessionHandler.CurrentNetworkState != CommonEnumerators.ClientNetworkState.Connected) return;
+            if (SessionHandler.CurrentNetworkState != ClientNetworkState.Connected)
+                return;
+
+            PKT_Login data = new PKT_Login();
+
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                data._username = "Test";
+                data._password = "1234";
+            }
             else
             {
-                PKT_Login data = new PKT_Login();
-
-                if (Input.GetKey(KeyCode.LeftShift))
-                {
-                    data._username = "Test";
-                    data._password = "1234";
-                }
-
-                else
-                {
-                    PersistentSettings settings = PersistentSettings.Load();
-                    data._username = settings.UserSettings.Username;
-                    data._password = settings.UserSettings.Password;
-                }
-
-                SessionHandler.Username = data._username;
-                data._runningMods = ModManagerH.GetRunningModList();
-                Network.ServerEndpoint.EnqueuePacket(PacketHeader.LoginManager, data);
+                PersistentSettings settings = PersistentSettings.Load();
+                data._username = settings.UserSettings.Username;
+                data._password = settings.UserSettings.Password;
             }
+
+            SessionHandler.Username = data._username;
+            data._runningMods = ModManagerH.GetRunningModList();
+
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.LoginManager, data);
         }
 
         public static void PromptCreateAccount(bool isQuickConnect)
@@ -89,19 +138,23 @@ namespace GameClient.PacketManagers
             Action toDo = delegate
             {
                 bool isInvalid = false;
-                if (!StringChecker.CheckIfStringValid(DLG_Inputs.DialogInputResults[0])) isInvalid = true;
-                else if (!StringChecker.CheckIfStringValid(DLG_Inputs.DialogInputResults[1])) isInvalid = true;
+
+                if (!StringChecker.CheckIfStringValid(DLG_Inputs.DialogInputResults[0]))
+                    isInvalid = true;
+                else if (!StringChecker.CheckIfStringValid(DLG_Inputs.DialogInputResults[1]))
+                    isInvalid = true;
 
                 if (isInvalid)
                 {
                     DLG_Base.PushNewDialog(new DLG_Message("ERROR",
                         new string[] { "Your login details contains illegal characters", "Please try again" }));
                 }
-
                 else
                 {
                     PersistentSettings settings = PersistentSettings.Load();
-                    settings.UserSettings.Set(DLG_Inputs.DialogInputResults[0], Hasher.GetHashFromString(DLG_Inputs.DialogInputResults[1]));
+                    settings.UserSettings.Set(
+                        DLG_Inputs.DialogInputResults[0],
+                        Hasher.GetHashFromString(DLG_Inputs.DialogInputResults[1]));
                     settings.Save();
 
                     if (isQuickConnect) QuickConnectUser();
@@ -111,11 +164,17 @@ namespace GameClient.PacketManagers
 
             Action toDo2 = delegate
             {
-                DLG_Base.PushNewDialog(new DLG_Inputs("Account Setup",
-                    new string[] { "Username", "Password" }, new bool[] { false, true }, toDo));
+                DLG_Base.PushNewDialog(new DLG_Inputs(
+                    "Account Setup",
+                    new string[] { "Username", "Password" },
+                    new bool[] { false, true },
+                    toDo));
             };
 
-            DLG_Base.PushNewDialog(new DLG_Message("Account Setup", new string[] { "Please create or log into your account" }, toDo2));
+            DLG_Base.PushNewDialog(new DLG_Message(
+                "Account Setup",
+                new string[] { "Please create or log into your account" },
+                toDo2));
         }
 
         public static void QuickConnectUser()
@@ -124,15 +183,48 @@ namespace GameClient.PacketManagers
             TCPNetwork.Network.Ip = settings.ServerSettings.LatestIP;
             TCPNetwork.Network.Port = settings.ServerSettings.LatestPort;
 
-            if (StringChecker.CheckIfStringValid(TCPNetwork.Network.Ip) && StringChecker.CheckIfStringValid(TCPNetwork.Network.Port.ToString()))
+            if (StringChecker.CheckIfStringValid(TCPNetwork.Network.Ip) &&
+                StringChecker.CheckIfStringValid(TCPNetwork.Network.Port.ToString()))
             {
                 LoginManagerH.ShowQuickConnectFloatMenu();
             }
-
             else
             {
-                DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "You must join a server first to use this feature!" }));
+                DLG_Base.PushNewDialog(new DLG_Message("ERROR",
+                    new string[] { "You must join a server first to use this feature!" }));
             }
+        }
+
+        private static void CloseWaitDialogIfOpen()
+        {
+            try
+            {
+                if (DLG_Wait.Instance != null)
+                    DLG_Wait.Instance.Close();
+            }
+            catch
+            {
+            }
+        }
+
+        private static void ShowDialog(string title, string[] lines)
+        {
+            CloseWaitDialogIfOpen();
+            DLG_Base.PushNewDialog(new DLG_Message(title, lines));
+        }
+
+        private static string SafeGetExtra(PKT_Login data, int index, string fallback)
+        {
+            try
+            {
+                if (data != null && data._extraDetails != null && data._extraDetails.Count > index)
+                    return data._extraDetails[index];
+            }
+            catch
+            {
+            }
+
+            return fallback;
         }
     }
 
@@ -141,9 +233,11 @@ namespace GameClient.PacketManagers
         public static bool CheckIfLoginIsValid()
         {
             PersistentSettings settings = PersistentSettings.Load();
+
             if (!StringChecker.CheckIfStringValid(settings.UserSettings.Username)) return false;
-            else if (!StringChecker.CheckIfStringValid(settings.UserSettings.Password)) return false;
-            else return true;
+            if (!StringChecker.CheckIfStringValid(settings.UserSettings.Password)) return false;
+
+            return true;
         }
 
         public static void ShowQuickConnectFloatMenu()

@@ -143,7 +143,9 @@ namespace GameServer.PacketManager
 
         public static bool CheckIfMapExists(int mapTileToCheck)
         {
-            string toFind = GetAllMaps().FirstOrDefault(fetch => Path.GetFileNameWithoutExtension(fetch) == mapTileToCheck.ToString());
+            string toFind = GetAllMaps().FirstOrDefault(fetch =>
+                Path.GetFileNameWithoutExtension(fetch) == mapTileToCheck.ToString());
+
             return toFind != null;
         }
 
@@ -191,7 +193,22 @@ namespace GameServer.PacketManager
             try
             {
                 if (File.Exists(statsPath))
-                    return Serializer.FileBytesToObject<MapStatsFile>(statsPath);
+                {
+                    try
+                    {
+                        return Serializer.FileBytesToObject<MapStatsFile>(statsPath);
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            return Serializer.SerializeFromFile<MapStatsFile>(statsPath);
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
             }
             catch { }
 
@@ -215,7 +232,6 @@ namespace GameServer.PacketManager
 
             MapStatsFile stats = BuildStatsFromMapFile(map, mapTileToGet, savedTicks);
             TryWriteStatsSnapshot(stats);
-
             return stats;
         }
 
@@ -226,7 +242,9 @@ namespace GameServer.PacketManager
                 if (mapFile == null)
                     return;
 
-                long savedTicks = mapFile.LastSavedUtcTicks > 0 ? mapFile.LastSavedUtcTicks : DateTime.UtcNow.Ticks;
+                long savedTicks = mapFile.LastSavedUtcTicks > 0
+                    ? mapFile.LastSavedUtcTicks
+                    : DateTime.UtcNow.Ticks;
 
                 MapStatsFile stats = BuildStatsFromMapFile(mapFile, mapFile.Tile, savedTicks);
                 TryWriteStatsSnapshot(stats);
@@ -272,18 +290,14 @@ namespace GameServer.PacketManager
             stats.LastSavedUtcTicks = savedTicksFallback > 0 ? savedTicksFallback : DateTime.UtcNow.Ticks;
 
             stats.ColonistCount = mapFile.ColonistCount >= 0 ? mapFile.ColonistCount : -1;
-
             stats.FactionHumanCount = mapFile.FactionHumanCount >= 0 ? mapFile.FactionHumanCount : -1;
             stats.NonFactionHumanCount = mapFile.NonFactionHumanCount >= 0 ? mapFile.NonFactionHumanCount : -1;
-
             stats.FactionAnimalCount = mapFile.FactionAnimalCount >= 0 ? mapFile.FactionAnimalCount : -1;
             stats.NonFactionAnimalCount = mapFile.NonFactionAnimalCount >= 0 ? mapFile.NonFactionAnimalCount : -1;
-
             stats.FactionThingCount = mapFile.FactionThingCount >= 0 ? mapFile.FactionThingCount : -1;
             stats.NonFactionThingCount = mapFile.NonFactionThingCount >= 0 ? mapFile.NonFactionThingCount : -1;
 
             TryBackfillFromSettlement(tile, stats);
-
             return stats;
         }
 
@@ -320,7 +334,6 @@ namespace GameServer.PacketManager
             if (file.GameTicks >= 0) return true;
             if (file.RealPlayTimeSeconds >= 0) return true;
             if (file.RealPlayTimeInteractingSeconds >= 0) return true;
-
             if (file.ColonistCount >= 0) return true;
             if (file.FactionHumanCount >= 0) return true;
             if (file.NonFactionHumanCount >= 0) return true;

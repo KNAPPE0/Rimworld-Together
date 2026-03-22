@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using GameClient.Hooks.TCPNetwork;
@@ -7,9 +8,10 @@ using GameClient.Misc;
 using GameClient.PacketManagers;
 using HarmonyLib;
 using RimWorld;
+using Shared.Misc;
 using TCPNetwork;
 using UnityEngine.SceneManagement;
-using static Shared.CommonEnumerators;
+using Verse;
 
 namespace GameClient.Patches.Pages
 {
@@ -19,13 +21,58 @@ namespace GameClient.Patches.Pages
         [HarmonyPostfix]
         public static void DoPost()
         {
-            if (!SessionHandler.IsGeneratingFreshWorld)
+            try
             {
-                PM_World.SetPlanetFeatures();
-                PM_World.SetPlanetFactions();
-            }
+                if (Current.Game == null || Find.World == null)
+                {
+                    Printer.Warning("[StartingSite] Skipped patch because game/world was not ready.");
+                    return;
+                }
 
-            PlanetManager.BuildPlanet();
+                if (!SessionHandler.IsGeneratingFreshWorld)
+                {
+                    try
+                    {
+                        PM_World.SetPlanetFeatures();
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning($"[StartingSite] Failed setting planet features: {e}");
+                    }
+
+                    try
+                    {
+                        PM_World.SetPlanetFactions();
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning($"[StartingSite] Failed setting planet factions: {e}");
+                    }
+
+                    try
+                    {
+                        if (Find.WindowStack != null)
+                            Find.WindowStack.Add(new Dialog_AdvancedGameConfig());
+                    }
+                    catch (Exception e)
+                    {
+                        Printer.Warning($"[StartingSite] Failed opening Advanced Game Config: {e}");
+                    }
+                }
+
+                try
+                {
+                    PlanetManager.BuildPlanet();
+                }
+                catch (Exception e)
+                {
+                    Printer.Warning($"[StartingSite] Failed rebuilding planet: {e}");
+                }
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"[StartingSite] Unexpected PreOpen patch error: {e}");
+            }
         }
     }
 
@@ -36,8 +83,15 @@ namespace GameClient.Patches.Pages
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator ilGenerator)
         {
             const string disconnectText = "Disconnect";
+
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             MethodInfo helper = AccessTools.Method(typeof(PathSelectStartingSitePage), nameof(Helper));
+
+            if (helper == null)
+            {
+                Printer.Warning("[StartingSite] Failed to find disconnect helper.");
+                return codes;
+            }
 
             int index = 0;
             for (; index < codes.Count; index++)
@@ -49,14 +103,14 @@ namespace GameClient.Patches.Pages
                 }
             }
 
-            bool flag = false;
+            bool foundFirst = false;
             for (; index < codes.Count; index++)
             {
                 if (codes[index].opcode == OpCodes.Ldarg_0)
                 {
-                    if (!flag)
+                    if (!foundFirst)
                     {
-                        flag = true;
+                        foundFirst = true;
                         continue;
                     }
 
@@ -74,8 +128,23 @@ namespace GameClient.Patches.Pages
 
         private static void Helper()
         {
-            SceneManager.LoadScene(0);
-            Network.ServerEndpoint?.Disconnect();
+            try
+            {
+                Network.ServerEndpoint?.Disconnect();
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"[StartingSite] Failed disconnecting: {e}");
+            }
+
+            try
+            {
+                SceneManager.LoadScene(0);
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"[StartingSite] Failed loading main menu: {e}");
+            }
         }
     }
 }

@@ -58,8 +58,6 @@ namespace GameServer.PacketManager
         {
             if (client == null) return;
 
-            // If a world already exists, only admins should be allowed to change server mod config.
-            // Do not ban here because client-side flows can accidentally trigger this through other settings sync.
             if (Master.WorldValues != null && (client.UserFile == null || !client.UserFile.IsAdmin))
             {
                 string username = client.UserFile?.Username ?? "(unknown)";
@@ -73,6 +71,9 @@ namespace GameServer.PacketManager
                 ResponseShortcutManager.SendIllegalPacket(client, "Received an invalid mod config file.");
                 return;
             }
+
+            if (file.ModConfigs == null)
+                file.ModConfigs = new List<ModConfig>();
 
             Master.ModConfig = file;
             ModsConfigFile.Save(ModsConfigFile.SavePath, file);
@@ -95,49 +96,49 @@ namespace GameServer.PacketManager
             }
             else
             {
-                foreach (ModConfig config in Master.ModConfig.ModConfigs.Where(fetch => fetch.Type == ModsConfigFile.ModType.Required))
+                List<ModConfig> serverMods = Master.ModConfig.ModConfigs;
+                List<ModConfig> clientMods = loginData._runningMods.ModConfigs;
+
+                foreach (ModConfig config in serverMods.Where(x => x.Type == ModsConfigFile.ModType.Required))
                 {
-                    ModConfig toFind = loginData._runningMods.ModConfigs.Find(fetch => fetch.FileName == config.FileName);
-                    if (toFind == null)
-                    {
-                        conflictingModNames.Add($"[Required] > {config.FileName}");
-                        continue;
-                    }
+                    ModConfig match = clientMods.Find(x => x.FileName == config.FileName);
+                    if (match == null)
+                        conflictingModNames.Add($"[Required Missing] > {config.FileName}");
                 }
 
-                foreach (ModConfig config in loginData._runningMods.ModConfigs)
+                foreach (ModConfig config in clientMods)
                 {
-                    ModConfig toFind = Master.ModConfig.ModConfigs.Find(fetch => fetch.FileName == config.FileName
-                        && (fetch.Type == ModsConfigFile.ModType.Required || fetch.Type == ModsConfigFile.ModType.Optional));
+                    ModConfig allowed = serverMods.Find(x =>
+                        x.FileName == config.FileName &&
+                        (x.Type == ModsConfigFile.ModType.Required || x.Type == ModsConfigFile.ModType.Optional));
 
-                    if (toFind == null)
-                    {
-                        conflictingModNames.Add($"[Disallowed] > {config.FileName}");
-                        continue;
-                    }
+                    if (allowed == null)
+                        conflictingModNames.Add($"[Disallowed Present] > {config.FileName}");
                 }
             }
+
+            conflictingModNames = conflictingModNames
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
 
             if (conflictingModNames.Count == 0)
             {
                 OptionsProfileManager.TryPushProfile(client);
                 return false;
             }
-            else
+
+            if (client != null && client.UserFile != null && client.UserFile.IsAdmin)
             {
-                if (client != null && client.UserFile != null && client.UserFile.IsAdmin)
-                {
-                    InformationDisplayer.DisplayModBypass(client.UserFile.Username);
-                    return false;
-                }
-                else
-                {
-                    string username = client?.UserFile?.Username ?? "(unknown)";
-                    InformationDisplayer.DisplayModMismatch(username);
-                    LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Mods, conflictingModNames);
-                    return true;
-                }
+                InformationDisplayer.DisplayModBypass(client.UserFile.Username);
+                return false;
             }
+
+            string username = client?.UserFile?.Username ?? "(unknown)";
+            InformationDisplayer.DisplayModMismatch(username);
+            LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Mods, conflictingModNames);
+            return true;
         }
     }
 }

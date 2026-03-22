@@ -22,7 +22,20 @@ namespace GameClient.PacketManagers
         [HandlesPacket(PacketHeader.ModManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            PKT_ModConfig data = Serializer.ConvertBytesToObject<PKT_ModConfig>(bytes);
+            PKT_ModConfig data = null;
+
+            try
+            {
+                data = Serializer.ConvertBytesToObject<PKT_ModConfig>(bytes);
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"[Mods] Failed to deserialize mod packet: {e}");
+                return;
+            }
+
+            if (data == null)
+                return;
 
             if (data._isOptionsProfileChunk || data._noOptionsProfileAvailable)
             {
@@ -35,7 +48,11 @@ namespace GameClient.PacketManagers
                 case ModConfigStepMode.Ask:
                     if (!SessionHandler.IsAdmin)
                     {
-                        DLG_Base.PushNewDialog(new DLG_Message("Mod Manager", new[] { "Admin only." }));
+                        DLG_Base.PushNewDialog(new DLG_Message("Mod Manager", new[]
+                        {
+                            "Admin only.",
+                            "Only admins can edit the server mod manager."
+                        }));
                         return;
                     }
 
@@ -49,7 +66,9 @@ namespace GameClient.PacketManagers
             Action toDo = delegate
             {
                 GameParameterManager.SendCurrentModConfigs(false);
-                if (isFirstEdit) GameParameterManager.SetFirstTimeSetup();
+
+                if (isFirstEdit)
+                    GameParameterManager.SetFirstTimeSetup();
             };
 
             List<string> modNames = new List<string>();
@@ -61,7 +80,9 @@ namespace GameClient.PacketManagers
 
             DLG_ListingWithTuple dialog = new DLG_ListingWithTuple(
                 "Mod Manager",
-                "Manage mods for the server",
+                SessionHandler.CurrentModConfig != null && SessionHandler.CurrentModConfig.IsEnforced
+                    ? "Manage mods for the server. This server currently has enforced mod rules."
+                    : "Manage mods for the server.",
                 keys,
                 values,
                 null,
@@ -76,7 +97,8 @@ namespace GameClient.PacketManagers
 
             OptionsProfileSessionManager.OnServerEnforcementReceived();
 
-            if (!SessionHandler.CurrentModConfig.IsEnforced) return;
+            if (!SessionHandler.CurrentModConfig.IsEnforced)
+                return;
 
             Printer.Warning("Receiving enforced mod configs from server", LogImportanceMode.Verbose);
         }
@@ -99,19 +121,56 @@ namespace GameClient.PacketManagers
             return configFile;
         }
 
-        public static void GetConflictingMods(PKT_Login data)
+        public static void ShowConflictingModsDialog(PKT_Login data)
         {
+            List<string> lines = new List<string>();
+
+            try
+            {
+                if (data != null && data._extraDetails != null)
+                {
+                    foreach (string str in data._extraDetails)
+                    {
+                        if (!string.IsNullOrWhiteSpace(str))
+                            lines.Add(str);
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            if (lines.Count == 0)
+            {
+                lines.Add("The server reported a mod conflict, but no details were provided.");
+                lines.Add("Try reopening the game and checking your mod list order and server-required mods.");
+            }
+
+            try
+            {
+                if (DLG_Wait.Instance != null)
+                    DLG_Wait.Instance.Close();
+            }
+            catch
+            {
+            }
+
             DLG_Base.PushNewDialog(new DLG_Listing(
                 "Mod Conflicts",
-                "The following mods are conflicting with the server",
-                data._extraDetails.ToArray()));
+                "Your current mod list does not match the server. Fix the items below, then reconnect.",
+                lines.ToArray()));
         }
 
         public static ModsConfigFile SortModsIntoCategories(string[] modNames, int[] categoryIndexes)
         {
             ModsConfigFile configFile = new ModsConfigFile();
 
-            for (int i = 0; i < modNames.Length; i++)
+            if (modNames == null || categoryIndexes == null)
+                return configFile;
+
+            int count = Math.Min(modNames.Length, categoryIndexes.Length);
+
+            for (int i = 0; i < count; i++)
             {
                 ModConfig newConfig = new ModConfig();
                 newConfig.FileName = modNames[i].Replace("steam_", "");

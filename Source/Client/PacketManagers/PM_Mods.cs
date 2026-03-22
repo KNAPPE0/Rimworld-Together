@@ -46,46 +46,89 @@ namespace GameClient.PacketManagers
             switch (data._stepMode)
             {
                 case ModConfigStepMode.Ask:
-                    if (!SessionHandler.IsAdmin)
+                    MainThreadHandler.Instance.Enqueue(() =>
                     {
-                        DLG_Base.PushNewDialog(new DLG_Message("Mod Manager", new[]
-                        {
-                            "Admin only.",
-                            "Only admins can edit the server mod manager."
-                        }));
-                        return;
-                    }
-
-                    OpenModManagerMenu();
+                        HandleAskToOpenModManager();
+                    });
                     break;
             }
         }
 
+        private static void HandleAskToOpenModManager()
+        {
+            SafeCloseWaitDialog();
+
+            if (!SessionHandler.IsAdmin)
+            {
+                DLG_Base.PushNewDialog(new DLG_Message("Mod Manager", new[]
+                {
+                    "Admin only.",
+                    "Only admins can edit the server mod manager."
+                }));
+                return;
+            }
+
+            OpenModManagerMenu();
+        }
+
         public static void OpenModManagerMenu(bool isFirstEdit = false)
         {
+            ModsConfigFile runningMods = ModManagerH.GetRunningModList();
+            ModsConfigFile serverConfig = SessionHandler.CurrentModConfig ?? new ModsConfigFile();
+
+            if (serverConfig.ModConfigs == null)
+                serverConfig.ModConfigs = new List<ModConfig>();
+
+            List<string> keyList = new List<string>();
+            List<int> preselectedIndexes = new List<int>();
+
+            foreach (ModConfig running in runningMods.ModConfigs)
+            {
+                if (running == null || string.IsNullOrWhiteSpace(running.FileName))
+                    continue;
+
+                keyList.Add(running.FileName);
+
+                ModConfig existing = null;
+                try
+                {
+                    existing = serverConfig.ModConfigs.FirstOrDefault(x =>
+                        x != null &&
+                        string.Equals(
+                            NormalizeModName(x.FileName),
+                            NormalizeModName(running.FileName),
+                            StringComparison.OrdinalIgnoreCase));
+                }
+                catch
+                {
+                    existing = null;
+                }
+
+                preselectedIndexes.Add(existing != null ? (int)existing.Type : (int)ModType.Optional);
+            }
+
+            string[] keys = keyList.ToArray();
+            string[] values = new[] { "Required", "Optional", "Forbidden" };
+            int[] defaults = preselectedIndexes.ToArray();
+
             Action toDo = delegate
             {
-                GameParameterManager.SendCurrentModConfigs(false);
+                GameParameterManager.SendCurrentModConfigs(serverConfig.IsEnforced);
 
                 if (isFirstEdit)
                     GameParameterManager.SetFirstTimeSetup();
             };
 
-            List<string> modNames = new List<string>();
-            foreach (ModConfig config in ModManagerH.GetRunningModList().ModConfigs)
-                modNames.Add(config.FileName);
-
-            string[] keys = modNames.ToArray();
-            string[] values = new string[] { "Required", "Optional", "Forbidden" };
+            string description = serverConfig.IsEnforced
+                ? "Manage mods for the server. This server currently has enforced mod rules."
+                : "Manage mods for the server.";
 
             DLG_ListingWithTuple dialog = new DLG_ListingWithTuple(
                 "Mod Manager",
-                SessionHandler.CurrentModConfig != null && SessionHandler.CurrentModConfig.IsEnforced
-                    ? "Manage mods for the server. This server currently has enforced mod rules."
-                    : "Manage mods for the server.",
+                description,
                 keys,
                 values,
-                null,
+                defaults,
                 toDo);
 
             DLG_Base.PushNewDialog(dialog);
@@ -93,7 +136,10 @@ namespace GameClient.PacketManagers
 
         public static void ReceiveModConfigs(PKT_ServerGlobalData data)
         {
-            SessionHandler.CurrentModConfig = data._modConfigs ?? new ModsConfigFile();
+            SessionHandler.CurrentModConfig = data?._modConfigs ?? new ModsConfigFile();
+
+            if (SessionHandler.CurrentModConfig.ModConfigs == null)
+                SessionHandler.CurrentModConfig.ModConfigs = new List<ModConfig>();
 
             OptionsProfileSessionManager.OnServerEnforcementReceived();
 
@@ -101,6 +147,26 @@ namespace GameClient.PacketManagers
                 return;
 
             Printer.Warning("Receiving enforced mod configs from server", LogImportanceMode.Verbose);
+        }
+
+        private static void SafeCloseWaitDialog()
+        {
+            try
+            {
+                if (DLG_Wait.Instance != null)
+                    DLG_Wait.Instance.Close();
+            }
+            catch
+            {
+            }
+        }
+
+        public static string NormalizeModName(string modName)
+        {
+            if (string.IsNullOrWhiteSpace(modName))
+                return string.Empty;
+
+            return modName.Replace("steam_", "").Trim();
         }
     }
 
@@ -110,12 +176,26 @@ namespace GameClient.PacketManagers
         {
             ModsConfigFile configFile = new ModsConfigFile();
 
-            ModContentPack[] runningMods = LoadedModManager.RunningMods.ToArray();
-            foreach (ModContentPack mod in runningMods)
+            try
             {
-                ModConfig newConfig = new ModConfig();
-                newConfig.FileName = mod.Name.Replace("steam_", "");
-                configFile.ModConfigs.Add(newConfig);
+                ModContentPack[] runningMods = LoadedModManager.RunningMods.ToArray();
+
+                foreach (ModContentPack mod in runningMods)
+                {
+                    if (mod == null || string.IsNullOrWhiteSpace(mod.Name))
+                        continue;
+
+                    ModConfig newConfig = new ModConfig
+                    {
+                        FileName = PM_Mods.NormalizeModName(mod.Name)
+                    };
+
+                    configFile.ModConfigs.Add(newConfig);
+                }
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"[Mods] Failed to gather running mods: {e}");
             }
 
             return configFile;
@@ -136,29 +216,34 @@ namespace GameClient.PacketManagers
                     }
                 }
             }
-            catch
+            catch (Exception e)
             {
+                Printer.Warning($"[Mods] Failed while reading conflict details: {e}");
             }
 
             if (lines.Count == 0)
             {
                 lines.Add("The server reported a mod conflict, but no details were provided.");
-                lines.Add("Try reopening the game and checking your mod list order and server-required mods.");
+                lines.Add("Try checking required, disallowed, and missing mods before reconnecting.");
             }
+
+            SafeCloseWaitDialog();
 
             try
             {
-                if (DLG_Wait.Instance != null)
-                    DLG_Wait.Instance.Close();
+                DLG_Base.PushNewDialog(new DLG_Listing(
+                    "Mod Conflicts",
+                    "Your current mod list does not match the server. Fix the items below, then reconnect.",
+                    lines.ToArray()));
             }
-            catch
+            catch (Exception e)
             {
-            }
+                Printer.Warning($"[Mods] Failed to open conflict listing dialog: {e}");
 
-            DLG_Base.PushNewDialog(new DLG_Listing(
-                "Mod Conflicts",
-                "Your current mod list does not match the server. Fix the items below, then reconnect.",
-                lines.ToArray()));
+                DLG_Base.PushNewDialog(new DLG_Message(
+                    "Mod Conflicts",
+                    lines.ToArray()));
+            }
         }
 
         public static ModsConfigFile SortModsIntoCategories(string[] modNames, int[] categoryIndexes)
@@ -172,14 +257,36 @@ namespace GameClient.PacketManagers
 
             for (int i = 0; i < count; i++)
             {
-                ModConfig newConfig = new ModConfig();
-                newConfig.FileName = modNames[i].Replace("steam_", "");
-                newConfig.Type = (ModType)categoryIndexes[i];
+                string name = modNames[i];
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
+
+                int rawIndex = categoryIndexes[i];
+                if (rawIndex < 0 || rawIndex > (int)ModType.Forbidden)
+                    rawIndex = (int)ModType.Optional;
+
+                ModConfig newConfig = new ModConfig
+                {
+                    FileName = PM_Mods.NormalizeModName(name),
+                    Type = (ModType)rawIndex
+                };
 
                 configFile.ModConfigs.Add(newConfig);
             }
 
             return configFile;
+        }
+
+        private static void SafeCloseWaitDialog()
+        {
+            try
+            {
+                if (DLG_Wait.Instance != null)
+                    DLG_Wait.Instance.Close();
+            }
+            catch
+            {
+            }
         }
     }
 }

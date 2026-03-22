@@ -4,6 +4,7 @@ using GameServer.Misc;
 using Shared;
 using Shared.Files.Configs.Mods;
 using Shared.Misc;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TCPNetwork;
@@ -99,17 +100,21 @@ namespace GameServer.PacketManager
                 List<ModConfig> serverMods = Master.ModConfig.ModConfigs;
                 List<ModConfig> clientMods = loginData._runningMods.ModConfigs;
 
-                foreach (ModConfig config in serverMods.Where(x => x.Type == ModsConfigFile.ModType.Required))
+                foreach (ModConfig config in serverMods.Where(x => x != null && x.Type == ModsConfigFile.ModType.Required))
                 {
-                    ModConfig match = clientMods.Find(x => x.FileName == config.FileName);
+                    ModConfig match = clientMods.Find(x =>
+                        x != null &&
+                        string.Equals(NormalizeModName(x.FileName), NormalizeModName(config.FileName), StringComparison.OrdinalIgnoreCase));
+
                     if (match == null)
                         conflictingModNames.Add($"[Required Missing] > {config.FileName}");
                 }
 
-                foreach (ModConfig config in clientMods)
+                foreach (ModConfig config in clientMods.Where(x => x != null))
                 {
                     ModConfig allowed = serverMods.Find(x =>
-                        x.FileName == config.FileName &&
+                        x != null &&
+                        string.Equals(NormalizeModName(x.FileName), NormalizeModName(config.FileName), StringComparison.OrdinalIgnoreCase) &&
                         (x.Type == ModsConfigFile.ModType.Required || x.Type == ModsConfigFile.ModType.Optional));
 
                     if (allowed == null)
@@ -119,7 +124,7 @@ namespace GameServer.PacketManager
 
             conflictingModNames = conflictingModNames
                 .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct()
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(x => x)
                 .ToList();
 
@@ -137,8 +142,20 @@ namespace GameServer.PacketManager
 
             string username = client?.UserFile?.Username ?? "(unknown)";
             InformationDisplayer.DisplayModMismatch(username);
+
+            foreach (string line in conflictingModNames)
+                Printer.Warning($"[Mod mismatch detail] {username} > {line}");
+
             LoginManagerH.DenyConnectionWithReason(client, LoginResponse.Mods, conflictingModNames);
             return true;
+        }
+
+        private static string NormalizeModName(string modName)
+        {
+            if (string.IsNullOrWhiteSpace(modName))
+                return string.Empty;
+
+            return modName.Replace("steam_", "").Trim();
         }
     }
 }

@@ -29,82 +29,88 @@ namespace GameClient.PacketManagers
             }
             catch (Exception e)
             {
-                Printer.Warning($"[Login] Failed to deserialize login response: {e}");
-                ShowDialog("ERROR", new string[]
-                {
-                    "Failed to read the server login response.",
-                    "Please try joining again."
-                });
+                Printer.Warning($"[Login] Failed to deserialize login packet: {e}");
                 return;
             }
 
             if (data == null)
-            {
-                ShowDialog("ERROR", new string[]
-                {
-                    "The server returned an empty login response.",
-                    "Please try joining again."
-                });
                 return;
-            }
 
-            switch (data._tryResponse)
+            MainThreadHandler.Instance.Enqueue(() =>
             {
-                case LoginResponse.Invalid:
-                    ShowDialog("ERROR", new string[]
-                    {
-                        "Login details are invalid!",
-                        "Please try again or reset your account."
-                    });
-                    break;
+                SafeCloseWaitDialog();
 
-                case LoginResponse.Ban:
-                    ShowDialog("ERROR", new string[]
-                    {
-                        "You are banned from this server!"
-                    });
-                    break;
+                switch (data._tryResponse)
+                {
+                    case LoginResponse.Invalid:
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[]
+                        {
+                            "Login details are invalid!",
+                            "Please try again or reset your account!"
+                        }));
+                        break;
 
-                case LoginResponse.Duplicate:
-                    ShowDialog("ERROR", new string[]
-                    {
-                        "You connected from another place!"
-                    });
-                    break;
+                    case LoginResponse.Ban:
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[]
+                        {
+                            "You are banned from this server!"
+                        }));
+                        break;
 
-                case LoginResponse.Mods:
-                    CloseWaitDialogIfOpen();
-                    ModManagerH.ShowConflictingModsDialog(data);
-                    break;
+                    case LoginResponse.Duplicate:
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[]
+                        {
+                            "You connected from another place!"
+                        }));
+                        break;
 
-                case LoginResponse.Full:
-                    ShowDialog("ERROR", new string[]
-                    {
-                        "Server is full!"
-                    });
-                    break;
+                    case LoginResponse.Mods:
+                        ModManagerH.ShowConflictingModsDialog(data);
+                        break;
 
-                case LoginResponse.Whitelist:
-                    ShowDialog("ERROR", new string[]
-                    {
-                        "Server is whitelisted!"
-                    });
-                    break;
+                    case LoginResponse.Full:
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[]
+                        {
+                            "Server is full!"
+                        }));
+                        break;
 
-                case LoginResponse.Version:
-                    ShowDialog("ERROR", new string[]
-                    {
-                        $"Mod version mismatch! Expected version '{SafeGetExtra(data, 0, "unknown")}'"
-                    });
-                    break;
+                    case LoginResponse.Whitelist:
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[]
+                        {
+                            "Server is whitelisted!"
+                        }));
+                        break;
 
-                case LoginResponse.NoWorld:
-                    ShowDialog("ERROR", new string[]
-                    {
-                        "Server is currently being set up!",
-                        "Join again later."
-                    });
-                    break;
+                    case LoginResponse.Version:
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[]
+                        {
+                            data._extraDetails != null && data._extraDetails.Count > 0
+                                ? $"Mod version mismatch! Expected version '{data._extraDetails[0]}'"
+                                : "Mod version mismatch!"
+                        }));
+                        break;
+
+                    case LoginResponse.NoWorld:
+                        DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[]
+                        {
+                            "Server is currently being set up!",
+                            "Join again later!"
+                        }));
+                        break;
+                }
+            });
+        }
+
+        private static void SafeCloseWaitDialog()
+        {
+            try
+            {
+                if (DLG_Wait.Instance != null)
+                    DLG_Wait.Instance.Close();
+            }
+            catch
+            {
             }
         }
 
@@ -157,8 +163,10 @@ namespace GameClient.PacketManagers
                         Hasher.GetHashFromString(DLG_Inputs.DialogInputResults[1]));
                     settings.Save();
 
-                    if (isQuickConnect) QuickConnectUser();
-                    else ConnectionManager.ShowConnectDialogs();
+                    if (isQuickConnect)
+                        QuickConnectUser();
+                    else
+                        ConnectionManager.ShowConnectDialogs();
                 }
             };
 
@@ -190,41 +198,11 @@ namespace GameClient.PacketManagers
             }
             else
             {
-                DLG_Base.PushNewDialog(new DLG_Message("ERROR",
-                    new string[] { "You must join a server first to use this feature!" }));
+                DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[]
+                {
+                    "You must join a server first to use this feature!"
+                }));
             }
-        }
-
-        private static void CloseWaitDialogIfOpen()
-        {
-            try
-            {
-                if (DLG_Wait.Instance != null)
-                    DLG_Wait.Instance.Close();
-            }
-            catch
-            {
-            }
-        }
-
-        private static void ShowDialog(string title, string[] lines)
-        {
-            CloseWaitDialogIfOpen();
-            DLG_Base.PushNewDialog(new DLG_Message(title, lines));
-        }
-
-        private static string SafeGetExtra(PKT_Login data, int index, string fallback)
-        {
-            try
-            {
-                if (data != null && data._extraDetails != null && data._extraDetails.Count > index)
-                    return data._extraDetails[index];
-            }
-            catch
-            {
-            }
-
-            return fallback;
         }
     }
 
@@ -233,10 +211,8 @@ namespace GameClient.PacketManagers
         public static bool CheckIfLoginIsValid()
         {
             PersistentSettings settings = PersistentSettings.Load();
-
             if (!StringChecker.CheckIfStringValid(settings.UserSettings.Username)) return false;
             if (!StringChecker.CheckIfStringValid(settings.UserSettings.Password)) return false;
-
             return true;
         }
 

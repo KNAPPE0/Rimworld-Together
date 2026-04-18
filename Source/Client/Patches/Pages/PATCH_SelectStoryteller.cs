@@ -1,4 +1,4 @@
-﻿using GameClient.Dialogs;
+using GameClient.Dialogs;
 using GameClient.Dialogs.Default;
 using GameClient.Managers;
 using GameClient.Misc;
@@ -22,8 +22,12 @@ namespace GameClient.Patches.Pages
 
             if (!SessionHandler.IsGeneratingFreshWorld)
             {
-                ___difficulty = DifficultyDefOf.Rough;
-                ___difficultyValues = new Difficulty(___difficulty);
+                // Only set default difficulty if it's NOT enforced by the server
+                if (SessionHandler.CurrentDifficulty == null || !SessionHandler.CurrentDifficulty.IsEnforced)
+                {
+                    ___difficulty = DifficultyDefOf.Rough;
+                    ___difficultyValues = new Difficulty(___difficulty);
+                }
             }
 
             return true;
@@ -34,6 +38,7 @@ namespace GameClient.Patches.Pages
     public static class Patch_Page_SelectStoryteller_DoWindowContents
     {
         public static bool executedMessage;
+        private static bool _difficultyNoticeShown = false;
 
         [HarmonyPrefix]
         public static bool DoPre(Rect rect, Page_SelectStoryteller __instance)
@@ -43,25 +48,42 @@ namespace GameClient.Patches.Pages
                 __instance.Close();
                 Network.ServerEndpoint.MarkForDisconnect();
             }
-            
-            if (!SessionHandler.IsGeneratingFreshWorld && SessionHandler.CurrentStoryteller.IsEnforced)
+
+            if (SessionHandler.IsGeneratingFreshWorld) return true;
+
+            bool storytellerEnforced = SessionHandler.CurrentStoryteller?.IsEnforced ?? false;
+            bool difficultyEnforced = SessionHandler.CurrentDifficulty?.IsEnforced ?? false;
+            bool scenarioEnforced = SessionHandler.CurrentScenario?.IsEnforced ?? false;
+
+            // If storyteller is enforced, skip the whole page
+            if (storytellerEnforced)
             {
-                if (executedMessage) return true;
-                else
+                if (!executedMessage)
                 {
+                    executedMessage = true;
                     Action toDo = delegate
                     {
                         GameParameterManager.SetStoryteller(SessionHandler.CurrentStoryteller);
-                        GameParameterManager.SetDifficulty(SessionHandler.CurrentDifficulty, true);
+                        if (difficultyEnforced)
+                            GameParameterManager.SetDifficulty(SessionHandler.CurrentDifficulty, true);
                         DLG_Base.PushNewDialog(__instance.next);
                         __instance.Close();
-
                         executedMessage = false;
                     };
-                    DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", new string[] { "Storyteller will be forced by the server" }, toDo));
 
-                    executedMessage = true;
+                    string msg = "Storyteller is enforced by the server.";
+                    if (difficultyEnforced) msg += "\nDifficulty is also enforced.";
+                    DLG_Base.PushNewDialog(new DLG_Message("Server Enforcement", new string[] { msg }, toDo));
                 }
+                return true;
+            }
+
+            // If only difficulty is enforced, show one-time info (don't loop)
+            if (difficultyEnforced && !_difficultyNoticeShown)
+            {
+                _difficultyNoticeShown = true;
+                DLG_Base.PushNewDialog(new DLG_Message("Server Enforcement", 
+                    new string[] { "Difficulty settings are enforced by the server. You may choose your storyteller freely." }));
             }
 
             return true;
@@ -85,24 +107,34 @@ namespace GameClient.Patches.Pages
         {
             if (SessionHandler.IsAdmin)
             {
-                DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", new string[] { "Difficulty settings overriden due to being an admin" }));
+                DLG_Base.PushNewDialog(new DLG_Message("Admin Override", 
+                    new string[] { "Settings saved. Admin permissions allow overriding enforcements." }));
                 return true;
             }
 
-            if (SessionHandler.CurrentDifficulty.IsEnforced || SessionHandler.CurrentStoryteller.IsEnforced)
+            bool storytellerEnforced = SessionHandler.CurrentStoryteller?.IsEnforced ?? false;
+            bool difficultyEnforced = SessionHandler.CurrentDifficulty?.IsEnforced ?? false;
+
+            if (!storytellerEnforced && !difficultyEnforced) return true;
+
+            // Re-apply enforced settings
+            Action toDo = delegate
             {
-                Action toDo = delegate
-                {
+                if (storytellerEnforced)
                     GameParameterManager.SetStoryteller(SessionHandler.CurrentStoryteller);
+                if (difficultyEnforced)
                     GameParameterManager.SetDifficulty(SessionHandler.CurrentDifficulty);
-                };
+            };
 
-                DLG_Base.PushNewDialog(new DLG_Message("MESSAGE", new string[] { "Settings might change to reflect server enforcements" }, toDo));
+            string enforcedItems = "";
+            if (storytellerEnforced) enforcedItems += "Storyteller";
+            if (storytellerEnforced && difficultyEnforced) enforcedItems += " and ";
+            if (difficultyEnforced) enforcedItems += "Difficulty";
 
-                return false;
-            }
+            DLG_Base.PushNewDialog(new DLG_Message("Server Enforcement", 
+                new string[] { $"{enforcedItems} settings will be restored to server values." }, toDo));
 
-            return true;
+            return false;
         }
     }
 }

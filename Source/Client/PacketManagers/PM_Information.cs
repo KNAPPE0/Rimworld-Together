@@ -26,6 +26,16 @@ namespace GameClient.PacketManagers
                 case PKT_Information.InfoStepMode.Wealth:
                     ReceiveWealth(data);
                     break;
+
+                // KMH: Colony stats feature
+                case PKT_Information.InfoStepMode.Stats:
+                    PM_Statistical.ReceiveStats(data);
+                    break;
+
+                // KMH: Rich leaderboard (via InfoStepMode)
+                case PKT_Information.InfoStepMode.Leaderboard:
+                    PM_Leaderboard.ReceiveLeaderboard(data);
+                    break;
             }
         }
 

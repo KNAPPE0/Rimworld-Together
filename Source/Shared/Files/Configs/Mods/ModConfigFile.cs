@@ -9,5 +9,8 @@ namespace Shared.Files.Configs.Mods
         public enum ModType { Required, Optional, Forbidden };
 
         public List<ModConfig> ModConfigs { get; set; } = new List<ModConfig>();
+
+        // KMH: Options profile enforcement
+        public bool IsEnforced { get; set; } = false;
     }
 }

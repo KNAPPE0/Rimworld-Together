@@ -28,6 +28,9 @@ namespace GameClient.Core
 
                 CreateUnityDispatcher();
                 HarmonyHandler.EnableStartPatches();
+
+                // KMH: Initialize options profile enforcement system
+                GameClient.Managers.OptionsProfileSessionManager.Bootstrap();
                 PersistentSettings.SetFilePath(Path.Combine(Master.AppdataRTPath, "PersistentSettings" + CommonValues.DefaultSaveFormat));
             }
         }
@@ -41,8 +44,17 @@ namespace GameClient.Core
             Master.AppdataTempPath = Path.Combine(Master.AppdataRTPath, "Temp");
             Master.AppdataVersionPath = Path.Combine(Master.AppdataTempPath, "Version");
 
-            string mod = LoadedModManager.RunningMods.First(m => (m.PackageId == Master.ModPackageID || m.PackageId == Master.ModPackageID + "_steam") 
-                && ModLister.GetActiveModWithIdentifier(m.PackageId) != null).RootDir;
+            var modContent = LoadedModManager.RunningMods.FirstOrDefault(m => (m.PackageId == Master.ModPackageID || m.PackageId == Master.ModPackageID + "_steam") 
+                && ModLister.GetActiveModWithIdentifier(m.PackageId) != null);
+
+            if (modContent == null)
+            {
+                // Fallback: try matching just the package ID without the ActiveMod check
+                modContent = LoadedModManager.RunningMods.FirstOrDefault(m => 
+                    m.PackageId == Master.ModPackageID || m.PackageId == Master.ModPackageID + "_steam");
+            }
+
+            string mod = modContent?.RootDir ?? string.Empty;
 
             Master.ModMainPath = mod;
             Master.ModScriptsPath = Path.Combine(Master.ModMainPath, "Scripts");

@@ -24,6 +24,7 @@ namespace GameServer.PacketManager
             }
 
             PKT_Road data = Serializer.ConvertBytesToObject<PKT_Road>(bytes);
+            if (data == null) return;
 
             switch (data._stepMode)
             {

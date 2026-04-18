@@ -51,7 +51,7 @@ namespace GameClient.PacketManagers.Synchronous
             Pawn pawn = Finder.GetPawnFromID(map, data.PawnID);
             BodyPartRecord part = Finder.GetBodyPartFromDefname(pawn, data.PartDefname);
 
-            HediffDef hediffDef = DefDatabase<HediffDef>.AllDefs.First(fetch => fetch.defName == data.HediffDefname);
+            HediffDef hediffDef = DefDatabase<HediffDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == data.HediffDefname);
             Hediff hediff = HediffMaker.MakeHediff(hediffDef, pawn, part);
             hediff.Severity = data.Severity;
 

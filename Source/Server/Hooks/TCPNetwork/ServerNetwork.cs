@@ -28,6 +28,8 @@ namespace GameServer.Hooks.TCPNetwork
             {
                 Network.ServerClients.Remove(client, out _);
                 InformationDisplayer.DisplayDisconnect(client);
+                // KMH: Announce leave to Discord
+                GameServer.Integrations.Discord.DiscordPlayerAnnouncer.AnnounceLeft(client.UserFile?.Username);
                 if (Master.ChatConfig.DisconnectNotifications) PM_Chat.BroadcastServerNotification($"{client.UserFile.Username} has left the server!");
 
                 UserManager.SendPlayerRecount();
@@ -59,6 +61,14 @@ namespace GameServer.Hooks.TCPNetwork
         private static void ListenForNewClients()
         {
             ServerClient client = new ServerClient(Network.ServerListener.AcceptTcpClient(), new NetworkRuleset(null, OnDisconnect, OnReadPacket, null));
+
+            // KMH: Check IP ban before anything else
+            if (GameServer.Commands.CMD_BanIP.IsIPBanned(client.CurrentIP))
+            {
+                Printer.Warning($"[IP Ban] Rejected connection from banned IP: {client.CurrentIP}");
+                try { client.Listener.MarkForDisconnect(); } catch { }
+                return;
+            }
 
             if (GetConnectedClients().Length >= Master.ServerConfig.MaxPlayers) PM_Logins.DenyConnectionWithReason(client, LoginResponse.Full);
             else if (Master.WorldValues == null && GetConnectedClients().Length > 0) PM_Logins.DenyConnectionWithReason(client, LoginResponse.NoWorld);

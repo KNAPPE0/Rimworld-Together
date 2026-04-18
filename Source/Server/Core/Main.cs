@@ -43,6 +43,15 @@ namespace GameServer.Core
             Task.Run(BackupManager.StartFeature);
             Task.Run(ServerBrowserManager.StartFeature);
 
+            // KMH: Initialize options profile enforcement
+            OptionsProfileManager.Initialize();
+
+            // KMH: Start Discord bridge if enabled
+            if (Master.ServerConfig != null && Master.ServerConfig.EnableDiscordBridge)
+            {
+                GameServer.Integrations.Discord.DiscordBridge.TryStart();
+            }
+
             while (true) CMD_Base.ListenForCommands();
         }
 

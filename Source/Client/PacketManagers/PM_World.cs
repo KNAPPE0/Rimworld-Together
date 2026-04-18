@@ -184,7 +184,7 @@ namespace GameClient.PacketManagers
                 try
                 {
                     WorldFeature worldFeature = new WorldFeature();
-                    worldFeature.def = DefDatabase<FeatureDef>.AllDefs.First(fetch => fetch.defName == planetFeature.DefName);
+                    worldFeature.def = DefDatabase<FeatureDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == planetFeature.DefName);
                     worldFeature.uniqueID = i;
                     worldFeature.name = planetFeature.Label;
                     worldFeature.maxDrawSizeInTiles = planetFeature.MaxDrawSizeInTiles;
@@ -211,7 +211,7 @@ namespace GameClient.PacketManagers
                 {
                     NPCFactionDetail faction = SessionHandler.CurrentWorld.NPCFactions[i];
 
-                    Faction toModify = planetFactions.First(fetch => fetch.def.defName == SessionHandler.CurrentWorld.NPCFactions[i].DefName);
+                    Faction toModify = planetFactions.FirstOrDefault(fetch => fetch.def.defName == SessionHandler.CurrentWorld.NPCFactions[i].DefName);
 
                     toModify.Name = faction.Name;
 

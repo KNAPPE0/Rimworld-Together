@@ -10,6 +10,23 @@ namespace Shared.Files
 
         public int Wealth { get; set; } = -1;
 
+        // KMH: Extended stats fields
+        public string Username { get; set; } = string.Empty;
+
+        public string SettlementName { get; set; } = string.Empty;
+
+        public string FactionName { get; set; } = string.Empty;
+
+        public double WealthExact { get; set; } = -1;
+
+        public int GameTicks { get; set; } = -1;
+
+        public double RealPlayTimeSeconds { get; set; } = -1;
+
+        public double RealPlayTimeInteractingSeconds { get; set; } = -1;
+
+        public long LastSavedUtcTicks { get; set; } = 0;
+
         public byte WeatherByte { get; set; } = byte.MaxValue;
 
         public List<string> Tiles { get; set; } = new List<string>();
@@ -21,5 +38,20 @@ namespace Shared.Files
         public List<string> Roofs { get; set; } = new List<string>();
 
         public List<bool> Pollutions { get; set; } = new List<bool>();
+
+        // KMH: Population/thing counts for stats
+        public int ColonistCount { get; set; } = -1;
+
+        public int FactionHumanCount { get; set; } = -1;
+
+        public int NonFactionHumanCount { get; set; } = -1;
+
+        public int FactionAnimalCount { get; set; } = -1;
+
+        public int NonFactionAnimalCount { get; set; } = -1;
+
+        public int FactionThingCount { get; set; } = -1;
+
+        public int NonFactionThingCount { get; set; } = -1;
     }
 }

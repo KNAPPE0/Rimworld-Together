@@ -13,6 +13,7 @@ namespace GameServer.PacketManager
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             PKT_Information data = Serializer.ConvertBytesToObject<PKT_Information>(bytes);
+            if (data == null) return;
 
             switch (data._stepMode)
             {
@@ -22,6 +23,17 @@ namespace GameServer.PacketManager
 
                 case PKT_Information.InfoStepMode.Wealth:
                     SendWealth(client, data);
+                    break;
+
+                // KMH: Colony stats feature
+                // KMH: Colony stats feature
+                case PKT_Information.InfoStepMode.Stats:
+                    PM_Statistical.HandleStatsRequest(client, data);
+                    break;
+
+                // KMH: Rich leaderboard with sort/pagination
+                case PKT_Information.InfoStepMode.Leaderboard:
+                    PM_Leaderboard.HandleLeaderboardRequest(client, data);
                     break;
             }
         }

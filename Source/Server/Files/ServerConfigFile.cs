@@ -27,5 +27,18 @@ namespace GameServer.Files
         public bool EnableServerBrowser { get; set; } = true;
 
         public bool EnableServerTelemetry { get; set; } = true;
+
+        // KMH: Discord integration
+        public bool EnableDiscordBridge { get; set; } = false;
+
+        public string DiscordBotToken { get; set; } = string.Empty;
+
+        public string DiscordChatChannelId { get; set; } = string.Empty;
+
+        public string DiscordAdminChannelId { get; set; } = string.Empty;
+
+        public string DiscordCommandPrefix { get; set; } = "!";
+
+        public string DiscordAdminRoleIdsCsv { get; set; } = string.Empty;
     }
 }

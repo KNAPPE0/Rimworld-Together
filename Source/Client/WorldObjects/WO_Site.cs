@@ -1,4 +1,4 @@
-﻿using GameClient.Defs;
+using GameClient.Defs;
 using GameClient.Dialogs;
 using GameClient.Dialogs.Default;
 using GameClient.Misc;
@@ -34,7 +34,6 @@ namespace GameClient.WorldObjects
                     cachedMat = MaterialPool.MatFrom(color: (!MainSitePartDef.applyFactionColorToSiteTexture || base.Faction == null) ? 
                         Color.white : base.Faction.Color, texPath: MainSitePartDef.siteTexture, shader: ShaderDatabase.WorldOverlayTransparentLit, renderQueue: 3550);
                 }
-
                 return cachedMat;
             }
         }
@@ -44,60 +43,129 @@ namespace GameClient.WorldObjects
             if (!part.def.forceMutators.NullOrEmpty())
             {
                 foreach (TileMutatorDef forceMutator in part.def.forceMutators)
-                {
                     base.Tile.Tile.AddMutator(forceMutator);
-                }
             }
-
             parts.Add(part);
         }
 
+        private bool IsOwnerOrGuild => Faction == Find.FactionManager.OfPlayer || Faction == SessionHandler.GuildFaction;
+
         public override IEnumerable<Gizmo> GetGizmos()
         {
-            List<Gizmo> gizmoList = new List<Gizmo>();
+            List<Gizmo> gizmos = new List<Gizmo>();
 
-            Command_Action command_DestroySite = new Command_Action
+            // Info - always available
+            gizmos.Add(new Command_Action
             {
-                defaultLabel = "Destroy site",
-                defaultDesc = "Destroy this site",
-                icon = ContentFinder<Texture2D>.Get("Commands/Site"),
+                defaultLabel = "Site Info",
+                defaultDesc = "View production details, workers, and efficiency",
+                icon = ContentFinder<Texture2D>.Get("Commands/Worker"),
                 action = delegate
                 {
-                    if (SessionHandler.CurrentActionValues.SiteAction.IsEnabled)
+                    SessionHandler.ChosenSite = this;
+                    PM_Sites.RequestCustomSiteInfo(Tile);
+                }
+            });
+
+            // Owner/Guild actions
+            if (IsOwnerOrGuild)
+            {
+                gizmos.Add(new Command_Action
+                {
+                    defaultLabel = "Upgrade",
+                    defaultDesc = "Increase max worker capacity (owner only)",
+                    icon = ContentFinder<Texture2D>.Get("Commands/Site"),
+                    action = delegate
                     {
                         SessionHandler.ChosenSite = this;
-                        PM_Sites.RequestDestroySite();
+                        PM_Sites.RequestSiteUpgrade(Tile);
                     }
-                    else DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "This feature has been disabled in this server!" }));
-                }
-            };
+                });
 
-            if (Faction == Find.FactionManager.OfPlayer || Faction == SessionHandler.GuildFaction) gizmoList.Add(command_DestroySite);
+                gizmos.Add(new Command_Action
+                {
+                    defaultLabel = "Destroy",
+                    defaultDesc = "Permanently destroy this site",
+                    icon = ContentFinder<Texture2D>.Get("Commands/Site"),
+                    action = delegate
+                    {
+                        if (SessionHandler.CurrentActionValues.SiteAction.IsEnabled)
+                        {
+                            SessionHandler.ChosenSite = this;
+                            PM_Sites.RequestDestroySite();
+                        }
+                        else DLG_Base.PushNewDialog(new DLG_Message("Error", new string[] { "Sites are disabled on this server." }));
+                    }
+                });
+            }
 
-            return gizmoList;
+            return gizmos;
         }
 
         public override IEnumerable<Gizmo> GetCaravanGizmos(Caravan caravan)
         {
-            List<Gizmo> gizmoList = new List<Gizmo>();
+            List<Gizmo> gizmos = new List<Gizmo>();
 
-            Command_Action command_Info = new Command_Action
+            // Info
+            gizmos.Add(new Command_Action
             {
-                defaultLabel = "Info",
-                defaultDesc = "Shows if the player is connected",
+                defaultLabel = "Site Info",
+                defaultDesc = "View production details, workers, and efficiency",
                 icon = ContentFinder<Texture2D>.Get("Commands/Worker"),
                 action = delegate
                 {
-                    DLG_Base.PushNewDialog(new DLG_Wait());
                     SessionHandler.ChosenCaravan = caravan;
                     SessionHandler.ChosenSite = this;
-                    PM_Sites.AskForInformation();
+                    PM_Sites.RequestCustomSiteInfo(Tile);
                 }
-            };
+            });
 
-            if (Faction == Find.FactionManager.OfPlayer || Faction == SessionHandler.GuildFaction) gizmoList.Add(command_Info);
+            // Worker management - standard sites (owner/guild)
+            if (IsOwnerOrGuild)
+            {
+                gizmos.Add(new Command_Action
+                {
+                    defaultLabel = "Assign Pawn",
+                    defaultDesc = "Assign or retrieve a pawn worker at this site",
+                    icon = ContentFinder<Texture2D>.Get("Commands/Worker"),
+                    action = delegate
+                    {
+                        DLG_Base.PushNewDialog(new DLG_Wait());
+                        SessionHandler.ChosenCaravan = caravan;
+                        SessionHandler.ChosenSite = this;
+                        PM_Sites.AskForInformation();
+                    }
+                });
+            }
 
-            return gizmoList;
+            // Join as worker (anyone can try - server validates access)
+            gizmos.Add(new Command_Action
+            {
+                defaultLabel = "Join Site",
+                defaultDesc = "Join as a worker (server checks access permissions)",
+                icon = ContentFinder<Texture2D>.Get("Commands/Site"),
+                action = delegate
+                {
+                    SessionHandler.ChosenCaravan = caravan;
+                    SessionHandler.ChosenSite = this;
+                    PM_Sites.RequestWorkerJoin(Tile);
+                }
+            });
+
+            // Leave
+            gizmos.Add(new Command_Action
+            {
+                defaultLabel = "Leave Site",
+                defaultDesc = "Leave this site as a worker",
+                icon = ContentFinder<Texture2D>.Get("Commands/Site"),
+                action = delegate
+                {
+                    SessionHandler.ChosenSite = this;
+                    PM_Sites.RequestWorkerLeave(Tile);
+                }
+            });
+
+            return gizmos;
         }
     }
 }

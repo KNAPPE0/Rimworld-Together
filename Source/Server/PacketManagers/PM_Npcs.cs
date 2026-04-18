@@ -24,6 +24,7 @@ namespace GameServer.PacketManager
             }
 
             PKT_NPCSettlement data = Serializer.ConvertBytesToObject<PKT_NPCSettlement>(bytes);
+            if (data == null) return;
 
             switch (data._stepMode)
             {

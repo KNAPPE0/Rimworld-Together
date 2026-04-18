@@ -1,4 +1,4 @@
-﻿using GameServer.Hooks.TCPNetwork;
+using GameServer.Hooks.TCPNetwork;
 using Shared;
 using Shared.Misc;
 using TCPNetwork.Files.Client;
@@ -10,15 +10,20 @@ namespace GameServer.Commands
         public CMD_List()
         {
             Prefix = "list";
-            Description = "Shows all connected players";
+            Description = "Shows all connected players with username and IP";
         }
 
         public override void Action() 
         {
-            Printer.Title($"Connected players: [{ServerNetwork.GetConnectedClients().Count()}]");
-
+            ServerClient[] clients = ServerNetwork.GetConnectedClients();
+            Printer.Title($"Connected players: [{clients.Length}]");
             Printer.Title("----------------------------------------");
-            foreach (ServerClient client in ServerNetwork.GetConnectedClients()) Printer.Warning($"{client.CurrentIP}");
+            foreach (ServerClient client in clients) 
+            {
+                string name = client.UserFile?.Username ?? "(no login)";
+                string admin = (client.UserFile?.IsAdmin ?? false) ? " [ADMIN]" : "";
+                Printer.Warning($"{name}{admin} - {client.CurrentIP}");
+            }
             Printer.Title("----------------------------------------");
         }
     }

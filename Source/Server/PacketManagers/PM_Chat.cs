@@ -36,6 +36,10 @@ namespace GameServer.PacketManager
         {
             PKT_Chat data = Serializer.ConvertBytesToObject<PKT_Chat>(bytes);
 
+            // KMH: Sanitize input - prevent empty/oversized messages
+            if (data == null || string.IsNullOrWhiteSpace(data.Message)) return;
+            if (data.Message.Length > 512) data.Message = data.Message.Substring(0, 512);
+
             if (data.IsCommand) ExecuteChatCommand(client, data.Message.Split(' '));
             else BroadcastChatMessage(client, data.Message);
         }
@@ -72,6 +76,8 @@ namespace GameServer.PacketManager
 
             ServerNetwork.SendPacketToAllClients(PacketHeader.ChatManager, chatData);
             PM_Chat.WriteChatInConsole(client.UserFile.Username, message);
+            // KMH: Relay in-game chat to Discord
+            GameServer.Integrations.Discord.DiscordBridge.TryRelayGameChatToDiscord(client.UserFile.Username, message);
             WriteToLogs(client.UserFile.Username, message);
         }
 
@@ -146,6 +152,20 @@ namespace GameServer.PacketManager
             catch (Exception ex) { Printer.Error(ex); }
 
             LogSemaphore.Release();
+        }
+
+        // KMH: Broadcast Discord messages with Discord color
+        public static void BroadcastDiscordMessage(string discordName, string message)
+        {
+            PKT_Chat chatData = new PKT_Chat();
+            chatData.Username = $"[Discord] {discordName}";
+            chatData.Message = message;
+            chatData.UsernameColor = ChatColor.Discord;
+            chatData.MessageColor = ChatColor.Normal;
+
+            ServerNetwork.SendPacketToAllClients(PacketHeader.ChatManager, chatData);
+            PM_Chat.WriteChatInConsole(discordName, message, fromDiscord: true);
+            WriteToLogs($"[Discord] {discordName}", message);
         }
 
         public static void WriteChatInConsole(string username, string message, bool fromDiscord = false)

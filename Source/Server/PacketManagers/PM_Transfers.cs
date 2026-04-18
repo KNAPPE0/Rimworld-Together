@@ -22,6 +22,7 @@ namespace GameServer.PacketManager
             }
 
             PKT_Transfer data = Serializer.ConvertBytesToObject<PKT_Transfer>(bytes);
+            if (data == null) return;
 
             switch (data.CurrentStepMode)
             {
@@ -77,6 +78,7 @@ namespace GameServer.PacketManager
         public static void RejectTransfer(ServerClient client, byte[] bytes)
         {
             PKT_Transfer transferData = Serializer.ConvertBytesToObject<PKT_Transfer>(bytes);
+            if (transferData == null) return;
 
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData.FromTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
@@ -95,6 +97,7 @@ namespace GameServer.PacketManager
         public static void TransferThingsRebound(ServerClient client, byte[] bytes)
         {
             PKT_Transfer transferData = Serializer.ConvertBytesToObject<PKT_Transfer>(bytes);
+            if (transferData == null) return;
 
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData.ToTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
@@ -114,6 +117,7 @@ namespace GameServer.PacketManager
         public static void AcceptReboundTransfer(ServerClient client, byte[] bytes)
         {
             PKT_Transfer transferData = Serializer.ConvertBytesToObject<PKT_Transfer>(bytes);
+            if (transferData == null) return;
 
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData.FromTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))
@@ -132,6 +136,7 @@ namespace GameServer.PacketManager
         public static void RejectReboundTransfer(ServerClient client, byte[] bytes)
         {
             PKT_Transfer transferData = Serializer.ConvertBytesToObject<PKT_Transfer>(bytes);
+            if (transferData == null) return;
 
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(transferData.FromTile);
             if (!UserManagerH.CheckIfUserIsConnected(settlement.Username))

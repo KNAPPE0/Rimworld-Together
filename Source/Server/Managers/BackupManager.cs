@@ -110,7 +110,7 @@ namespace GameServer.Managers
         {
             while (Directory.GetFiles(Master.BackupServerPath).Length > Master.BackupConfig.Amount)
             {
-                FileSystemInfo fileInfo = new DirectoryInfo(Master.BackupServerPath).GetFileSystemInfos().OrderBy(file => file.CreationTime).First();
+                FileSystemInfo fileInfo = new DirectoryInfo(Master.BackupServerPath).GetFileSystemInfos().OrderBy(file => file.CreationTime).FirstOrDefault();
                 Printer.Warning($"Deleting backup {fileInfo.Name} because we've reached the limit of {Master.BackupConfig.Amount}", LogImportanceMode.Verbose);
                 fileInfo.Delete();
             }

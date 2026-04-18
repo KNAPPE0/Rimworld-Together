@@ -20,7 +20,7 @@ namespace GameClient.Core
 
         // Values
 
-        public static string ModPackageID { get; private set; } = "nova.rimworldtogether";
+        public static string ModPackageID { get; private set; } = "nova.rimworldtogether.kmh";
 
         public static string ModID { get; private set; } = "RimWorldTogether";
     }

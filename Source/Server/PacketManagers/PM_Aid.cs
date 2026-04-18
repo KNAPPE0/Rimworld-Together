@@ -22,6 +22,7 @@ namespace GameServer.PacketManager
             }
 
             PKT_Aid data = Serializer.ConvertBytesToObject<PKT_Aid>(bytes);
+            if (data == null) return;
 
             switch (data._stepMode)
             {

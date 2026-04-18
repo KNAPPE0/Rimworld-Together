@@ -25,6 +25,46 @@ namespace GameClient.Misc
 
             mapFile.Wealth = (int)map.wealthWatcher.WealthTotal;
 
+            // KMH: Populate stats for leaderboard and colony stats features
+            try
+            {
+                mapFile.WealthExact = map.wealthWatcher.WealthTotal;
+                mapFile.GameTicks = Find.TickManager.TicksGame;
+                mapFile.LastSavedUtcTicks = DateTime.UtcNow.Ticks;
+
+                // Settlement/Faction name
+                var playerFaction = Faction.OfPlayer;
+                if (playerFaction != null)
+                    mapFile.FactionName = playerFaction.Name ?? "Unknown";
+
+                // Count pawns
+                var allPawns = map.mapPawns.AllPawns;
+                mapFile.ColonistCount = map.mapPawns.FreeColonistsCount;
+                mapFile.FactionHumanCount = allPawns.Count(p => p.RaceProps.Humanlike && p.Faction == playerFaction);
+                mapFile.NonFactionHumanCount = allPawns.Count(p => p.RaceProps.Humanlike && p.Faction != playerFaction);
+                mapFile.FactionAnimalCount = allPawns.Count(p => p.RaceProps.Animal && p.Faction == playerFaction);
+                mapFile.NonFactionAnimalCount = allPawns.Count(p => p.RaceProps.Animal && p.Faction != playerFaction);
+
+                // Thing counts
+                var allThings = map.listerThings.AllThings;
+                mapFile.FactionThingCount = allThings.Count(t => t.Faction == playerFaction);
+                mapFile.NonFactionThingCount = allThings.Count(t => t.Faction != null && t.Faction != playerFaction);
+
+                // Settlement name
+                var worldObject = Find.WorldObjects.SettlementAt(map.Tile);
+                if (worldObject != null)
+                    mapFile.SettlementName = worldObject.Label ?? "Unknown";
+
+                // Username
+                mapFile.Username = SessionHandler.Username ?? "Unknown";
+
+                // KMH: Playtime from MapPlaytimeComponent
+                MapPlaytimeComponent playtime = map.GetComponent<MapPlaytimeComponent>();
+                if (playtime != null)
+                    mapFile.RealPlayTimeSeconds = playtime.TotalSeconds;
+            }
+            catch { }
+
             ToggleWeather(OperationType.Get, mapFile, map);
 
             ToggleTerrain(OperationType.Get, mapFile, map);
@@ -79,7 +119,7 @@ namespace GameClient.Misc
                 {
                     IntVec3 vector = new IntVec3(x, map.Size.y, z);
                     if (type == OperationType.Get) file.Tiles.Add(map.terrainGrid.TerrainAt(vector).defName);
-                    else map.terrainGrid.SetTerrain(vector, DefDatabase<TerrainDef>.AllDefs.First(fetch => fetch.defName == file.Tiles[index]));
+                    else map.terrainGrid.SetTerrain(vector, DefDatabase<TerrainDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == file.Tiles[index]));
 
                     index++;
                 }
@@ -121,7 +161,7 @@ namespace GameClient.Misc
 
                     else
                     {
-                        try { map.roofGrid.SetRoof(vector, DefDatabase<RoofDef>.AllDefs.First(fetch => fetch.defName == file.Roofs[index])); }
+                        try { map.roofGrid.SetRoof(vector, DefDatabase<RoofDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == file.Roofs[index])); }
                         catch { }
                     }
 

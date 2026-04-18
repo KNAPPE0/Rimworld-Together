@@ -174,7 +174,7 @@ namespace GameClient.Managers
 
             while (requiredQuantity > 0)
             {
-                Thing thing = things.First();
+                Thing thing = things.FirstOrDefault();
                 int stackDeleting = Mathf.Min(requiredQuantity, thing.stackCount);
                 thing.SplitOff(stackDeleting);
                 requiredQuantity -= stackDeleting;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using Verse;
 
@@ -6,46 +6,67 @@ namespace GameClient.Dialogs.Default
 {
     public class DLG_Message : DLG_Base
     {
-        public override Vector2 InitialSize => new Vector2(500f, 150f);
+        public override Vector2 InitialSize => new Vector2(520f, 280f);
 
         private string CurrentMessage { get; set; }
-
         private string[] Messages { get; set; }
-
         private int Index { get; set; } = 0;
+        private Vector2 _msgScroll = Vector2.zero;
 
         public DLG_Message(string title, string[] messages, Action onConfirm = null)
         {
-            if (title != null) this.Title = title;
-            else this.Title = "Message";
+            Title = string.IsNullOrEmpty(title) ? "Message" : title;
+            Messages = messages ?? Array.Empty<string>();
+            OnAccept = onConfirm;
 
-            this.Messages = messages;
-            this.OnAccept = onConfirm;
-            CurrentMessage = messages[Index];
+            if (Messages.Length == 0)
+                Messages = new[] { string.Empty };
+
+            CurrentMessage = Messages[Index];
+
+            closeOnAccept = false;
+            closeOnCancel = false;
         }
 
-        public override void DoWindowContents(Rect rect)
+        public override void DoWindowContents(Rect inRect)
         {
-            float centeredX = rect.width / 2;
-            float horizontalLineDif = Text.CalcSize(CurrentMessage).y + StandardMargin / 2;
-            float windowDescriptionDif = Text.CalcSize(CurrentMessage).y + StandardMargin;
+            float y = DrawStandardHeader(inRect);
+            if (y < 0f) return;
 
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
-            Widgets.DrawLineHorizontal(rect.x, horizontalLineDif, rect.width);
+            float footerH = DefaultButtonSize.y + FooterPad * 2f;
+            Rect contentOuter = new Rect(0f, y, inRect.width, inRect.height - y - footerH).ContractedBy(ContentPad);
+
+            Widgets.DrawMenuSection(contentOuter);
+            Rect inner = contentOuter.ContractedBy(10f);
+
             Text.Font = GameFont.Small;
+            string msg = CurrentMessage ?? string.Empty;
 
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(CurrentMessage).x / 2, windowDescriptionDif, 
-                Text.CalcSize(CurrentMessage).x, Text.CalcSize(CurrentMessage).y), CurrentMessage);
+            float msgH = Text.CalcHeight(msg, inner.width);
+            Rect viewRect = new Rect(0f, 0f, inner.width - GenUI.ScrollBarWidth, Mathf.Max(msgH, inner.height));
 
-            if (Widgets.ButtonText(GetRectForLocation(rect, DefaultButtonSize, RectLocation.BottomCenter), "OK"))
+            Widgets.BeginScrollView(inner, ref _msgScroll, viewRect);
+            try
+            {
+                Widgets.Label(new Rect(0f, 0f, viewRect.width, msgH), msg);
+            }
+            finally
+            {
+                Widgets.EndScrollView();
+            }
+
+            Rect footer = new Rect(0f, inRect.height - footerH, inRect.width, footerH);
+            float okW = Mathf.Min(DefaultButtonSize.x, inRect.width - (FooterPad * 2f));
+            Rect okBtn = new Rect((inRect.width - okW) / 2f, footer.y + FooterPad, okW, DefaultButtonSize.y);
+
+            if (Widgets.ButtonText(okBtn, "OK"))
             {
                 if (Index < Messages.Length - 1)
                 {
                     Index++;
                     CurrentMessage = Messages[Index];
+                    _msgScroll = Vector2.zero;
                 }
-
                 else
                 {
                     OnAccept?.Invoke();

@@ -35,6 +35,12 @@ namespace TCPNetwork.Files.Client
 
         public PlayerSiteConfig[] SiteConfigs { get; set; } = Array.Empty<PlayerSiteConfig>();
 
+        // KMH: Discord account linking
+        public string DiscordId { get; set; } = null;
+        public string DiscordUsername { get; set; } = null;
+        public string DiscordLinkToken { get; set; } = null;
+        public long DiscordLinkTokenExpiry { get; set; } = 0;
+
         private Semaphore SavingSemaphore { get; set; } = new Semaphore(1, 1);
 
         public void SaveUserFile()

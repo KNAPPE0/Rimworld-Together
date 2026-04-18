@@ -1,24 +1,23 @@
 ﻿using System.Collections.Generic;
+using GameClient.Dialogs.Default;
 using System.Linq;
 using UnityEngine;
 using Verse;
 using RimWorld;
+using Shared;
+using GameClient.Managers;
 using Shared.Files.Sites;
 using Shared.Misc;
 using GameClient.PacketManagers;
-using GameClient.Dialogs.Default;
 
 namespace GameClient.Dialogs.Sites
 {
     public class DLG_SiteMenuConfig : DLG_Base
     {
-        public override Vector2 InitialSize => new Vector2(600f, 250f);
+        public override Vector2 InitialSize => new Vector2(640f, 340f);
 
         public SitePartDef SitePartDef { get; private set; }
-
         public SiteType ConfigFile { get; private set; }
-
-        public Dictionary<ThingDef, int> CostThing { get; private set; } = new Dictionary<ThingDef, int>();
 
         public Dictionary<ThingDef, int> RewardThing { get; private set; } = new Dictionary<ThingDef, int>();
 
@@ -30,67 +29,98 @@ namespace GameClient.Dialogs.Sites
         {
             Instance = this;
             SitePartDef = thingChosen;
-            this.Title = thingChosen.label;
-            ConfigFile = PM_Sites.SiteValues.Where(f => f.DefName == thingChosen.defName).First();
+            Title = thingChosen?.label ?? "Site";
+            ConfigFile = PM_Sites.SiteValues.Where(f => f.DefName == thingChosen.defName).FirstOrDefault();
 
-            ThingDef cost = DefDatabase<ThingDef>.GetNamed(ThingDefOf.Silver.defName);
-            if (cost != null) CostThing.Add(cost, ConfigFile.Cost);
+            if (ConfigFile == null)
+            {
+                IsInvalid = true;
+                return;
+            }
 
             for (int i = 0; i < ConfigFile.Rewards.Length; i++)
             {
                 ThingDef reward = DefDatabase<ThingDef>.GetNamedSilentFail(ConfigFile.Rewards[i].DefName);
-                if (reward != null) RewardThing.Add(reward, ConfigFile.Rewards[i].Amount);
-                else Printer.Warning($"{ConfigFile.Rewards[i].DefName} could not be found and won't be added to the list. Double check the def exists.");
+                if (reward != null)
+                    RewardThing[reward] = ConfigFile.Rewards[i].Amount;
+                else
+                    Printer.Warning($"{ConfigFile.Rewards[i].DefName} could not be found and won't be added to the list. Double check the def exists.");
             }
+
+            closeOnAccept = false;
+            closeOnCancel = false;
         }
 
-        public override void DoWindowContents(Rect mainRect)
+        public override void DoWindowContents(Rect inRect)
         {
             if (IsInvalid)
             {
                 DLG_Base.PushNewDialog(new DLG_Message("ERROR", new string[] { "Site could not be loaded because of invalid configuration" }));
                 Close();
+                return;
             }
-            Widgets.DrawLineHorizontal(mainRect.x, mainRect.y - 1, mainRect.width);
-            Widgets.DrawLineHorizontal(mainRect.x, mainRect.yMax + 1, mainRect.width);
 
-            if (Widgets.CloseButtonFor(mainRect)) Close();
-            float centeredX = mainRect.width / 2;
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, mainRect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
+            float y = DrawStandardHeader(inRect, drawTopBorder: true, drawBottomBorder: true, closeX: true);
+            if (y < 0f) return;
 
-            Rect leftColumn = new Rect(mainRect.x, mainRect.y + 30f, mainRect.width / 2, mainRect.height - 20f);
-            Widgets.DrawTextureFitted(leftColumn, SitePartDef.ExpandingIconTexture, 1f);
+            Rect outer = new Rect(0f, y, inRect.width, inRect.height - y).ContractedBy(ContentPad);
+            Widgets.DrawMenuSection(outer);
 
-            Rect rightColumn = new Rect(mainRect.width / 2, mainRect.y + 30f, mainRect.width / 2, mainRect.height - 20f);
-            float heightDesc = Text.CalcHeight(SitePartDef.description, rightColumn.width - 16f) / 2 + 9f;
-            float height = 40f + RewardThing.Count() * 25f + heightDesc;
-            Rect viewRightColumn = new Rect(rightColumn.x, rightColumn.y, rightColumn.width - 16f, height);
+            Rect inner = outer.ContractedBy(10f);
 
-            Widgets.BeginScrollView(rightColumn, ref ScrollPosition, viewRightColumn);
+            Rect columns = inner;
+            float colW = columns.width / 2f;
+
+            Rect leftColumn = new Rect(columns.x, columns.y, colW, columns.height);
+            Rect rightColumn = new Rect(columns.x + colW, columns.y, colW, columns.height);
+
+            if (SitePartDef != null)
+                Widgets.DrawTextureFitted(leftColumn.ContractedBy(6f), SitePartDef.ExpandingIconTexture, 1f);
+
+            Rect rightInner = rightColumn.ContractedBy(6f);
+
+            string desc = SitePartDef?.description ?? string.Empty;
+
             Text.Font = GameFont.Small;
-            float num = viewRightColumn.y;
+            float descH = Text.CalcHeight(desc, rightInner.width - GenUI.ScrollBarWidth);
+            float contentH = descH + 10f + 22f + (RewardThing.Count * 28f) + 6f;
 
-            Widgets.Label(new Rect(viewRightColumn.x, num, viewRightColumn.width, heightDesc), SitePartDef.description);
-            num += heightDesc;
+            Rect viewRect = new Rect(0f, 0f, rightInner.width - GenUI.ScrollBarWidth, Mathf.Max(contentH, rightInner.height));
 
-            Widgets.Label(new Rect(viewRightColumn.x, num, viewRightColumn.width, 20f), $"Produces:");
-            num += 20f;
-            Text.Font = GameFont.Small;
-            foreach (ThingDef thing in RewardThing.Keys)
+            Widgets.BeginScrollView(rightInner, ref ScrollPosition, viewRect);
+            try
             {
-                Widgets.Label(new Rect(viewRightColumn.x, num, viewRightColumn.width, 25f), $"- {thing.label} {RewardThing[thing].ToString()} ");
-                if (Widgets.ButtonText(new Rect(viewRightColumn.width + 210f, num, viewRightColumn.width - 210f, 25f), "Choose"))
-                {
-                    PM_Sites.RequestSiteChangeConfig(ConfigFile, thing.defName);
-                    DLG_SiteMenu.Instance.Close();
-                    DLG_SiteMenuConfig.Instance.Close();
-                }
-                num += 25;
-            }
+                float cy = 0f;
 
-            Widgets.EndScrollView();
+                Widgets.Label(new Rect(0f, cy, viewRect.width, descH), desc);
+                cy += descH + 8f;
+
+                Widgets.Label(new Rect(0f, cy, viewRect.width, 22f), "Produces:");
+                cy += 22f;
+
+                foreach (var kv in RewardThing)
+                {
+                    Rect row = new Rect(0f, cy, viewRect.width, 26f);
+
+                    Rect labelRect = new Rect(row.x, row.y, row.width - 110f, row.height);
+                    Widgets.Label(labelRect, $"- {kv.Key.label} {kv.Value}");
+
+                    Rect btn = new Rect(row.xMax - 100f, row.y, 100f, row.height);
+                    if (Widgets.ButtonText(btn, "Choose"))
+                    {
+                        PM_Sites.RequestSiteChangeConfig(ConfigFile, kv.Key.defName);
+                        DLG_SiteMenu.Instance?.Close();
+                        DLG_SiteMenuConfig.Instance?.Close();
+                        break;
+                    }
+
+                    cy += 28f;
+                }
+            }
+            finally
+            {
+                Widgets.EndScrollView();
+            }
         }
     }
 }
-

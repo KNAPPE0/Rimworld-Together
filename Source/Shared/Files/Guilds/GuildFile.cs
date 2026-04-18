@@ -29,14 +29,14 @@ namespace Shared.Files.Guilds
 
         public void PromoteMember(GuildMember member)
         {
-            GuildMember toFind = GuildMembers.First(fetch => fetch.Username == member.Username);
+            GuildMember toFind = GuildMembers.FirstOrDefault(fetch => fetch.Username == member.Username);
             toFind.Rank = GuildMember.GuildRanks.Moderator;
             Save(Path.Combine(SavePath, Name + CommonValues.DefaultSaveFormat), this);
         }
 
         public void DemoteMember(GuildMember member)
         {
-            GuildMember toFind = GuildMembers.First(fetch => fetch.Username == member.Username);
+            GuildMember toFind = GuildMembers.FirstOrDefault(fetch => fetch.Username == member.Username);
             toFind.Rank = GuildMember.GuildRanks.Member;
             Save(Path.Combine(SavePath, Name + CommonValues.DefaultSaveFormat), this);
         }

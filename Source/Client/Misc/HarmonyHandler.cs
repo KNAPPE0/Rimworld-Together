@@ -47,7 +47,7 @@ namespace GameClient.Misc
         {
             if (SynchronousInstance == null) SynchronousInstance = new Harmony("RimWorld Together Synchronous");
 
-            Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().First(fetch => fetch.GetName().Name == "Synchronous");
+            Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(fetch => fetch.GetName().Name == "Synchronous");
             SynchronousInstance.PatchCategory(assembly, "Synchronous");
 
             Printer.Warning("Patched Synchronous methods", LogImportanceMode.Verbose);
@@ -59,7 +59,7 @@ namespace GameClient.Misc
         {
             if (SynchronousInstance != null)
             {
-                Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().First(fetch => fetch.GetName().Name == "Synchronous");
+                Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(fetch => fetch.GetName().Name == "Synchronous");
                 SynchronousInstance.UnpatchCategory(assembly, "Synchronous");
 
                 Printer.Warning("Unpatched Synchronous methods", LogImportanceMode.Verbose);

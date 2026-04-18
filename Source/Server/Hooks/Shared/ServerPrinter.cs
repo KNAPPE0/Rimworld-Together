@@ -1,4 +1,5 @@
 ﻿using GameServer.Core;
+using Shared;
 using Shared.Misc;
 using System.Text;
 using static Shared.Misc.Printer;
@@ -21,21 +22,25 @@ namespace GameServer.Hooks.Shared
         {
             Action<object, LogImportanceMode> onMessage = delegate (object value, LogImportanceMode importance)
             {
+                CMD_Base.TryCaptureOutput(value?.ToString());
                 if (CheckIfShouldPrint(importance)) WriteToConsole(value.ToString(), LogMode.Message, importance);
             };
 
             Action<object, LogImportanceMode> onWarning = delegate (object value, LogImportanceMode importance)
             {
+                CMD_Base.TryCaptureOutput(value?.ToString());
                 if (CheckIfShouldPrint(importance)) WriteToConsole(value.ToString(), LogMode.Warning, importance);
             };
 
             Action<object, LogImportanceMode> onError = delegate (object value, LogImportanceMode importance)
             {
+                CMD_Base.TryCaptureOutput(value?.ToString());
                 if (CheckIfShouldPrint(importance)) WriteToConsole(value.ToString(), LogMode.Error, importance);
             };
 
             Action<object, LogImportanceMode> onTitle = delegate (object value, LogImportanceMode importance)
             {
+                CMD_Base.TryCaptureOutput(value?.ToString());
                 if (CheckIfShouldPrint(importance)) WriteToConsole(value.ToString(), LogMode.Title, importance);
             };
 
@@ -55,6 +60,13 @@ namespace GameServer.Hooks.Shared
                     Console.ForegroundColor = ColorDictionary[mode];
                     Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] | " + text);
                     Console.ForegroundColor = ConsoleColor.White;
+                }
+
+                // KMH: Relay to Discord admin channel (skip if capturing for Discord command reply)
+                if (!CMD_Base.IsCommandCapturing)
+                {
+                    try { GameServer.Integrations.Discord.DiscordBridge.TryRelayServerConsoleLine(text, mode); }
+                    catch { }
                 }
             }
             catch(Exception ex) { throw new Exception($"Logger encountered an error. This should never happen\n{ex}"); }

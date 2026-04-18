@@ -103,7 +103,7 @@ namespace GameClient.Dialogs
             {
                 if (RimworldManager.CheckIfSocialPawnInMap(Find.AnyPlayerHomeMap))
                 {
-                    Settlement settlement = Find.World.worldObjects.Settlements.First(fetch => fetch.Faction != Faction.OfPlayer);
+                    Settlement settlement = Find.World.worldObjects.Settlements.FirstOrDefault(fetch => fetch.Faction != Faction.OfPlayer);
                     Pawn negotiator = RimworldManager.GetNegotiatorAtMap(settlement.Map);
                     Find.WindowStack.Add(new Dialog_Trade(negotiator, settlement));
                 }

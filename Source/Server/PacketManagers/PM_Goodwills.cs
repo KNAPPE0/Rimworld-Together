@@ -16,6 +16,7 @@ namespace GameServer.PacketManager
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             PKT_FactionGoodwill data = Serializer.ConvertBytesToObject<PKT_FactionGoodwill>(bytes);
+            if (data == null) return;
 
             ChangeUserGoodwills(client, data);
         }

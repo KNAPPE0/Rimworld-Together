@@ -7,7 +7,7 @@ namespace GameClient.Dialogs.Default
 {
     public class DLG_ScrollButtons : DLG_Base
     {
-        public override Vector2 InitialSize => new Vector2(500f, 350f);
+        public override Vector2 InitialSize => new Vector2(520f, 420f);
 
         private string[] ButtonNames { get; set; }
 
@@ -17,91 +17,90 @@ namespace GameClient.Dialogs.Default
 
         public DLG_ScrollButtons(string title, string description, string[] buttonNames, Action actionSelect, Action actionCancel)
         {
-            this.Title = title;
-            this.Description = description;
-            this.ButtonNames = buttonNames;
-            this.OnAccept = actionSelect;
-            this.OnCancel = actionCancel;
+            Title = title;
+            Description = description;
+            ButtonNames = buttonNames ?? Array.Empty<string>();
+
+            OnAccept = actionSelect;
+            OnCancel = actionCancel;
+
             Instance = this;
+
+            closeOnAccept = false;
+            closeOnCancel = true;
         }
 
-        public override void DoWindowContents(Rect rect)
+        public override void DoWindowContents(Rect inRect)
         {
-            float centeredX = rect.width / 2;
+            float y = DrawStandardHeader(inRect);
+            if (y < 0f) return;
 
-            float windowDescriptionDif = Text.CalcSize(Description).y + StandardMargin;
-            float descriptionLineDif1 = windowDescriptionDif - Text.CalcSize(Description).y * 0.25f;
-            float descriptionLineDif2 = windowDescriptionDif + Text.CalcSize(Description).y * 1.1f;
+            float footerH = DefaultButtonSize.y + FooterPad * 2f;
 
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
-
-            Widgets.DrawLineHorizontal(rect.x, descriptionLineDif1, rect.width);
+            Rect contentOuter = new Rect(0f, y, inRect.width, inRect.height - y - footerH).ContractedBy(ContentPad);
 
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Description).x / 2, windowDescriptionDif, Text.CalcSize(Description).x, Text.CalcSize(Description).y), Description);
-            Text.Font = GameFont.Medium;
+            float descH = Text.CalcHeight(Description ?? string.Empty, contentOuter.width);
+            Rect descRect = new Rect(contentOuter.x, contentOuter.y, contentOuter.width, Mathf.Min(descH, 70f));
+            Widgets.Label(descRect, Description ?? string.Empty);
 
-            Widgets.DrawLineHorizontal(rect.x, descriptionLineDif2, rect.width);
+            float listTop = descRect.yMax + 8f;
+            Rect listOuter = new Rect(contentOuter.x, listTop, contentOuter.width, contentOuter.yMax - listTop);
 
-            GenerateList(new Rect(rect.x, rect.yMax - DefaultButtonSize.y * 5 - 40, rect.width, 175f), ButtonNames);
+            Widgets.DrawMenuSection(listOuter);
+            Rect listInner = listOuter.ContractedBy(10f);
 
-            if (Widgets.ButtonText(new Rect(new Vector2(centeredX - DefaultButtonSize.x / 2, rect.yMax - DefaultButtonSize.y), DefaultButtonSize), "Cancel"))
+            GenerateList(listInner, ButtonNames);
+
+            Rect footer = new Rect(0f, inRect.height - footerH, inRect.width, footerH);
+            float cancelW = Mathf.Min(DefaultButtonSize.x, inRect.width - (FooterPad * 2f));
+            Rect cancelBtn = new Rect((inRect.width - cancelW) / 2f, footer.y + FooterPad, cancelW, DefaultButtonSize.y);
+
+            if (Widgets.ButtonText(cancelBtn, "Cancel"))
             {
-                OnBack();
+                OnCancel?.Invoke();
+                Close();
             }
-        }
-
-        private void OnBack()
-        {
-            if (OnCancel != null) OnCancel.Invoke();
-
-            Close();
         }
 
         private void GenerateList(Rect mainRect, string[] buttons)
         {
-            float yPadding = 0;
-            float extraLenght = 32f;
-            float num2 = ScrollPosition.y - 30f;
-            float num3 = ScrollPosition.y + mainRect.height;
-            float height = 6f + buttons.Count() * DefaultButtonSize.y;
+            float rowH = 34f;
+            float height = 6f + buttons.Length * rowH;
 
-            Rect viewRect = new Rect(mainRect.x, mainRect.y, mainRect.width - 16f, height);
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - GenUI.ScrollBarWidth, height);
+
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
-
-            int index = 0;
-            foreach (string str in buttons)
+            try
             {
-                if (yPadding > num2 && yPadding < num3)
+                float y = 0f;
+                float yMin = ScrollPosition.y - rowH;
+                float yMax = ScrollPosition.y + mainRect.height;
+
+                for (int i = 0; i < buttons.Length; i++)
                 {
-                    Rect rect = new Rect(0f, mainRect.y + yPadding, viewRect.width + extraLenght, DefaultButtonSize.y);
-                    DrawCustomRow(rect, str);
-                    index++;
-                }
-
-                yPadding += DefaultButtonSize.y;
-            }
-
-            Widgets.EndScrollView();
-        }
-
-        private void DrawCustomRow(Rect rect, string buttonName)
-        {
-            Text.Font = GameFont.Small;
-            Rect fixedRect = new Rect(new Vector2(rect.x + 10f, rect.y + 5f), new Vector2(rect.width - 36f, rect.height));
-
-            if (Widgets.ButtonText(fixedRect, buttonName))
-            {
-                for (int i = 0; i < ButtonNames.Count(); i++)
-                {
-                    if (ButtonNames[i] == buttonName)
+                    if (y > yMin && y < yMax)
                     {
-                        SelectedScrollButton = i;
-                        OnAccept?.Invoke();
-                        Close();
+                        Rect row = new Rect(0f, y, viewRect.width, rowH);
+
+                        if (i % 2 == 0) Widgets.DrawAltRect(row);
+                        Widgets.DrawHighlightIfMouseover(row);
+
+                        Rect btnRect = row.ContractedBy(6f, 4f);
+                        if (Widgets.ButtonText(btnRect, buttons[i] ?? $"Option {i + 1}"))
+                        {
+                            SelectedScrollButton = i;
+                            OnAccept?.Invoke();
+                            Close();
+                            break;
+                        }
                     }
+                    y += rowH;
                 }
+            }
+            finally
+            {
+                Widgets.EndScrollView();
             }
         }
     }

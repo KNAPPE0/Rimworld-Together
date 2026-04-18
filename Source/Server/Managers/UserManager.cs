@@ -24,17 +24,27 @@ namespace GameServer.Managers
         public static void BanPlayerFromName(string username)
         {
             UserFile userFile = UserManagerH.GetUserFileFromName(username);
-            ServerClient client = ServerNetwork.GetConnectedClientFromUsername(username);
-            if (userFile == null || client == null) Printer.Warning($"User '{CMD_Base.CommandParameters[0]}' was not found");
-            else
+            if (userFile == null)
             {
-                if (userFile.IsBanned) Printer.Warning($"User '{userFile.Username}' is already banned from the server");
-                else
-                {
-                    userFile.UpdateBan(true);
-                    client.Listener.MarkForDisconnect();
-                    Printer.Warning($"User '{userFile.Username}' has been banned from the server");
-                }
+                Printer.Warning($"User '{username}' was not found");
+                return;
+            }
+
+            if (userFile.IsBanned)
+            {
+                Printer.Warning($"User '{userFile.Username}' is already banned from the server");
+                return;
+            }
+
+            userFile.UpdateBan(true);
+            Printer.Warning($"User '{userFile.Username}' has been banned from the server (IP: {userFile.LatestIP})");
+
+            // Kick if currently online
+            ServerClient client = ServerNetwork.GetConnectedClientFromUsername(username);
+            if (client != null)
+            {
+                client.Listener.MarkForDisconnect();
+                Printer.Warning($"User '{userFile.Username}' was also kicked (was online)");
             }
         }
 
@@ -131,7 +141,7 @@ namespace GameServer.Managers
         public static bool CheckWhitelist(ServerClient client)
         {
             if (!Master.Whitelist.UseWhitelist) return true;
-            else if (Master.Whitelist.WhitelistedUsers.ToArray().First(fetch => fetch == client.UserFile.Username) != null) return true;
+            else if (Master.Whitelist.WhitelistedUsers.ToArray().FirstOrDefault(fetch => fetch == client.UserFile.Username) != null) return true;
             else
             {
                 PM_Logins.DenyConnectionWithReason(client, LoginResponse.Whitelist);

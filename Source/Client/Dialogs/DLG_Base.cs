@@ -80,5 +80,53 @@ namespace GameClient.Dialogs
         }
 
         public static float GetRectMiddle(Rect rect) { return rect.width / 2; }
+
+        // KMH UI helper constants
+        protected const float HeaderGap = 6f;
+        protected const float ContentPad = 10f;
+        protected const float FooterPad = 10f;
+        protected const float FooterGap = 8f;
+
+        // KMH UI helper: draws a standard title header and returns the Y offset below it
+        protected float DrawStandardHeader(Rect inRect, string titleOverride = null, bool drawTopBorder = false, bool drawBottomBorder = false, bool closeX = false)
+        {
+            if (drawTopBorder)
+                Widgets.DrawLineHorizontal(inRect.x, inRect.y - 1f, inRect.width);
+
+            if (drawBottomBorder)
+                Widgets.DrawLineHorizontal(inRect.x, inRect.yMax + 1f, inRect.width);
+
+            if (closeX && Widgets.CloseButtonFor(inRect))
+            {
+                Close();
+                return -1f;
+            }
+
+            string title = string.IsNullOrWhiteSpace(titleOverride) ? (Title ?? string.Empty) : titleOverride;
+
+            Text.Font = GameFont.Medium;
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            float titleH = Mathf.Max(30f, Text.CalcHeight(title, inRect.width));
+            Rect titleRect = new Rect(inRect.x, inRect.y, inRect.width, titleH);
+            Widgets.Label(titleRect, title);
+
+            float y = titleRect.yMax + HeaderGap;
+
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.UpperLeft;
+
+            Widgets.DrawLineHorizontal(inRect.x, y - 2f, inRect.width);
+            y += HeaderGap;
+
+            return y - inRect.yMin;
+        }
+
+        // KMH UI helper: clamps button size to available width
+        protected static Vector2 ClampButtonSize(Vector2 desired, float availableWidth, float minWidth = 90f)
+        {
+            float w = Mathf.Clamp(desired.x, minWidth, availableWidth);
+            return new Vector2(w, desired.y);
+        }
     }
 }

@@ -7,70 +7,83 @@ namespace GameClient.Dialogs.Default
 {
     public class DLG_ListingWithTuple : DLG_Base
     {
-        public override Vector2 InitialSize => new Vector2(500f, 400f);
+        public override Vector2 InitialSize => new Vector2(560f, 440f);
 
         public string[] Keys { get; private set; }
-
         public string[] Values { get; private set; }
 
         public string[] ValueString { get; private set; }
-
         public int[] ValueInt { get; private set; }
 
         public static string[] DialogTupleListingResultString { get; private set; }
-
         public static int[] DialogTupleListingResultInt { get; private set; }
 
         public DLG_ListingWithTuple(string title, string description, string[] keys, string[] values, int[] defaultValues = null, Action actionAccept = null)
         {
-            this.Title = title;
-            this.Description = description;
-            this.Keys = keys;
-            this.Values = values;
-            this.OnAccept = actionAccept;
+            Title = title;
+            Description = description;
 
-            List<string> strings = new List<string>();
-            for (int i = 0; i < keys.Length; i++) strings.Add(values[0]);
-            ValueString = strings.ToArray();
+            Keys = keys ?? Array.Empty<string>();
+            Values = values ?? Array.Empty<string>();
+            OnAccept = actionAccept;
 
-            List<int> ints = new List<int>();
-            for (int i = 0; i < keys.Length; i++) ints.Add(0);
-            ValueInt = ints.ToArray();
+            closeOnAccept = false;
+            closeOnCancel = false;
+
+            ValueString = new string[Keys.Length];
+            ValueInt = new int[Keys.Length];
+
+            for (int i = 0; i < Keys.Length; i++)
+            {
+                ValueString[i] = (Values.Length > 0) ? Values[0] : "";
+                ValueInt[i] = 0;
+            }
 
             if (defaultValues != null)
             {
-                for (int i = 0; i < ValueString.Length; i++)
+                for (int i = 0; i < ValueString.Length && i < defaultValues.Length; i++)
                 {
-                    ValueString[i] = values[defaultValues[i]];
-                    ValueInt[i] = defaultValues[i];
+                    int dv = defaultValues[i];
+                    if (dv >= 0 && dv < Values.Length)
+                    {
+                        ValueString[i] = Values[dv];
+                        ValueInt[i] = dv;
+                    }
                 }
             }
         }
 
-        public override void DoWindowContents(Rect rect)
+        public override void DoWindowContents(Rect inRect)
         {
-            float centeredX = rect.width / 2;
+            float y = DrawStandardHeader(inRect);
+            if (y < 0f) return;
 
-            float windowDescriptionDif = Text.CalcSize(Description).y + StandardMargin;
-            float descriptionLineDif1 = windowDescriptionDif - Text.CalcSize(Description).y * 0.25f;
-            float descriptionLineDif2 = windowDescriptionDif + Text.CalcSize(Description).y * 1.1f;
+            float footerH = DefaultButtonSize.y + FooterPad * 2f;
 
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
-
-            Widgets.DrawLineHorizontal(rect.x, descriptionLineDif1, rect.width);
-            Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(centeredX - Text.CalcSize(Description).x / 2, windowDescriptionDif, Text.CalcSize(Description).x, Text.CalcSize(Description).y), Description);
-            Text.Font = GameFont.Medium;
-            Widgets.DrawLineHorizontal(rect.x, descriptionLineDif2, rect.width);
-
-            FillMainRect(new Rect(0f, descriptionLineDif2 + 10f, rect.width, rect.height - DefaultButtonSize.y - 85f));
+            Rect contentOuter = new Rect(0f, y, inRect.width, inRect.height - y - footerH).ContractedBy(ContentPad);
 
             Text.Font = GameFont.Small;
+            float descH = Text.CalcHeight(Description ?? string.Empty, contentOuter.width);
+            Rect descRect = new Rect(contentOuter.x, contentOuter.y, contentOuter.width, Mathf.Min(descH, 70f));
+            Widgets.Label(descRect, Description ?? string.Empty);
 
-            if (Widgets.ButtonText(GetRectForLocation(rect, TinyButtonSize, RectLocation.TopRight), "▶")) ShowFloatMenu(-1, true);
+            Vector2 tiny = ClampButtonSize(TinyButtonSize, 60f, 40f);
+            Rect globalBtn = new Rect(contentOuter.xMax - tiny.x, contentOuter.y, tiny.x, tiny.y);
+            if (Widgets.ButtonText(globalBtn, "▶"))
+                ShowFloatMenu(-1, true);
 
-            if (Widgets.ButtonText(GetRectForLocation(rect, DefaultButtonSize, RectLocation.BottomCenter), "Accept"))
+            float listTop = descRect.yMax + 8f;
+            Rect listOuter = new Rect(contentOuter.x, listTop, contentOuter.width, contentOuter.yMax - listTop);
+            Widgets.DrawMenuSection(listOuter);
+
+            Rect listInner = listOuter.ContractedBy(10f);
+            FillMainRect(listInner);
+
+            Rect footer = new Rect(0f, inRect.height - footerH, inRect.width, footerH);
+            float acceptW = Mathf.Min(DefaultButtonSize.x, inRect.width - (FooterPad * 2f));
+            Rect acceptBtn = new Rect((inRect.width - acceptW) / 2f, footer.y + FooterPad, acceptW, DefaultButtonSize.y);
+
+            if (Widgets.ButtonText(acceptBtn, "Accept"))
             {
                 DialogTupleListingResultString = Keys;
                 DialogTupleListingResultInt = ValueInt;
@@ -81,74 +94,85 @@ namespace GameClient.Dialogs.Default
 
         private void FillMainRect(Rect mainRect)
         {
-            float height = 6f + Keys.Length * 30f;
-            Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
+            float rowH = 34f;
+            float height = 6f + Keys.Length * rowH;
+
+            Rect viewRect = new Rect(0f, 0f, mainRect.width - GenUI.ScrollBarWidth, height);
+
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
-            float num = 0;
-            float num2 = ScrollPosition.y - 30f;
-            float num3 = ScrollPosition.y + mainRect.height;
-            int num4 = 0;
-
-            for (int i = 0; i < Keys.Length; i++)
+            try
             {
-                if (num > num2 && num < num3)
+                float y = 0f;
+                float yMin = ScrollPosition.y - rowH;
+                float yMax = ScrollPosition.y + mainRect.height;
+
+                for (int i = 0; i < Keys.Length; i++)
                 {
-                    Rect rect = new Rect(0f, num, viewRect.width, 30f);
-                    DrawCustomRow(rect, Keys[i], num4);
+                    if (y > yMin && y < yMax)
+                    {
+                        Rect row = new Rect(0f, y, viewRect.width, rowH);
+                        DrawCustomRow(row, Keys[i], i);
+                    }
+                    y += rowH;
                 }
-
-                num += 30f;
-                num4++;
             }
-
-            Widgets.EndScrollView();
+            finally
+            {
+                Widgets.EndScrollView();
+            }
         }
 
-        private void DrawCustomRow(Rect rect, string element, int index)
+        private void DrawCustomRow(Rect row, string element, int index)
         {
-            Text.Font = GameFont.Small;
-            Rect fixedRect = new Rect(new Vector2(rect.x, rect.y + 5f), new Vector2(rect.width - 16f, rect.height - 5f));
-            if (index % 2 == 0) Widgets.DrawHighlight(fixedRect);
+            if (index % 2 == 0) Widgets.DrawAltRect(row);
+            Widgets.DrawHighlightIfMouseover(row);
 
-            Widgets.Label(fixedRect, element);
-            string buttonLabel = ValueString[index];
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - LongButtonSize.x, rect.yMax - LongButtonSize.y), LongButtonSize), buttonLabel))
-            {
+            Rect inner = row.ContractedBy(6f, 4f);
+
+            float btnW = 120f;
+            Rect btn = new Rect(inner.xMax - btnW, inner.y, btnW, inner.height);
+
+            Rect labelRect = new Rect(inner.x, inner.y, inner.width - btnW - 8f, inner.height);
+
+            Text.Font = GameFont.Small;
+            Widgets.LabelEllipses(labelRect, element ?? string.Empty);
+
+            string buttonLabel = ValueString[index] ?? "";
+            if (Widgets.ButtonText(btn, buttonLabel))
                 ShowFloatMenu(index, false);
-            }
         }
 
         private void ShowFloatMenu(int index, bool globalChange)
         {
             List<FloatMenuOption> list = new List<FloatMenuOption>();
 
-            foreach (string str in Values)
+            for (int i = 0; i < Values.Length; i++)
             {
-                Action changeSingleValue = delegate
-                {
-                    ValueString[index] = str;
-                    ValueInt[index] = GetValueFromString(str);
-                };
+                string choice = Values[i];
+                int choiceIndex = i;
 
-                Action changeAllValues = delegate
+                list.Add(new FloatMenuOption(choice, () =>
                 {
-                    for (int i = 0; i < ValueString.Length; i++)
+                    if (globalChange)
                     {
-                        ValueString[i] = str;
-                        ValueInt[i] = GetValueFromString(ValueString[i]);
+                        for (int k = 0; k < ValueString.Length; k++)
+                        {
+                            ValueString[k] = choice;
+                            ValueInt[k] = choiceIndex;
+                        }
                     }
-                };
-
-                list.Add(new FloatMenuOption(str, delegate
-                {
-                    if (globalChange) changeAllValues();
-                    else changeSingleValue();
+                    else
+                    {
+                        if (index >= 0 && index < ValueString.Length)
+                        {
+                            ValueString[index] = choice;
+                            ValueInt[index] = choiceIndex;
+                        }
+                    }
                 }));
             }
 
             Find.WindowStack.Add(new FloatMenu(list));
         }
-
-        private int GetValueFromString(string str) { return Values.FirstIndexOf(fetch => fetch == str); }
     }
 }

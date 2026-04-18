@@ -17,7 +17,8 @@ namespace GameClient.Defs
             RTSitePartDefOf.RTRefinery,
             RTSitePartDefOf.RTHerbalWorkshop,
             RTSitePartDefOf.RTTextileFactory,
-            RTSitePartDefOf.RTFoodProcessor
+            RTSitePartDefOf.RTFoodProcessor,
+            RTSitePartDefOf.RTMarketplace
         };
     }
 }

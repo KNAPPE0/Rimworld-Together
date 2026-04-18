@@ -29,12 +29,12 @@ namespace GameClient.Misc
 
         public static WO_Settlement GetRTSettlementFromTile(int tile) 
         { 
-            return (WO_Settlement)Find.World.worldObjects.AllWorldObjects.First(fetch => fetch.Tile == tile && fetch is WO_Settlement); 
+            return (WO_Settlement)Find.World.worldObjects.AllWorldObjects.FirstOrDefault(fetch => fetch.Tile == tile && fetch is WO_Settlement); 
         }
 
         public static WO_Site GetRTSiteFromTile(int tile)
         {
-            return (WO_Site)Find.World.worldObjects.AllWorldObjects.First(fetch => fetch.Tile == tile && fetch is WO_Site);
+            return (WO_Site)Find.World.worldObjects.AllWorldObjects.FirstOrDefault(fetch => fetch.Tile == tile && fetch is WO_Site);
         }
 
         public static WorldObject[] GetAllRTSettlements()

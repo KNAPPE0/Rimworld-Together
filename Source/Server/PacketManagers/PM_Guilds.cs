@@ -194,7 +194,7 @@ namespace GameServer.PacketManager
 
                 toRemoveOffline.UpdateFaction(null);
 
-                guild.RemoveMember(guild.GuildMembers.First(fetch => fetch.Username == toRemoveOffline.Username));
+                guild.RemoveMember(guild.GuildMembers.FirstOrDefault(fetch => fetch.Username == toRemoveOffline.Username));
 
                 foreach (SiteFile site in SiteManagerHelper.GetAllSitesFromUsername(toRemoveOffline.Username)) site.UpdateFaction(null);
 
@@ -215,7 +215,7 @@ namespace GameServer.PacketManager
                 if (GuildManagerH.GetMemberRank(guild, toPromoteOffline.Username) != GuildRanks.Member) ResponseShortcutManager.SendNoPowerPacket(client);
                 else
                 {
-                    GuildMember member = GuildManagerH.GetAllFactionMembers(guild).First(fetch => fetch.Username == toPromoteOffline.Username);
+                    GuildMember member = GuildManagerH.GetAllFactionMembers(guild).FirstOrDefault(fetch => fetch.Username == toPromoteOffline.Username);
                     guild.PromoteMember(member);
 
                     ServerClient toPromoteOnline = ServerNetwork.GetConnectedClientFromUsername(toPromoteOffline.Username);
@@ -237,7 +237,7 @@ namespace GameServer.PacketManager
                 if (GuildManagerH.GetMemberRank(guild, toDemoteOffline.Username) != GuildRanks.Moderator) ResponseShortcutManager.SendNoPowerPacket(client);
                 else
                 {
-                    GuildMember member = GuildManagerH.GetAllFactionMembers(guild).First(fetch => fetch.Username == toDemoteOffline.Username);
+                    GuildMember member = GuildManagerH.GetAllFactionMembers(guild).FirstOrDefault(fetch => fetch.Username == toDemoteOffline.Username);
                     guild.DemoteMember(member);
 
                     ServerClient toDemoteOnline = ServerNetwork.GetConnectedClientFromUsername(toDemoteOffline.Username);
@@ -275,7 +275,7 @@ namespace GameServer.PacketManager
 
         public static GuildRanks GetMemberRank(GuildFile factionFile, string usernameToCheck)
         {
-            return GetAllFactionMembers(factionFile).First(fetch => fetch.Username == usernameToCheck).Rank;
+            return GetAllFactionMembers(factionFile).FirstOrDefault(fetch => fetch.Username == usernameToCheck).Rank;
         }
 
         public static SiteFile[] GetFactionSites(GuildFile factionFile)

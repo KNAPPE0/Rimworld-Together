@@ -42,6 +42,9 @@ namespace GameClient.Misc
 
         public static List<ModConfig> CurrentMods { get; set; } = null;
 
+        // KMH: Options profile enforcement support
+        public static ModConfigFile CurrentModConfig { get; set; } = new ModConfigFile();
+
         public static ScenarioConfigFile CurrentScenario { get; set; } = null;
 
         public static StorytellerConfigFile CurrentStoryteller { get; set; } = null;
@@ -119,7 +122,7 @@ namespace GameClient.Misc
         [OnSessionStart]
         private static void SetOverrideGenerators()
         {
-            MapGeneratorDef emptyGenerator = DefDatabase<MapGeneratorDef>.AllDefs.First(fetch => fetch.defName == "Empty");
+            MapGeneratorDef emptyGenerator = DefDatabase<MapGeneratorDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == "Empty");
 
             WorldObjectDef settlement = RTWorldObjectDefOf.RTSettlement;
             settlement.mapGenerator = emptyGenerator;
@@ -154,6 +157,10 @@ namespace GameClient.Misc
             Patch_Page_SelectStoryteller_DoWindowContents.executedMessage = false;
 
             CurrentNetworkState = ClientNetworkState.Disconnected;
+
+            // KMH: Restore personal configs if enforcement was active
+            try { GameClient.Managers.OptionsProfileSessionManager.TryRestoreOnDisconnect(); }
+            catch { }
         }
     }
 }

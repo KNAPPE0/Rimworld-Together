@@ -303,7 +303,7 @@ namespace GameClient.WorldObjects
 
                     else
                     {
-                        Settlement settlement = Find.World.worldObjects.Settlements.First(fetch => fetch.Faction != Faction.OfPlayer);
+                        Settlement settlement = Find.World.worldObjects.Settlements.FirstOrDefault(fetch => fetch.Faction != Faction.OfPlayer);
                         Pawn negotiator = RimworldManager.GetIfSocialPawnInCaravan(SessionHandler.ChosenCaravan);
 
                         if (negotiator != null)

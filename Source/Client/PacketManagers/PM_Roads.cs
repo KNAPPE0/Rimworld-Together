@@ -164,15 +164,15 @@ namespace GameClient.PacketManagers
 
         public static int[] allowedRoadCosts;
 
-        public static RoadDef DirtPathDef => DefDatabase<RoadDef>.AllDefs.First(fetch => fetch.defName == "DirtPath");
+        public static RoadDef DirtPathDef => DefDatabase<RoadDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == "DirtPath");
 
-        public static RoadDef DirtRoadDef => DefDatabase<RoadDef>.AllDefs.First(fetch => fetch.defName == "DirtRoad");
+        public static RoadDef DirtRoadDef => DefDatabase<RoadDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == "DirtRoad");
 
-        public static RoadDef StoneRoadDef => DefDatabase<RoadDef>.AllDefs.First(fetch => fetch.defName == "StoneRoad");
+        public static RoadDef StoneRoadDef => DefDatabase<RoadDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == "StoneRoad");
 
-        public static RoadDef AncientAsphaltRoadDef => DefDatabase<RoadDef>.AllDefs.First(fetch => fetch.defName == "AncientAsphaltRoad");
+        public static RoadDef AncientAsphaltRoadDef => DefDatabase<RoadDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == "AncientAsphaltRoad");
 
-        public static RoadDef AncientAsphaltHighwayDef => DefDatabase<RoadDef>.AllDefs.First(fetch => fetch.defName == "AncientAsphaltHighway");
+        public static RoadDef AncientAsphaltHighwayDef => DefDatabase<RoadDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == "AncientAsphaltHighway");
 
         public static void SetValues()
         {
@@ -237,7 +237,7 @@ namespace GameClient.PacketManagers
 
         public static RoadDef GetRoadDefFromDefName(string defName)
         {
-            return DefDatabase<RoadDef>.AllDefs.First(fetch => fetch.defName == defName);
+            return DefDatabase<RoadDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == defName);
         }
 
         public static void ShowRoadChooseDialog(PlanetTile[] neighborTiles, bool hasRoadOnTile)

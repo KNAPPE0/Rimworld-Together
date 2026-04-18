@@ -25,6 +25,11 @@ namespace GameClient.Defs
 
         public static SitePartDef RTFoodProcessor;
 
+        // KMH: Marketplace and Custom Outpost
+        public static SitePartDef RTMarketplace;
+
+        public static SitePartDef RTCustomOutpost;
+
         static RTSitePartDefOf() => DefOfHelper.EnsureInitializedInCtor(typeof(SitePartDefOf));
     }
 }

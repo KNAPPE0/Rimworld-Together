@@ -61,7 +61,7 @@ namespace GameClient.PacketManagers
                     return;
                 }
 
-                else if (factions.Count == 1) settlement.SetFaction(factions.First());
+                else if (factions.Count == 1) settlement.SetFaction(factions.FirstOrDefault());
 
                 else if (factions.Count > 1)
                 {
@@ -70,7 +70,7 @@ namespace GameClient.PacketManagers
                         if (faction.Name == toAdd.FactionName) settlement.SetFaction(faction);
                     }
 
-                    if (settlement.Faction == null) settlement.SetFaction(factions.First());
+                    if (settlement.Faction == null) settlement.SetFaction(factions.FirstOrDefault());
                 }
 
                 // Check if the settlement belongs to planet or space
@@ -224,7 +224,7 @@ namespace GameClient.PacketManagers
             {
                 if (questToFixTemp.TryGetValue(obj.Tile, out List<QuestPart> parts))
                 {
-                    Printer.Warning($"Found quest with id {parts.First().quest.id}", LogImportanceMode.Verbose);
+                    Printer.Warning($"Found quest with id {parts.FirstOrDefault().quest.id}", LogImportanceMode.Verbose);
 
                     foreach (QuestPart part in parts)
                     {
@@ -253,7 +253,7 @@ namespace GameClient.PacketManagers
                         }
                     }
 
-                    Printer.Warning($"Loaded quest with id {parts.First().quest.id} on tile {obj.Tile}.", LogImportanceMode.Verbose);
+                    Printer.Warning($"Loaded quest with id {parts.FirstOrDefault().quest.id} on tile {obj.Tile}.", LogImportanceMode.Verbose);
                 }
             }
 

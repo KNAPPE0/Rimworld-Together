@@ -3,6 +3,7 @@ using GameServer.Hooks.TCPNetwork;
 using GameServer.Managers;
 using GameServer.Misc;
 using Shared;
+using System.Text.RegularExpressions;
 using Shared.Misc;
 using TCPNetwork.Files.Client;
 using TCPNetwork.PacketManagers;
@@ -25,6 +26,19 @@ namespace GameServer.PacketManager
         public static void HandleUser(ServerClient client, PKT_Login data)
         {
             client.UserFile = new UserFile();
+
+            // KMH: Sanitize username to prevent path traversal and injection
+            string sanitized = data._username ?? string.Empty;
+            sanitized = sanitized.Trim();
+            sanitized = System.Text.RegularExpressions.Regex.Replace(sanitized, @"[^a-zA-Z0-9_\-]", "");
+            if (sanitized.Length > 32) sanitized = sanitized.Substring(0, 32);
+            if (string.IsNullOrWhiteSpace(sanitized))
+            {
+                DenyConnectionWithReason(client, LoginResponse.Invalid);
+                return;
+            }
+            data._username = sanitized;
+
             client.UserFile.Username = data._username;
             client.UserFile.Password = data._password;
 
@@ -47,6 +61,8 @@ namespace GameServer.PacketManager
             RemoveOldClientSessions(client);
 
             InformationDisplayer.DisplayLogin(client);
+            // KMH: Announce join to Discord
+            GameServer.Integrations.Discord.DiscordPlayerAnnouncer.AnnounceFullyJoined(client.UserFile?.Username);
 
             PostLogin(client);
 
@@ -73,6 +89,12 @@ namespace GameServer.PacketManager
             GlobalDataManager.SendServerGlobalData(client);
 
             PM_Chat.SendLoginChatMessages(client);
+
+            // KMH: Auto-send enforcement profile if enforcement is enabled
+            if (GameServer.Core.Master.ModConfig != null && GameServer.Core.Master.ModConfig.IsEnforced)
+            {
+                GameServer.Managers.OptionsProfileManager.TryPushProfile(client);
+            }
 
             if (PM_World.CheckIfWorldExists())
             {

@@ -34,12 +34,12 @@ namespace GameClient.Patches
         {
             if (!DLG_Chat.IsDialogOpen)
             {
-                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.ChatOn)) Find.WindowStack.Add(new DLG_Chat());
+                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.ChatOff)) Find.WindowStack.Add(new DLG_Chat());
             }
 
             else
             {
-                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.ChatOff)) DLG_Chat.Instance.Close();
+                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.ChatOn)) DLG_Chat.Instance.Close();
             }
         }
 
@@ -47,12 +47,12 @@ namespace GameClient.Patches
         {
             if (!DLG_Options.IsDialogOpen)
             {
-                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.OptionsOn)) Find.WindowStack.Add(new DLG_Options());
+                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.OptionsOff)) Find.WindowStack.Add(new DLG_Options());
             }
 
             else
             {
-                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.OptionsOff)) DLG_Options.Instance.Close();
+                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.OptionsOn)) DLG_Options.Instance.Close();
             }
         }
 
@@ -62,12 +62,12 @@ namespace GameClient.Patches
 
             if (!DLG_Admin.IsDialogOpen)
             {
-                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.AdminOn)) Find.WindowStack.Add(new DLG_Admin());
+                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.AdminOff)) Find.WindowStack.Add(new DLG_Admin());
             }
 
             else
             {
-                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.AdminOff)) DLG_Admin.Instance.Close();
+                if (Widgets.ButtonImageWithBG(rect, RTTextureDefs.AdminOn)) DLG_Admin.Instance.Close();
             }
         }
 

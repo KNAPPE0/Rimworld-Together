@@ -1,5 +1,3 @@
-﻿using Shared.Misc;
-using System;
 using UnityEngine;
 using Verse;
 
@@ -7,42 +5,34 @@ namespace GameClient.Dialogs.Default
 {
     public class DLG_Wait : DLG_Base
     {
-        public override Vector2 InitialSize => new Vector2(300f, 95f);
+        public override Vector2 InitialSize => new Vector2(360f, 140f);
 
         public static DLG_Base Instance { get; private set; } = null;
 
-        private DateTime PreviousTime { get; set; } = DateTime.Now;
-
-        public DLG_Wait()
+        public DLG_Wait(string description = null)
         {
             Instance = this;
-            this.Title = "WAIT";
-            this.Description = "...";
+            Title = "Wait";
+            Description = string.IsNullOrEmpty(description) ? "Waiting..." : description;
+
+            closeOnAccept = false;
+            closeOnCancel = false;
         }
 
-        public override void DoWindowContents(Rect rect)
+        public override void DoWindowContents(Rect inRect)
         {
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(DLG_Base.GetRectMiddle(rect) - Text.CalcSize(Title).x / 2, rect.y, Text.CalcSize(Title).x, Text.CalcSize(Title).y), Title);
+            float y = DrawStandardHeader(inRect);
+            if (y < 0f) return;
 
-            Widgets.DrawLineHorizontal(rect.x, 37, rect.width);
+            Rect body = new Rect(0f, y, inRect.width, inRect.height - y);
+            body = body.ContractedBy(ContentPad);
 
-            Animate();
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(DLG_Base.GetRectMiddle(rect) - Text.CalcSize(Description).x / 2, Text.CalcSize(Description).y + 18f, Text.CalcSize(Description).x, Text.CalcSize(Description).y), Description);
-        }
+            Text.Anchor = TextAnchor.MiddleCenter;
 
-        private void Animate()
-        {
-            DateTime currentTime = DateTime.Now;
+            Widgets.Label(body, Description ?? string.Empty);
 
-            if (currentTime - PreviousTime > TimeSpan.FromSeconds(0.5f))
-            {
-                if (Description.Length < 3) Description += ".";
-                else Description = ".";
-
-                PreviousTime = currentTime;
-            }
+            Text.Anchor = TextAnchor.UpperLeft;
         }
     }
 }

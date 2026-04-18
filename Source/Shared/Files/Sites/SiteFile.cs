@@ -20,6 +20,9 @@ namespace Shared.Files.Sites
 
         public SiteType Type { get; set; } = new SiteType();
 
+        /// <summary>True if this is a player-created custom site.</summary>
+        public bool IsCustomSite => Type != null && Type.IsCustom;
+
         [NonSerialized] public Semaphore SavingSemaphore = new Semaphore(1, 1);
 
         public void SaveSite()

@@ -46,8 +46,17 @@ namespace GameClient.Patches.Pages
             if (Current.ProgramState != ProgramState.Entry) return true;
             else
             {
-                if (optList.First().GetType() == typeof(ListableOption))
+                if (optList.FirstOrDefault().GetType() == typeof(ListableOption))
                 {
+                    // KMH: Show restore button when enforcement is active
+                    if (EnforcementGuard.IsActive && EnforcementGuard.HasBackup)
+                    {
+                        optList.Add(new ListableOption("Restore Original Configs", delegate
+                        {
+                            OptionsProfileSessionManager.RestorePersonalConfigsManual();
+                        }));
+                    }
+
                     optList.Insert(0, new ListableOption("Server Browser", delegate
                     {
                         if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected) return;

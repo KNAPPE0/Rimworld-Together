@@ -12,6 +12,7 @@ using GameClient.PacketManagers;
 using static TCPNetwork.Packets.GameParameterData;
 using static TCPNetwork.Packets.PKT_ModConfig;
 using GameClient.Dialogs.Default;
+using Shared.Misc;
 
 namespace GameClient.Managers
 {
@@ -49,23 +50,50 @@ namespace GameClient.Managers
         public static void SetDifficulty(DifficultyConfigFile file, bool bypass = false)
         {
             if (!file.IsEnforced && !bypass) return;
-            else
+
+            try
             {
+                // Deserialize the enforced difficulty settings
+                Difficulty enforcedDifficulty = (Difficulty)ScribeManager.SerializeFromString<Difficulty>(file.ScribeData);
+                if (enforcedDifficulty != null)
+                {
+                    // Keep the current difficultyDef if one exists, otherwise default to Rough
+                    if (Current.Game.storyteller.difficultyDef == null)
+                        Current.Game.storyteller.difficultyDef = DifficultyDefOf.Rough;
+                    
+                    Current.Game.storyteller.difficulty = enforcedDifficulty;
+                }
+            }
+            catch
+            {
+                // Fallback: if deserialization fails, just set a safe default
                 Current.Game.storyteller.difficultyDef = DifficultyDefOf.Rough;
-                Current.Game.storyteller.difficulty = (Difficulty)ScribeManager.SerializeFromString<Difficulty>(file.ScribeData);
+                Current.Game.storyteller.difficulty = new Difficulty(DifficultyDefOf.Rough);
             }
         }
 
         public static void SetStoryteller(StorytellerConfigFile file, bool bypassCheck = false)
         {
             if (!file.IsEnforced && !bypassCheck) return;
-            else
+
+            try
             {
-                StorytellerDef storytellerDef = DefDatabase<StorytellerDef>.AllDefs.First(fetch => fetch.defName == file.DefName);
-                DifficultyDef difficultyDef = Current.Game.storyteller.difficultyDef == null ? DifficultyDefOf.Easy : Current.Game.storyteller.difficultyDef;
-                Difficulty difficulty = Current.Game.storyteller.difficulty == null ? new Difficulty(difficultyDef) : Current.Game.storyteller.difficulty;
+                StorytellerDef storytellerDef = DefDatabase<StorytellerDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == file.DefName);
+                if (storytellerDef == null)
+                {
+                    Printer.Warning($"[GameParameter] Enforced storyteller '{file.DefName}' not found. Using default.");
+                    storytellerDef = StorytellerDefOf.Cassandra;
+                }
+
+                // Preserve current difficulty settings when changing storyteller
+                DifficultyDef difficultyDef = Current.Game.storyteller?.difficultyDef ?? DifficultyDefOf.Rough;
+                Difficulty difficulty = Current.Game.storyteller?.difficulty ?? new Difficulty(difficultyDef);
 
                 Current.Game.storyteller = new Storyteller(storytellerDef, difficultyDef, difficulty);
+            }
+            catch (System.Exception e)
+            {
+                Printer.Warning($"[GameParameter] Failed to set storyteller: {e.Message}");
             }
         }
 

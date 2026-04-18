@@ -104,10 +104,10 @@ namespace GameClient.Managers
         {
             Faction[] factions = Find.FactionManager.AllFactions.ToArray();
 
-            SessionHandler.EnemyFaction = factions.First(fetch => fetch.def.defName == RTFactionDefOf.RTEnemy.defName);
-            SessionHandler.AllyFaction = factions.First(fetch => fetch.def.defName == RTFactionDefOf.RTAlly.defName);
-            SessionHandler.NeutralFaction = factions.First(fetch => fetch.def.defName == RTFactionDefOf.RTNeutral.defName);
-            SessionHandler.GuildFaction = factions.First(fetch => fetch.def.defName == RTFactionDefOf.RTFaction.defName);
+            SessionHandler.EnemyFaction = factions.FirstOrDefault(fetch => fetch.def.defName == RTFactionDefOf.RTEnemy.defName);
+            SessionHandler.AllyFaction = factions.FirstOrDefault(fetch => fetch.def.defName == RTFactionDefOf.RTAlly.defName);
+            SessionHandler.NeutralFaction = factions.FirstOrDefault(fetch => fetch.def.defName == RTFactionDefOf.RTNeutral.defName);
+            SessionHandler.GuildFaction = factions.FirstOrDefault(fetch => fetch.def.defName == RTFactionDefOf.RTFaction.defName);
 
             SessionHandler.PlayerFactions.Clear();
             SessionHandler.PlayerFactions.Add(SessionHandler.EnemyFaction);

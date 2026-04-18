@@ -23,6 +23,7 @@ namespace GameServer.PacketManager
             }
 
             PKT_Pollution data = Serializer.ConvertBytesToObject<PKT_Pollution>(bytes);
+            if (data == null) return;
             AddPollutionToTile(data, client, true);
         }
 

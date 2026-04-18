@@ -65,6 +65,60 @@ namespace Shared
             }
         }
 
+        // KMH: Capture buffer for Discord command output relay
+        private static readonly object CaptureLock = new object();
+        private static List<string> CaptureBuffer { get; set; } = null;
+        private static bool IsCapturing { get; set; } = false;
+
+        /// <summary>True when a Discord command is executing and output is being captured.</summary>
+        public static bool IsCommandCapturing => IsCapturing;
+
+        /// <summary>Runs a command and returns captured Printer output lines.</summary>
+        public static string[] ExecuteCommand(string input, bool fromDiscord = false)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return Array.Empty<string>();
+
+            if (!fromDiscord)
+            {
+                ParseCommand(input);
+                return Array.Empty<string>();
+            }
+
+            // Capture mode: intercept Printer output during command execution
+            lock (CaptureLock)
+            {
+                CaptureBuffer = new List<string>();
+                IsCapturing = true;
+            }
+
+            try
+            {
+                ParseCommand(input);
+            }
+            finally
+            {
+                lock (CaptureLock) { IsCapturing = false; }
+            }
+
+            string[] result;
+            lock (CaptureLock)
+            {
+                result = CaptureBuffer.ToArray();
+                CaptureBuffer = null;
+            }
+            return result;
+        }
+
+        /// <summary>Called by Printer hooks to capture output when running Discord commands.</summary>
+        public static void TryCaptureOutput(string text)
+        {
+            lock (CaptureLock)
+            {
+                if (IsCapturing && CaptureBuffer != null && !string.IsNullOrEmpty(text))
+                    CaptureBuffer.Add(text);
+            }
+        }
+
         private static void ParseCommand(string input)
         {
             Semaphore.WaitOne();

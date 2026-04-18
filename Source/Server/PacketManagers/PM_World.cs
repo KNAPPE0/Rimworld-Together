@@ -15,6 +15,7 @@ namespace GameServer.PacketManager
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
             PKT_World data = Serializer.ConvertBytesToObject<PKT_World>(bytes);
+            if (data == null) return;
 
             switch (data._stepMode)
             {

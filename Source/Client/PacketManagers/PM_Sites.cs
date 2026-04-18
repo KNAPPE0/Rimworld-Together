@@ -62,6 +62,11 @@ namespace GameClient.PacketManagers
                 case SiteStepMode.Rewards:
                     OnReceiveRewards(data._rewardFiles);
                     break;
+
+                // KMH: Custom site info/status response
+                case SiteStepMode.CustomInfo:
+                    ReceiveCustomSiteInfo(data);
+                    break;
             }
         }
 
@@ -121,7 +126,7 @@ namespace GameClient.PacketManagers
             {
                 try
                 {
-                    ThingDef def = DefDatabase<ThingDef>.AllDefs.First(fetch => fetch.defName == reward.DefName);
+                    ThingDef def = DefDatabase<ThingDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == reward.DefName);
                     Thing toMake = ThingMaker.MakeThing(def);
                     toMake.stackCount = reward.Amount;
                     toMake.HitPoints = def.BaseMaxHitPoints;
@@ -170,8 +175,8 @@ namespace GameClient.PacketManagers
             {
                 try
                 {
-                    SitePartDef siteDef = RTSitePartDefs.Defs.First(fetch => fetch.defName == toAdd.Type.DefName);
-                    WO_Site site = (WO_Site)WorldObjectMaker.MakeWorldObject(DefDatabase<WorldObjectDef>.AllDefs.First(fetch => fetch.defName == "RTSite"));
+                    SitePartDef siteDef = RTSitePartDefs.Defs.FirstOrDefault(fetch => fetch.defName == toAdd.Type.DefName);
+                    WO_Site site = (WO_Site)WorldObjectMaker.MakeWorldObject(DefDatabase<WorldObjectDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == "RTSite"));
                     site.Tile = toAdd.Tile;
                     site.SetFaction(PlanetManagerHelper.GetPlayerFactionFromGoodwill(toAdd.Goodwill));
                     site.AddPart(new RTSitePart(site, siteDef));
@@ -203,7 +208,7 @@ namespace GameClient.PacketManagers
             SiteFile file = new SiteFile();
             file.Tile = site.Tile;
             file.Goodwill = goodwill;
-            file.Type = SiteValues.First(fetch => fetch.DefName == site.MainSitePartDef.defName);
+            file.Type = SiteValues.FirstOrDefault(fetch => fetch.DefName == site.MainSitePartDef.defName);
 
             OnSiteDestroy(file);
             OnSiteBuild(file);
@@ -315,5 +320,139 @@ namespace GameClient.PacketManagers
             PM_Sites.SiteValues = SessionHandler.GlobalData._siteValues;
             PM_Sites.RewardDelay = SessionHandler.GlobalData._actionValues.SiteAction.TimeInterval;
         }
+    
+        // KMH: Send worker join request - uses caravan pawn selection for skill
+        public static void RequestWorkerJoin(int tile)
+        {
+            try
+            {
+                Caravan caravan = SessionHandler.ChosenCaravan;
+                if (caravan == null)
+                {
+                    // Use map colonists if no caravan
+                    int bestSkill = 0;
+                    if (Find.CurrentMap != null)
+                    {
+                        foreach (Pawn pawn in Find.CurrentMap.mapPawns.FreeColonists)
+                        {
+                            if (pawn.skills == null) continue;
+                            foreach (SkillRecord sr in pawn.skills.skills)
+                                if (sr.Level > bestSkill) bestSkill = sr.Level;
+                        }
+                    }
+                    SendWorkerJoinPacket(tile, bestSkill);
+                    return;
+                }
+
+                // Show pawn selection from caravan
+                List<Pawn> humans = caravan.PawnsListForReading
+                    .Where(p => RimworldManager.CheckIfThingIsHuman(p)).ToList();
+
+                if (humans.Count == 0)
+                {
+                    DLG_Base.PushNewDialog(new DLG_Message("Error", new string[] { "No colonists in this caravan." }));
+                    return;
+                }
+
+                List<string> labels = new List<string>();
+                foreach (Pawn p in humans)
+                {
+                    string skillInfo = "";
+                    if (p.skills != null)
+                    {
+                        int best = 0;
+                        string bestName = "";
+                        foreach (SkillRecord sr in p.skills.skills)
+                        {
+                            if (sr.Level > best) { best = sr.Level; bestName = sr.def.defName; }
+                        }
+                        skillInfo = $" (Best: {bestName} {best})";
+                    }
+                    labels.Add($"{p.LabelCap}{skillInfo}");
+                }
+
+                Action onSelect = delegate
+                {
+                    int idx = DLG_ListingWithButton.ResultInt;
+                    if (idx < 0 || idx >= humans.Count) return;
+                    Pawn chosen = humans[idx];
+                    int skill = 0;
+                    if (chosen.skills != null)
+                    {
+                        foreach (SkillRecord sr in chosen.skills.skills)
+                            if (sr.Level > skill) skill = sr.Level;
+                    }
+                    SendWorkerJoinPacket(tile, skill);
+                };
+
+                DLG_Base.PushNewDialog(new DLG_ListingWithButton(
+                    "Select Worker", "Choose a colonist to represent your colony at this site. Their skills affect production efficiency.",
+                    labels.ToArray(), onSelect, null));
+            }
+            catch { }
+        }
+
+        private static void SendWorkerJoinPacket(int tile, int skillLevel)
+        {
+            PKT_Site packet = new PKT_Site();
+            packet._stepMode = SiteStepMode.WorkerJoin;
+            packet._file = new SiteFile { Tile = tile };
+            packet._workerSkillLevel = skillLevel;
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, packet);
+        }
+
+        // KMH: Send worker leave request for a custom site
+        public static void RequestWorkerLeave(int tile)
+        {
+            try
+            {
+                PKT_Site packet = new PKT_Site();
+                packet._stepMode = SiteStepMode.WorkerLeave;
+                packet._file = new SiteFile { Tile = tile };
+
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, packet);
+            }
+            catch { }
+        }
+
+        // KMH: Request site upgrade (owner only)
+        public static void RequestSiteUpgrade(int tile)
+        {
+            try
+            {
+                PKT_Site packet = new PKT_Site();
+                packet._stepMode = SiteStepMode.Upgrade;
+                packet._file = new SiteFile { Tile = tile };
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, packet);
+            }
+            catch { }
+        }
+
+        // KMH: Request custom site info
+        public static void RequestCustomSiteInfo(int tile)
+        {
+            try
+            {
+                PKT_Site packet = new PKT_Site();
+                packet._stepMode = SiteStepMode.CustomInfo;
+                packet._file = new SiteFile { Tile = tile };
+
+                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, packet);
+            }
+            catch { }
+        }
+
+        // KMH: Handle custom site info/status response from server
+        private static void ReceiveCustomSiteInfo(PKT_Site data)
+        {
+            // Close any waiting dialog
+            try { if (DLG_Wait.Instance != null) DLG_Wait.Instance.Close(); } catch { }
+
+            string msg = data._statusMessage ?? "No response from server.";
+
+            // Use the enforcement notice dialog for better sizing
+            DLG_Base.PushNewDialog(new DLG_Message("Site Information", new string[] { msg }));
+        }
+
     }
 }

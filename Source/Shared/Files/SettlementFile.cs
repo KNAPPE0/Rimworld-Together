@@ -9,5 +9,8 @@ namespace Shared.Files
         public string Username { get; set; } = string.Empty;
         
         public Goodwill Goodwill { get; set; } = Goodwill.Neutral;
+
+        // KMH: Settlement name for stats
+        public string Name { get; set; } = string.Empty;
     }
 }

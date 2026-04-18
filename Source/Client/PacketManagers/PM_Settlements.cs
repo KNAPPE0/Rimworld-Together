@@ -63,7 +63,7 @@ namespace GameClient.PacketManagers
         {
             try
             {
-                WorldObjectDef def = DefDatabase<WorldObjectDef>.AllDefs.First(fetch => fetch.defName == "RTSettlement");
+                WorldObjectDef def = DefDatabase<WorldObjectDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == "RTSettlement");
                 WO_Settlement settlement = (WO_Settlement)WorldObjectMaker.MakeWorldObject(def);
                 settlement.Tile = toAdd.Tile;
                 settlement.Name = $"{toAdd.Username}'s settlement";

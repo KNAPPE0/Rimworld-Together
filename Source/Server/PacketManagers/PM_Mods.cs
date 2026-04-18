@@ -20,6 +20,19 @@ namespace GameServer.PacketManager
         {
             PKT_ModConfig data = Serializer.ConvertBytesToObject<PKT_ModConfig>(bytes);
 
+            // KMH: Route options profile requests
+            if (data._requestOptionsProfile)
+            {
+                OptionsProfileManager.HandleClientRequest(client);
+                return;
+            }
+
+            if (data._uploadOptionsProfile)
+            {
+                OptionsProfileManager.HandleAdminUploadChunk(client, data);
+                return;
+            }
+
             switch (data._stepMode)
             {
                 case ModConfigStepMode.Send:

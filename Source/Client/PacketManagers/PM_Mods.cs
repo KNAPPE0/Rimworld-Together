@@ -1,4 +1,5 @@
 ﻿using GameClient.Dialogs;
+using GameClient.Managers;
 using GameClient.Misc;
 using Shared;
 using Shared.Files.Configs.Mods;
@@ -23,10 +24,27 @@ namespace GameClient.PacketManagers
         {
             PKT_ModConfig data = Serializer.ConvertBytesToObject<PKT_ModConfig>(bytes);
 
+            // KMH: Route options profile chunks and responses
+            if (data._isOptionsProfileChunk || data._noOptionsProfileAvailable)
+            {
+                OptionsProfileSessionManager.ReceiveOptionsProfilePacket(data);
+                return;
+            }
+
             switch (data._stepMode)
             {
                 case ModConfigStepMode.Send:
                     SetValues(data._configFile.ModConfigs);
+                    // KMH: Update enforcement state
+                    if (data._configFile != null)
+                    {
+                        SessionHandler.CurrentModConfig = data._configFile;
+                        if (data._configFile.IsEnforced)
+                        {
+                            Shared.Misc.Printer.Warning("[PM_Mods] Server enforcement is ENABLED - requesting profile");
+                            OptionsProfileSessionManager.OnServerEnforcementReceived();
+                        }
+                    }
                     break;
             }
         }

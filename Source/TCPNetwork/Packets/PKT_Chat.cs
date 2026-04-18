@@ -10,10 +10,11 @@ namespace TCPNetwork.Packets
             { ChatColor.Admin, "<color=red>" },
             { ChatColor.Console, "<color=yellow>" },
             { ChatColor.Private, "<color=#3ae0dd>" },
-            { ChatColor.Server, " <color=white>" }
+            { ChatColor.Server, " <color=white>" },
+            { ChatColor.Discord, "<color=#7289DA>" }
         };
 
-        public enum ChatColor { Normal, Admin, Console, Private, Server }
+        public enum ChatColor { Normal, Admin, Console, Private, Server, Discord }
 
         public ChatColor UsernameColor { get; set; } = ChatColor.Normal;
 

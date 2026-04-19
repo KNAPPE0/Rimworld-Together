@@ -1,17 +1,15 @@
-using GameClient.Managers;
-using GameClient.Misc;
+using GameClient.Patches.Pages;
 using HarmonyLib;
-using GameClient.Hooks.TCPNetwork;
+using Shared;
 using System.Reflection;
 using Verse;
 
 namespace GameClient.Patches
 {
+    [HarmonyPatchCategory("Start")]
     [HarmonyPatch(typeof(LoadedModManager))]
     public static class Patch_LoadedModManager_WriteModSettings_OptionsProfile
     {
-        private static bool IsRunning;
-
         static MethodBase TargetMethod()
         {
             return AccessTools.Method(typeof(LoadedModManager), "WriteModSettings")
@@ -19,22 +17,23 @@ namespace GameClient.Patches
                 ?? null;
         }
 
-        [HarmonyPostfix]
-        public static void Postfix()
+        [HarmonyPrefix]
+        public static bool Prefix()
         {
-            if (IsRunning) return;
-            if (SessionHandler.CurrentNetworkState == GameClient.Hooks.TCPNetwork.ClientNetwork.ClientNetworkState.Disconnected) return;
-            if (SessionHandler.IsAdmin) return;
+            if (!LocalConfigLockUtility.ShouldLockConfigEditing()) return true;
+            return false;
+        }
+    }
 
-            try
-            {
-                IsRunning = true;
-                OptionsProfileSessionManager.ReapplyProfileToDiskIfActive(softReload: false);
-            }
-            finally
-            {
-                IsRunning = false;
-            }
+    public static class Patch_EnforcedPrefsLock
+    {
+        [OnUpdate]
+        private static void ForceLockedPrefsWhileEnforced()
+        {
+            if (!LocalConfigLockUtility.ShouldLockConfigEditing()) return;
+
+            if (Prefs.DevMode)
+                Prefs.DevMode = false;
         }
     }
 }

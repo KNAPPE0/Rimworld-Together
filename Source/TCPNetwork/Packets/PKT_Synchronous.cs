@@ -22,8 +22,6 @@ namespace TCPNetwork.Packets
 
         public string Username { get; set; } = string.Empty;
 
-        public byte[] Contents { get; set; } = null;
-
         public PartyFile Party { get; set; } = null;
 
         public enum ActionType

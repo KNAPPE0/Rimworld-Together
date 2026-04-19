@@ -97,18 +97,36 @@ namespace GameServer.PacketManager
 
         private static void AddNewSite(ServerClient client, PKT_Site siteData)
         {
-            if (PM_Settlements.CheckIfTileIsInUse(siteData._file.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"A site tried to be added to tile {siteData._file.Tile}, but that tile already has a settlement");
-            else if (SiteManagerHelper.CheckIfTileIsInUse(siteData._file.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"A site tried to be added to tile {siteData._file.Tile}, but that tile already has a site");
-            else
-            {
-                SiteFile siteFile = new SiteFile();
+            if (siteData == null || siteData._file == null || siteData._file.Type == null)
+                return;
 
-                siteFile.Tile = siteData._file.Tile;
-                siteFile.Username = client.UserFile.Username;
-                siteFile.Type = SiteManagerHelper.GetTypeFromDef(siteData._file.Type.DefName);
-                if (!string.IsNullOrEmpty(client.UserFile.GuildName)) siteFile.GuildName = client.UserFile.GuildName;
-                ConfirmNewSite(client, siteFile);
+            if (PM_Settlements.CheckIfTileIsInUse(siteData._file.Tile))
+            {
+                PKT_Site response = new PKT_Site();
+                response._stepMode = SiteStepMode.CustomInfo;
+                response._statusMessage = $"That tile already has a settlement.";
+                client.Listener.EnqueuePacket(PacketHeader.SiteManager, response);
+                return;
             }
+
+            if (SiteManagerHelper.CheckIfTileIsInUse(siteData._file.Tile))
+            {
+                PKT_Site response = new PKT_Site();
+                response._stepMode = SiteStepMode.CustomInfo;
+                response._statusMessage = $"That tile already has a site.";
+                client.Listener.EnqueuePacket(PacketHeader.SiteManager, response);
+                return;
+            }
+
+            SiteFile siteFile = new SiteFile();
+            siteFile.Tile = siteData._file.Tile;
+            siteFile.Username = client.UserFile.Username;
+            siteFile.Type = SiteManagerHelper.GetTypeFromDef(siteData._file.Type.DefName);
+
+            if (!string.IsNullOrEmpty(client.UserFile.GuildName))
+                siteFile.GuildName = client.UserFile.GuildName;
+
+            ConfirmNewSite(client, siteFile);
         }
 
         private static void DestroySite(ServerClient client, PKT_Site siteData)

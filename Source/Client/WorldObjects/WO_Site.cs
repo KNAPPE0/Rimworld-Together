@@ -5,6 +5,7 @@ using GameClient.Misc;
 using GameClient.PacketManagers;
 using RimWorld;
 using RimWorld.Planet;
+using Shared.Misc;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -17,13 +18,14 @@ namespace GameClient.WorldObjects
 
         public override string Label => base.Label;
 
-        public SitePartDef MainSitePartDef => MainSitePart.def;
+        private RTSitePart MainSitePart => parts != null && parts.Count > 0 ? parts[0] : null;
+
+        public SitePartDef MainSitePartDef => MainSitePart?.def;
 
         public List<RTSitePart> parts = new List<RTSitePart>();
 
-        private RTSitePart MainSitePart { get { return parts[0]; } }
-
-        public override Texture2D ExpandingIcon => MainSitePartDef.ExpandingIconTexture;
+        public override Texture2D ExpandingIcon
+            => MainSitePartDef?.ExpandingIconTexture ?? BaseContent.BadTex;
 
         public override Material Material
         {
@@ -31,20 +33,37 @@ namespace GameClient.WorldObjects
             {
                 if (cachedMat == null)
                 {
-                    cachedMat = MaterialPool.MatFrom(color: (!MainSitePartDef.applyFactionColorToSiteTexture || base.Faction == null) ? 
-                        Color.white : base.Faction.Color, texPath: MainSitePartDef.siteTexture, shader: ShaderDatabase.WorldOverlayTransparentLit, renderQueue: 3550);
+                    SitePartDef def = MainSitePartDef;
+                    if (def == null)
+                        return null;
+
+                    cachedMat = MaterialPool.MatFrom(
+                        color: (!def.applyFactionColorToSiteTexture || base.Faction == null)
+                            ? Color.white
+                            : base.Faction.Color,
+                        texPath: def.siteTexture,
+                        shader: ShaderDatabase.WorldOverlayTransparentLit,
+                        renderQueue: 3550);
                 }
+
                 return cachedMat;
             }
         }
 
         public void AddPart(RTSitePart part)
         {
+            if (part == null || part.def == null)
+            {
+                Printer.Warning("[RT] Tried to add a null site part to WO_Site. Spawn cancelled.");
+                return;
+            }
+
             if (!part.def.forceMutators.NullOrEmpty())
             {
                 foreach (TileMutatorDef forceMutator in part.def.forceMutators)
                     base.Tile.Tile.AddMutator(forceMutator);
             }
+
             parts.Add(part);
         }
 
@@ -54,7 +73,6 @@ namespace GameClient.WorldObjects
         {
             List<Gizmo> gizmos = new List<Gizmo>();
 
-            // Info - always available
             gizmos.Add(new Command_Action
             {
                 defaultLabel = "Site Info",
@@ -67,7 +85,6 @@ namespace GameClient.WorldObjects
                 }
             });
 
-            // Owner/Guild actions
             if (IsOwnerOrGuild)
             {
                 gizmos.Add(new Command_Action
@@ -94,7 +111,10 @@ namespace GameClient.WorldObjects
                             SessionHandler.ChosenSite = this;
                             PM_Sites.RequestDestroySite();
                         }
-                        else DLG_Base.PushNewDialog(new DLG_Message("Error", new string[] { "Sites are disabled on this server." }));
+                        else
+                        {
+                            DLG_Base.PushNewDialog(new DLG_Message("Error", new string[] { "Sites are disabled on this server." }));
+                        }
                     }
                 });
             }
@@ -106,7 +126,6 @@ namespace GameClient.WorldObjects
         {
             List<Gizmo> gizmos = new List<Gizmo>();
 
-            // Info
             gizmos.Add(new Command_Action
             {
                 defaultLabel = "Site Info",
@@ -120,7 +139,6 @@ namespace GameClient.WorldObjects
                 }
             });
 
-            // Worker management - standard sites (owner/guild)
             if (IsOwnerOrGuild)
             {
                 gizmos.Add(new Command_Action
@@ -138,7 +156,6 @@ namespace GameClient.WorldObjects
                 });
             }
 
-            // Join as worker (anyone can try - server validates access)
             gizmos.Add(new Command_Action
             {
                 defaultLabel = "Join Site",
@@ -152,7 +169,6 @@ namespace GameClient.WorldObjects
                 }
             });
 
-            // Leave
             gizmos.Add(new Command_Action
             {
                 defaultLabel = "Leave Site",

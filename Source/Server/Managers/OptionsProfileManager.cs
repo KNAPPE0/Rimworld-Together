@@ -13,20 +13,16 @@ namespace GameServer.Managers
     public static class OptionsProfileManager
     {
         private const int ChunkSizeBytes = 256 * 1024;
+        private const int SendDedupeWindowMs = 5000;
 
-        // Upload buffers are keyed by "username|hash" so concurrent admin uploads won't collide.
         private static readonly Dictionary<string, IncomingUploadBuffer> UploadBuffers =
             new Dictionary<string, IncomingUploadBuffer>(StringComparer.OrdinalIgnoreCase);
 
-        // Prevent duplicate sends per connection/profile hash.
-        // Keyed by stable client identity (username if available, otherwise IP) + hash.
         private static readonly object SendGateLock = new object();
         private static readonly Dictionary<string, long> RecentlySent =
             new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
 
-        // Small TTL to prevent spam (login pipeline can trigger multiple ModManager calls).
-        private const int SendDedupeWindowMs = 5000;
-        private static long LastPruneTicks = 0;
+        private static long LastPruneTicks;
 
         private class IncomingUploadBuffer
         {
@@ -45,11 +41,12 @@ namespace GameServer.Managers
             try
             {
                 if (string.IsNullOrEmpty(OptionsProfile.SavePath))
-                {
                     OptionsProfile.SavePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServerOptionsProfile.dat");
-                }
 
                 CurrentProfile = (OptionsProfile)OptionsProfile.Load<OptionsProfile>();
+                if (CurrentProfile == null)
+                    CurrentProfile = new OptionsProfile();
+
                 Printer.Warning($"[OptionsProfile] Loaded. HasProfile={CurrentProfile.HasProfile}", LogImportanceMode.Verbose);
             }
             catch (Exception e)
@@ -59,55 +56,47 @@ namespace GameServer.Managers
             }
         }
 
-        /// <summary>
-        /// Safe helper to push the current profile to a client if one exists.
-        /// This will NOT send pre-login (no username yet), and will dedupe repeated triggers.
-        /// </summary>
         public static void TryPushProfile(ServerClient client)
         {
             try
             {
                 if (client == null) return;
-                if (CurrentProfile == null) return;
-                if (!CurrentProfile.HasProfile) return;
-                if (string.IsNullOrEmpty(CurrentProfile.ProfileHash)) return;
 
-                // KMH: First send enforcement flag so client knows enforcement is active
-                PKT_ModConfig enforcementNotify = new PKT_ModConfig
+                // Always send current enforcement state first.
+                PKT_ModConfig statePacket = new PKT_ModConfig
                 {
                     _stepMode = PKT_ModConfig.ModConfigStepMode.Send,
                     _configFile = GameServer.Core.Master.ModConfig
                 };
-                client.Listener.EnqueuePacket(PacketHeader.ModManager, enforcementNotify);
 
-                // Then send the profile data
+                client.Listener.EnqueuePacket(PacketHeader.ModManager, statePacket);
+
+                // If no profile exists, stop here.
+                if (CurrentProfile == null || !CurrentProfile.HasProfile || string.IsNullOrEmpty(CurrentProfile.ProfileHash))
+                    return;
+
                 HandleClientRequest(client);
             }
-            catch { }
+            catch (Exception e)
+            {
+                Printer.Warning($"[OptionsProfile] TryPushProfile failed: {e}");
+            }
         }
 
-        /// <summary>
-        /// Called when a client requests the profile (or when the server wants to push it).
-        /// </summary>
         public static void HandleClientRequest(ServerClient client)
+        {
+            SendProfileToClient(client, forceSend: false);
+        }
+
+        private static void SendProfileToClient(ServerClient client, bool forceSend)
         {
             if (client == null) return;
 
-            // Don't send during pre-login. This is what causes:
-            // "Sending profile to ." because Username isn't set yet.
-            // The login pipeline will call again once LoginManager sets UserFile.Username.
             string username = client.UserFile?.Username;
-            if (string.IsNullOrWhiteSpace(username))
-            {
-                // If you ever want pre-login sends, change this to use IP as identity and SEND,
-                // but keep the log label non-empty. For now: skip for correctness + dedupe.
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(username)) return;
 
             if (CurrentProfile == null || !CurrentProfile.HasProfile || string.IsNullOrEmpty(CurrentProfile.ProfileHash))
             {
-                Printer.Warning($"[OptionsProfile] {SafeClientLabel(client)} requested profile, but none is available.", LogImportanceMode.Verbose);
-
                 PKT_ModConfig none = new PKT_ModConfig
                 {
                     _isOptionsProfileChunk = true,
@@ -118,14 +107,12 @@ namespace GameServer.Managers
                 return;
             }
 
-            if (WasRecentlySent(client, CurrentProfile.ProfileHash))
+            if (!forceSend && WasRecentlySent(client, CurrentProfile.ProfileHash))
                 return;
 
             List<byte[]> chunks = ConfigProfileUtility.SplitIntoChunks(CurrentProfile.ZipBytes, ChunkSizeBytes);
 
-            Printer.Warning(
-                $"[OptionsProfile] Sending profile to {username}. Chunks={chunks.Count} Hash={CurrentProfile.ProfileHash}",
-                LogImportanceMode.Verbose);
+            Printer.Warning($"[OptionsProfile] Sending profile to {username}. Chunks={chunks.Count} Hash={CurrentProfile.ProfileHash}");
 
             for (int i = 0; i < chunks.Count; i++)
             {
@@ -136,7 +123,8 @@ namespace GameServer.Managers
                     _optionsProfileUpdatedUtcTicks = CurrentProfile.UpdatedUtcTicks,
                     _chunkIndex = i,
                     _chunkCount = chunks.Count,
-                    _chunkBytes = chunks[i]
+                    _chunkBytes = chunks[i],
+                    _forceSendOptionsProfile = forceSend
                 };
 
                 client.Listener.EnqueuePacket(PacketHeader.ModManager, packet);
@@ -147,25 +135,27 @@ namespace GameServer.Managers
         {
             if (client == null || data == null) return;
 
-            // KMH: Only admins can upload options profiles
             if (client.UserFile == null || !client.UserFile.IsAdmin)
             {
-                Printer.Warning($"[OptionsProfile] Non-admin '{client.UserFile?.Username}' tried to upload a profile. Denied.");
+                Printer.Warning($"[OptionsProfile] Non-admin '{client.UserFile?.Username}' tried to upload a profile.");
                 return;
             }
 
-            string username = client.UserFile?.Username ?? "UNKNOWN";
-            string key = $"{username}|{data._optionsProfileHash}";
+            string username = client.UserFile.Username ?? "UNKNOWN";
+            string hash = data._optionsProfileHash ?? string.Empty;
 
-            if (string.IsNullOrEmpty(data._optionsProfileHash) || data._chunkCount <= 0) return;
+            if (string.IsNullOrWhiteSpace(hash)) return;
+            if (data._chunkCount <= 0) return;
             if (data._chunkIndex < 0 || data._chunkIndex >= data._chunkCount) return;
+
+            string key = $"{username}|{hash}";
 
             if (!UploadBuffers.TryGetValue(key, out IncomingUploadBuffer buffer))
             {
                 buffer = new IncomingUploadBuffer
                 {
                     Key = key,
-                    Hash = data._optionsProfileHash,
+                    Hash = hash,
                     UpdatedTicks = data._optionsProfileUpdatedUtcTicks,
                     ChunkCount = data._chunkCount,
                     Chunks = new byte[data._chunkCount][],
@@ -173,7 +163,6 @@ namespace GameServer.Managers
                 };
 
                 UploadBuffers[key] = buffer;
-
                 Printer.Warning($"[OptionsProfile] Upload started by {username}. Chunks={buffer.ChunkCount} Hash={buffer.Hash}", LogImportanceMode.Verbose);
             }
 
@@ -183,63 +172,108 @@ namespace GameServer.Managers
                 buffer.ReceivedCount++;
             }
 
-            if (buffer.ReceivedCount >= buffer.ChunkCount)
+            if (buffer.ReceivedCount < buffer.ChunkCount)
+                return;
+
+            byte[] full = Combine(buffer.Chunks);
+            UploadBuffers.Remove(key);
+
+            string computed = ConfigProfileUtility.Sha256Hex(full);
+            if (!string.Equals(computed, buffer.Hash, StringComparison.OrdinalIgnoreCase))
             {
-                byte[] full = Combine(buffer.Chunks);
-                UploadBuffers.Remove(key);
+                Printer.Warning($"[OptionsProfile] Upload hash mismatch by {username}. Expected={buffer.Hash} Got={computed}");
+                return;
+            }
 
-                string computed = ConfigProfileUtility.Sha256Hex(full);
-                if (!string.Equals(computed, buffer.Hash, StringComparison.OrdinalIgnoreCase))
+            CurrentProfile = new OptionsProfile
+            {
+                ProfileHash = buffer.Hash,
+                UpdatedUtcTicks = buffer.UpdatedTicks > 0 ? buffer.UpdatedTicks : DateTime.UtcNow.Ticks,
+                ZipBytes = full
+            };
+
+            try
+            {
+                CurrentProfile.Save();
+                Printer.Warning($"[OptionsProfile] Profile updated by {username}. Hash={CurrentProfile.ProfileHash} Size={CurrentProfile.ZipBytes.Length}");
+
+                if (GameServer.Core.Master.ModConfig != null)
                 {
-                    Printer.Warning($"[OptionsProfile] Upload failed (hash mismatch) by {username}. Expected={buffer.Hash} Got={computed}");
-                    return;
+                    GameServer.Core.Master.ModConfig.IsEnforced = true;
+                    ModConfigFile.Save(ModConfigFile.SavePath, GameServer.Core.Master.ModConfig);
+                    Printer.Title("[OptionsProfile] Enforcement ENABLED.");
                 }
 
-                CurrentProfile = new OptionsProfile
+                lock (SendGateLock)
                 {
-                    ProfileHash = buffer.Hash,
-                    UpdatedUtcTicks = buffer.UpdatedTicks > 0 ? buffer.UpdatedTicks : DateTime.UtcNow.Ticks,
-                    ZipBytes = full
-                };
-
-                try
-                {
-                    CurrentProfile.Save();
-                    Printer.Warning($"[OptionsProfile] Updated by {username}. Hash={CurrentProfile.ProfileHash} Size={CurrentProfile.ZipBytes.Length} bytes");
-
-                    // KMH: Auto-enable enforcement when a profile is published
-                    if (GameServer.Core.Master.ModConfig != null)
-                    {
-                        GameServer.Core.Master.ModConfig.IsEnforced = true;
-                        Shared.Files.Configs.Mods.ModConfigFile.Save(
-                            Shared.Files.Configs.Mods.ModConfigFile.SavePath,
-                            GameServer.Core.Master.ModConfig);
-                        Printer.Title($"[OptionsProfile] Enforcement ENABLED. All joining players will receive this profile.");
-                    }
-
-                    // Push to all currently connected clients
-                    foreach (var sc in GameServer.Hooks.TCPNetwork.ServerNetwork.GetConnectedClients())
-                    {
-                        try { TryPushProfile(sc); } catch { }
-                    }
-                }
-                catch (Exception e)
-                {
-                    Printer.Warning($"[OptionsProfile] Failed to save: {e}");
+                    RecentlySent.Clear();
+                    LastPruneTicks = DateTime.UtcNow.Ticks;
                 }
 
-                try
+                foreach (ServerClient sc in GameServer.Hooks.TCPNetwork.ServerNetwork.GetConnectedClients())
                 {
-                    lock (SendGateLock)
-                    {
-                        RecentlySent.Clear();
-                        LastPruneTicks = DateTime.UtcNow.Ticks;
-                    }
+                    try { TryPushProfile(sc); }
+                    catch { }
                 }
-                catch { }
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"[OptionsProfile] Failed to save profile: {e}");
+            }
+        }
+        public static bool IsClientMissingRequiredProfile(PKT_Login loginData)
+        {
+            try
+            {
+                if (GameServer.Core.Master.ModConfig == null || !GameServer.Core.Master.ModConfig.IsEnforced)
+                    return false;
+
+                if (CurrentProfile == null || !CurrentProfile.HasProfile || string.IsNullOrWhiteSpace(CurrentProfile.ProfileHash))
+                    return false;
+
+                if (loginData == null)
+                    return true;
+
+                if (!loginData._hasActiveOptionsProfile)
+                    return true;
+
+                return !string.Equals(
+                    loginData._activeOptionsProfileHash ?? string.Empty,
+                    CurrentProfile.ProfileHash ?? string.Empty,
+                    StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return true;
             }
         }
 
+        public static void SendRequiredProfileForJoin(ServerClient client)
+        {
+            if (client == null) return;
+
+            try
+            {
+                PKT_ModConfig gatePacket = new PKT_ModConfig
+                {
+                    _stepMode = PKT_ModConfig.ModConfigStepMode.Send,
+                    _configFile = GameServer.Core.Master.ModConfig,
+                    _optionsProfileRequiredForJoin = true,
+                    _optionsProfileHash = CurrentProfile?.ProfileHash ?? string.Empty,
+                    _optionsProfileUpdatedUtcTicks = CurrentProfile?.UpdatedUtcTicks ?? 0,
+                    _forceSendOptionsProfile = true
+                };
+
+                client.Listener.EnqueuePacket(PacketHeader.ModManager, gatePacket);
+
+                // Force-send actual profile data right now.
+                SendProfileToClient(client, forceSend: true);
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"[OptionsProfile] SendRequiredProfileForJoin failed: {e}");
+            }
+        }
         private static bool WasRecentlySent(ServerClient client, string hash)
         {
             try
@@ -256,7 +290,7 @@ namespace GameServer.Managers
 
                 lock (SendGateLock)
                 {
-                    PruneIfNeeded_NoThrow(nowTicks);
+                    PruneIfNeeded(nowTicks);
 
                     if (RecentlySent.TryGetValue(key, out long lastTicks))
                     {
@@ -273,66 +307,44 @@ namespace GameServer.Managers
             return false;
         }
 
-        private static void PruneIfNeeded_NoThrow(long nowTicks)
+        private static void PruneIfNeeded(long nowTicks)
         {
             try
             {
                 if (LastPruneTicks != 0)
                 {
-                    double since = (nowTicks - LastPruneTicks) / (double)TimeSpan.TicksPerMillisecond;
-                    if (since < 10000)
-                        return;
+                    double ms = (nowTicks - LastPruneTicks) / (double)TimeSpan.TicksPerMillisecond;
+                    if (ms < 10000) return;
                 }
 
                 LastPruneTicks = nowTicks;
 
-                long cutoff = nowTicks - (TimeSpan.TicksPerSecond * 60);
-
-                if (RecentlySent.Count == 0)
-                    return;
-
-                List<string> toRemove = null;
+                long cutoff = nowTicks - TimeSpan.FromMinutes(1).Ticks;
+                List<string> remove = null;
 
                 foreach (var kv in RecentlySent)
                 {
                     if (kv.Value < cutoff)
                     {
-                        toRemove ??= new List<string>(8);
-                        toRemove.Add(kv.Key);
+                        remove ??= new List<string>();
+                        remove.Add(kv.Key);
                     }
                 }
 
-                if (toRemove != null)
+                if (remove != null)
                 {
-                    for (int i = 0; i < toRemove.Count; i++)
-                        RecentlySent.Remove(toRemove[i]);
+                    for (int i = 0; i < remove.Count; i++)
+                        RecentlySent.Remove(remove[i]);
                 }
             }
             catch { }
         }
 
-        private static string SafeClientLabel(ServerClient client)
-        {
-            try
-            {
-                string u = client?.UserFile?.Username;
-                if (!string.IsNullOrWhiteSpace(u)) return u;
-
-                string ip = client?.CurrentIP;
-                if (!string.IsNullOrWhiteSpace(ip)) return ip;
-
-                return "(unknown)";
-            }
-            catch
-            {
-                return "(unknown)";
-            }
-        }
-
         private static byte[] Combine(byte[][] parts)
         {
             int total = 0;
-            for (int i = 0; i < parts.Length; i++) total += parts[i]?.Length ?? 0;
+            for (int i = 0; i < parts.Length; i++)
+                total += parts[i]?.Length ?? 0;
 
             byte[] all = new byte[total];
             int offset = 0;

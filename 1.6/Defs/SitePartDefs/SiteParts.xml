@@ -46,7 +46,7 @@
   <SitePartDef>
     <defName>RTBank</defName>
     <label>Bank</label>
-    <description>Your pawns worked on hard on this one. Banks are capable of magically generating silver and other precious metals out of mid air. Fancy that!</description>
+    <description>Your pawns worked hard on this one. Banks are capable of magically generating silver and other precious metals out of mid air.</description>
     <workerClass>SitePartWorker_Outpost</workerClass>
     <siteTexture>World/WorldObjects/DefaultSettlement</siteTexture>
     <expandingIconTexture>Sites/Bank</expandingIconTexture>
@@ -54,10 +54,10 @@
     <minThreatPoints>5000</minThreatPoints>
   </SitePartDef>
 
-<SitePartDef>
+  <SitePartDef>
     <defName>RTLaboratory</defName>
     <label>Laboratory</label>
-    <description>Where the brightest live. Your scientist and engineers work hard to make components here.</description>
+    <description>Where the brightest live. Your scientists and engineers work hard to make components here.</description>
     <workerClass>SitePartWorker_Outpost</workerClass>
     <siteTexture>World/WorldObjects/DefaultSettlement</siteTexture>
     <expandingIconTexture>Sites/Laboratory</expandingIconTexture>
@@ -65,7 +65,7 @@
     <minThreatPoints>5000</minThreatPoints>
   </SitePartDef>
 
-<SitePartDef>
+  <SitePartDef>
     <defName>RTRefinery</defName>
     <label>Refinery</label>
     <description>A fully automated refinery, capable of outputting chemfuel.</description>
@@ -76,10 +76,10 @@
     <minThreatPoints>5000</minThreatPoints>
   </SitePartDef>
 
-<SitePartDef>
+  <SitePartDef>
     <defName>RTHerbalWorkshop</defName>
     <label>Herbal Workshop</label>
-    <description>A simple medicine workshop, simple as that.</description>
+    <description>A simple medicine workshop.</description>
     <workerClass>SitePartWorker_Outpost</workerClass>
     <siteTexture>World/WorldObjects/DefaultSettlement</siteTexture>
     <expandingIconTexture>Sites/HerbalWorkshop</expandingIconTexture>
@@ -87,10 +87,10 @@
     <minThreatPoints>5000</minThreatPoints>
   </SitePartDef>
 
-<SitePartDef>
+  <SitePartDef>
     <defName>RTTextileFactory</defName>
     <label>Textile Factory</label>
-    <description>The textile factory outputs the finest fabric, none of that peasant stuff.</description>
+    <description>The textile factory outputs the finest fabric.</description>
     <workerClass>SitePartWorker_Outpost</workerClass>
     <siteTexture>World/WorldObjects/DefaultSettlement</siteTexture>
     <expandingIconTexture>Sites/TextileFactory</expandingIconTexture>
@@ -98,13 +98,35 @@
     <minThreatPoints>5000</minThreatPoints>
   </SitePartDef>
 
-<SitePartDef>
+  <SitePartDef>
     <defName>RTFoodProcessor</defName>
     <label>Food Processor</label>
-    <description>Tired of cooking? This site does it for you! Food poisoning included.</description>
+    <description>Tired of cooking? This site does it for you.</description>
     <workerClass>SitePartWorker_Outpost</workerClass>
     <siteTexture>World/WorldObjects/DefaultSettlement</siteTexture>
     <expandingIconTexture>Sites/FoodProcessor</expandingIconTexture>
+    <applyFactionColorToSiteTexture>true</applyFactionColorToSiteTexture>
+    <minThreatPoints>5000</minThreatPoints>
+  </SitePartDef>
+
+  <SitePartDef>
+    <defName>RTMarketplace</defName>
+    <label>Marketplace</label>
+    <description>A bustling trade hub that generates wealth through market activity.</description>
+    <workerClass>SitePartWorker_Outpost</workerClass>
+    <siteTexture>World/WorldObjects/DefaultSettlement</siteTexture>
+    <expandingIconTexture>Sites/Bank</expandingIconTexture>
+    <applyFactionColorToSiteTexture>true</applyFactionColorToSiteTexture>
+    <minThreatPoints>5000</minThreatPoints>
+  </SitePartDef>
+
+  <SitePartDef>
+    <defName>RTCustomOutpost</defName>
+    <label>Custom Outpost</label>
+    <description>A player-defined outpost that produces a custom resource every cycle.</description>
+    <workerClass>SitePartWorker_Outpost</workerClass>
+    <siteTexture>World/WorldObjects/DefaultSettlement</siteTexture>
+    <expandingIconTexture>Sites/Farmland</expandingIconTexture>
     <applyFactionColorToSiteTexture>true</applyFactionColorToSiteTexture>
     <minThreatPoints>5000</minThreatPoints>
   </SitePartDef>

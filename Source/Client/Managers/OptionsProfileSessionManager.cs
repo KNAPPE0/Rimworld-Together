@@ -14,7 +14,6 @@ using TCPNetwork;
 using TCPNetwork.Packets;
 using Verse;
 
-
 namespace GameClient.Managers
 {
     public static class OptionsProfileSessionManager
@@ -23,11 +22,10 @@ namespace GameClient.Managers
 
         private static string ConfigPath => GenFilePaths.ConfigFolderPath;
         private static string RootPath => Directory.GetParent(GenFilePaths.ConfigFolderPath).FullName;
-
         private static string BackupPath => Path.Combine(RootPath, "ConfigRWT_BACKUP");
         private static string ProfilesRoot => Path.Combine(RootPath, "ConfigRWT_PROFILES");
         private static string StatePath => Path.Combine(RootPath, "RWT_SESSION_STATE.json");
-
+        private static string CrashMarkerPath => Path.Combine(RootPath, "RWT_CRASH_DURING_APPLY");
         private static string ActiveMarkerPath => Path.Combine(ConfigPath, "RWT_ACTIVE_PROFILE.txt");
 
         private static bool Bootstrapped;
@@ -40,18 +38,18 @@ namespace GameClient.Managers
         private static CancellationTokenSource WatcherToken;
         private static int PendingReapplyFlag;
         private static DateTime LastReapplyUtc = DateTime.MinValue;
-        private static bool IsApplying;
-
         private static int PendingManualRequest;
+
+        public static bool IsInternalApplyInProgress { get; private set; }
 
         private class SessionState
         {
-            public bool IsEnforcedActive { get; set; } = false;
+            public bool IsEnforcedActive { get; set; }
             public string ActiveProfileHash { get; set; } = string.Empty;
-            public long ActiveProfileUpdatedUtcTicks { get; set; } = 0;
-
-            public long LastAppliedUtcTicks { get; set; } = 0;
-            public int LastAppliedFileCount { get; set; } = 0;
+            public long ActiveProfileUpdatedUtcTicks { get; set; }
+            public long LastAppliedUtcTicks { get; set; }
+            public int LastAppliedFileCount { get; set; }
+            public List<string> ManagedFiles { get; set; } = new List<string>();
         }
 
         private class IncomingProfileBuffer
@@ -73,23 +71,39 @@ namespace GameClient.Managers
                 Directory.CreateDirectory(ProfilesRoot);
                 LoadOrCreateState();
 
-                // KMH: If enforcement is active, keep it - the user will rejoin the server.
-                // Only restore if there's an explicit crash marker file indicating a failed apply.
-                string crashMarker = Path.Combine(RootPath, "RWT_CRASH_DURING_APPLY");
-                if (File.Exists(crashMarker) && Directory.Exists(BackupPath))
+                if (File.Exists(CrashMarkerPath) && Directory.Exists(BackupPath))
                 {
-                    Printer.Warning("[OptionsProfile] Detected crash during profile apply - restoring backup.");
+                    Printer.Warning("[OptionsProfile] Crash marker detected. Restoring personal backup.");
                     RestoreBackupToConfig(softReload: true);
                     ClearSessionState();
                     SafeDeleteDirectory(BackupPath);
-                EnforcementGuard.ClearMarker();
-                    try { File.Delete(crashMarker); } catch { }
+
+                    try { File.Delete(CrashMarkerPath); } catch { }
                 }
+
+                if (State != null && State.IsEnforcedActive)
+                    EnforcementGuard.MarkEnforced(State.ActiveProfileHash);
             }
             catch (Exception e)
             {
                 Printer.Warning($"[OptionsProfile] Bootstrap failed: {e}");
             }
+        }
+
+        public static bool HasBackup()
+        {
+            try { return Directory.Exists(BackupPath); }
+            catch { return false; }
+        }
+
+        public static bool IsEnforcementActive()
+        {
+            return (State != null && State.IsEnforcedActive) || EnforcementGuard.IsActive;
+        }
+
+        public static string GetActiveHash()
+        {
+            return State?.ActiveProfileHash ?? string.Empty;
         }
 
         public static string GetStatusLine()
@@ -104,39 +118,14 @@ namespace GameClient.Managers
             return $"Server Options Profile: ACTIVE ({State.ActiveProfileHash}) | Applied: {applied} | Files: {State.LastAppliedFileCount}";
         }
 
-        /// <summary>Returns true if a personal config backup exists.</summary>
-        public static bool HasBackup()
-        {
-            try { return Directory.Exists(BackupPath); }
-            catch { return false; }
-        }
-
-        /// <summary>Returns true if enforcement is currently active.</summary>
-        public static bool IsEnforcementActive()
-        {
-            // Delegate to EnforcementGuard for reliable detection
-            return EnforcementGuard.IsActive;
-        }
-
-        /// <summary>Returns the currently applied profile hash, or empty.</summary>
-        public static string GetActiveHash()
-        {
-            return State?.ActiveProfileHash ?? string.Empty;
-        }
-
-        public static void OnServerEnforcementReceived()
-        {
-            Printer.Warning("[OptionsProfile] Server enforcement received! Requesting profile...");
-            RequestServerOptionsProfile(isManual: false);
-        }
-
         public static void RequestServerOptionsProfile(bool isManual)
         {
             try
             {
-                if (isManual) Interlocked.Exchange(ref PendingManualRequest, 1);
-
                 if (Network.ServerEndpoint == null) return;
+
+                if (isManual)
+                    Interlocked.Exchange(ref PendingManualRequest, 1);
 
                 PKT_ModConfig req = new PKT_ModConfig
                 {
@@ -145,6 +134,7 @@ namespace GameClient.Managers
                 };
 
                 Network.ServerEndpoint.EnqueuePacket(PacketHeader.ModManager, req);
+                Printer.Warning("[OptionsProfile] Requested profile from server.");
             }
             catch (Exception e)
             {
@@ -173,7 +163,6 @@ namespace GameClient.Managers
                 byte[] zip = ConfigProfileUtility.CreateConfigZipBytes(ConfigPath, ConfigProfileUtility.DefaultExcludeFiles);
                 string hash = ConfigProfileUtility.Sha256Hex(zip);
                 List<byte[]> chunks = ConfigProfileUtility.SplitIntoChunks(zip, ChunkSizeBytes);
-
                 long ticks = DateTime.UtcNow.Ticks;
 
                 for (int i = 0; i < chunks.Count; i++)
@@ -192,16 +181,16 @@ namespace GameClient.Managers
                     Network.ServerEndpoint.EnqueuePacket(PacketHeader.ModManager, part);
                 }
 
-                // Update local enforcement state so the admin sees it immediately
-                SessionHandler.CurrentModConfig.IsEnforced = true;
+                if (SessionHandler.CurrentModConfig != null)
+                    SessionHandler.CurrentModConfig.IsEnforced = true;
 
                 DLG_Base.PushNewDialog(new DLG_Message("Profile",
-                    new[] { "Published server options profile.", "Enforcement is now ACTIVE.", $"Hash: {hash}", $"Chunks: {chunks.Count}" }));
+                    new[] { "Published server options profile.", "Enforcement is now active on the server.", $"Hash: {hash}" }));
             }
             catch (Exception e)
             {
                 Printer.Warning($"[OptionsProfile] PublishCurrentConfigProfileToServer failed: {e}");
-                DLG_Base.PushNewDialog(new DLG_Message("Error", new[] { "Failed to publish. Check logs." }));
+                DLG_Base.PushNewDialog(new DLG_Message("Error", new[] { "Failed to publish profile. Check logs." }));
             }
         }
 
@@ -215,9 +204,10 @@ namespace GameClient.Managers
 
                 if (wasManual)
                 {
-                    MainThreadHandler.Instance.Enqueue(delegate {
+                    MainThreadHandler.Instance.Enqueue(delegate
+                    {
                         DLG_Base.PushNewDialog(new DLG_Message("Profile",
-                            new[] { "Server has no options profile set yet.", "Ask an admin to publish one." }));
+                            new[] { "This server does not currently have a published options profile." }));
                     });
                 }
 
@@ -225,7 +215,6 @@ namespace GameClient.Managers
             }
 
             if (!data._isOptionsProfileChunk) return;
-
             if (string.IsNullOrEmpty(data._optionsProfileHash)) return;
             if (data._chunkCount <= 0) return;
             if (data._chunkIndex < 0 || data._chunkIndex >= data._chunkCount) return;
@@ -250,71 +239,61 @@ namespace GameClient.Managers
                 buffer.ReceivedCount++;
             }
 
-            if (buffer.ReceivedCount >= buffer.ChunkCount)
+            if (buffer.ReceivedCount < buffer.ChunkCount)
+                return;
+
+            byte[] full = Combine(buffer.Chunks);
+            IncomingProfiles.Remove(buffer.Hash);
+
+            string computed = ConfigProfileUtility.Sha256Hex(full);
+            if (!string.Equals(computed, buffer.Hash, StringComparison.OrdinalIgnoreCase))
             {
-                byte[] full = Combine(buffer.Chunks);
-                IncomingProfiles.Remove(buffer.Hash);
-
-                string computed = ConfigProfileUtility.Sha256Hex(full);
-                if (!string.Equals(computed, buffer.Hash, StringComparison.OrdinalIgnoreCase))
+                MainThreadHandler.Instance.Enqueue(delegate
                 {
-                    MainThreadHandler.Instance.Enqueue(delegate {
-                        DLG_Base.PushNewDialog(new DLG_Message("Error",
-                            new[] { "Options profile download failed (hash mismatch)." }));
-                    });
-                    return;
-                }
-
-                string profileFolder = GetProfileFolder(buffer.Hash);
-
-                SafeDeleteDirectory(profileFolder);
-                Directory.CreateDirectory(profileFolder);
-
-                ConfigProfileUtility.ExtractZipBytesToFolder(full, profileFolder);
-
-                int extractedCount = SafeCountFiles(profileFolder);
-
-                // KMH: Check if we already have this profile applied - skip if same hash
-                bool stateActive = State != null && State.IsEnforcedActive;
-                bool hashMatch = stateActive && string.Equals(State.ActiveProfileHash, buffer.Hash, StringComparison.OrdinalIgnoreCase);
-                Printer.Warning($"[OptionsProfile] Hash check: StateActive={stateActive} HashMatch={hashMatch} StateHash={State?.ActiveProfileHash} BufferHash={buffer.Hash}");
-                if (hashMatch)
-                {
-                    bool wasManual = Interlocked.Exchange(ref PendingManualRequest, 0) == 1;
-                    if (wasManual)
-                        MainThreadHandler.Instance.Enqueue(delegate {
-                            DLG_Base.PushNewDialog(new DLG_Message("Profile", 
-                                new[] { "Server profile already applied.", $"Hash: {buffer.Hash}" }));
-                        });
-                    return;
-                }
-
-                Printer.Warning($"[OptionsProfile] All chunks received. Applying profile. Hash={buffer.Hash} Files={extractedCount}");
-                // Must run on main thread for UI dialogs
-                string _pf = profileFolder; string _h = buffer.Hash; long _t = buffer.UpdatedTicks; int _ec = extractedCount;
-                MainThreadHandler.Instance.Enqueue(delegate { ApplyEnforcedProfile(_pf, _h, _t, _ec); });
+                    DLG_Base.PushNewDialog(new DLG_Message("Error",
+                        new[] { "Options profile download failed because the hash did not match." }));
+                });
+                return;
             }
+
+            string profileFolder = GetProfileFolder(buffer.Hash);
+            SafeDeleteDirectory(profileFolder);
+            Directory.CreateDirectory(profileFolder);
+            ConfigProfileUtility.ExtractZipBytesToFolder(full, profileFolder);
+
+            bool alreadyActive = State != null
+                && State.IsEnforcedActive
+                && string.Equals(State.ActiveProfileHash, buffer.Hash, StringComparison.OrdinalIgnoreCase);
+
+            if (alreadyActive)
+            {
+                Printer.Warning($"[OptionsProfile] Profile {buffer.Hash} already active. Reapplying to disk.");
+                ReapplyProfileToDiskIfActive(softReload: true);
+                return;
+            }
+
+            string pf = profileFolder;
+            string h = buffer.Hash;
+            long t = buffer.UpdatedTicks;
+
+            MainThreadHandler.Instance.Enqueue(delegate
+            {
+                ApplyEnforcedProfile(pf, h, t);
+            });
         }
 
         public static void TryRestoreOnDisconnect()
         {
-            try
-            {
-                // KMH: Do NOT restore configs on disconnect - user keeps server configs
-                // until they manually restore or join a different server.
-                // Only stop the filesystem watcher.
-                StopWatcher();
-            }
-            catch (Exception e)
-            {
-                Printer.Warning($"[OptionsProfile] TryRestoreOnDisconnect failed: {e}");
-            }
+            StopWatcher();
         }
 
         public static void RestorePersonalConfigsManual()
         {
             try
             {
+                if (State == null)
+                    LoadOrCreateState();
+
                 if (!Directory.Exists(BackupPath))
                 {
                     DLG_Base.PushNewDialog(new DLG_Message("Profile", new[] { "No backup found." }));
@@ -323,17 +302,26 @@ namespace GameClient.Managers
 
                 StopWatcher();
 
-                RestoreBackupToConfig(softReload: true);
+                IsInternalApplyInProgress = true;
+                try
+                {
+                    RestoreBackupToConfig(softReload: true);
+                }
+                finally
+                {
+                    IsInternalApplyInProgress = false;
+                }
+
                 ClearSessionState();
                 SafeDeleteDirectory(BackupPath);
-                EnforcementGuard.ClearMarker();
 
-                DLG_Base.PushNewDialog(new DLG_Message("Profile",
-                    new[] { "Restored personal configs.", "A restart is recommended to fully apply." },
+                DLG_Base.PushNewDialog(new DLG_Message(
+                    "Profile",
+                    new[] { "Your original configs were restored.", "The game will now restart." },
                     onConfirm: delegate
                     {
                         try { GenCommandLine.Restart(); }
-                        catch { Verse.Root.Shutdown(); }
+                        catch { Root.Shutdown(); }
                     }));
             }
             catch (Exception e)
@@ -353,10 +341,17 @@ namespace GameClient.Managers
                 string profileFolder = GetProfileFolder(State.ActiveProfileHash);
                 if (!Directory.Exists(profileFolder)) return;
 
-                int copied = ApplyProfileFolderToConfig_NonDestructive(profileFolder, ConfigProfileUtility.DefaultExcludeFiles);
-                WriteActiveMarker(State.ActiveProfileHash, State.ActiveProfileUpdatedUtcTicks, copied);
-
-                if (softReload) TrySoftReloadModSettings();
+                IsInternalApplyInProgress = true;
+                try
+                {
+                    ApplyProfileFolderToConfig(profileFolder, updateStateManifest: false);
+                    WriteActiveMarker(State.ActiveProfileHash, State.ActiveProfileUpdatedUtcTicks, State.LastAppliedFileCount);
+                    if (softReload) TrySoftReloadModSettings();
+                }
+                finally
+                {
+                    IsInternalApplyInProgress = false;
+                }
             }
             catch (Exception e)
             {
@@ -364,23 +359,71 @@ namespace GameClient.Managers
             }
         }
 
-        private static void ApplyEnforcedProfile(string profileFolder, string hash, long updatedTicks, int extractedCount)
+        public static void HandleJoinRequirement(PKT_ModConfig data)
         {
             try
             {
+                string requiredHash = data?._optionsProfileHash ?? string.Empty;
+                string localHash = GetActiveHash();
+
+                bool alreadyMatching =
+                    IsEnforcementActive() &&
+                    !string.IsNullOrWhiteSpace(localHash) &&
+                    string.Equals(localHash, requiredHash, StringComparison.OrdinalIgnoreCase);
+
+                if (alreadyMatching)
+                {
+                    Printer.Warning($"[OptionsProfile] Required profile already active locally. Hash={localHash}");
+                    return;
+                }
+
+                MainThreadHandler.Instance.Enqueue(delegate
+                {
+                    DLG_Base.PushNewDialog(new DLG_Message(
+                        "Server Config Required",
+                        new[]
+                        {
+                            "This server requires its config profile before you can join.",
+                            "The profile is being downloaded and will be verified.",
+                            "After it is applied, the game will restart."
+                        }));
+                });
+
+                RequestServerOptionsProfile(isManual: false);
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"[OptionsProfile] HandleJoinRequirement failed: {e}");
+            }
+        }
+
+        private static void ApplyEnforcedProfile(string profileFolder, string hash, long updatedTicks)
+        {
+            try
+            {
+                if (State == null)
+                    State = new SessionState();
+
                 Directory.CreateDirectory(ConfigPath);
                 Directory.CreateDirectory(ProfilesRoot);
 
                 EnsureBackupExists();
 
-                // Write crash marker - if game crashes during apply, Bootstrap will restore
-                string crashMarker = Path.Combine(RootPath, "RWT_CRASH_DURING_APPLY");
-                File.WriteAllText(crashMarker, DateTime.UtcNow.ToString("o"));
+                File.WriteAllText(CrashMarkerPath, DateTime.UtcNow.ToString("o"));
 
-                int copiedCount = ApplyProfileFolderToConfig_NonDestructive(profileFolder, ConfigProfileUtility.DefaultExcludeFiles);
+                IsInternalApplyInProgress = true;
+                int copiedCount;
 
-                // Remove crash marker - apply succeeded
-                try { File.Delete(crashMarker); } catch { }
+                try
+                {
+                    copiedCount = ApplyProfileFolderToConfig(profileFolder, updateStateManifest: true);
+                    TrySoftReloadModSettings();
+                }
+                finally
+                {
+                    IsInternalApplyInProgress = false;
+                    try { File.Delete(CrashMarkerPath); } catch { }
+                }
 
                 State.IsEnforcedActive = true;
                 State.ActiveProfileHash = hash;
@@ -389,32 +432,100 @@ namespace GameClient.Managers
                 State.LastAppliedFileCount = copiedCount;
                 SaveState();
 
+                EnforcementGuard.MarkEnforced(hash);
                 WriteActiveMarker(hash, updatedTicks, copiedCount);
-
-                TrySoftReloadModSettings();
-
                 StartWatcher();
 
-                // KMH: Write enforcement marker
-                Printer.Warning($"[OptionsProfile] Writing enforcement marker. Hash={hash}");
-                EnforcementGuard.MarkEnforced(hash);
-
-                // KMH: Force restart after enforcement profile applied
-                Action doRestart = delegate
-                {
-                    try { GenCommandLine.Restart(); }
-                    catch { Verse.Root.Shutdown(); }
-                };
-
-                DLG_Base.PushNewDialog(new DLG_Message("Server Config Enforced",
-                    new[] { "Server config profile has been applied.", $"Files: {copiedCount} | Hash: {hash}", "The game must restart to apply changes." },
-                    doRestart));
+                DLG_Base.PushNewDialog(new DLG_Message(
+                    "Server Config Enforced",
+                    new[]
+                    {
+                        "The server config profile has been applied.\n\n" +
+                        $"Files copied: {copiedCount}\n" +
+                        $"Hash: {hash}\n\n",
+                        "The game must restart now to finish applying the enforced config."
+                    },
+                    onConfirm: delegate
+                    {
+                        try { GenCommandLine.Restart(); }
+                        catch { Root.Shutdown(); }
+                    }));
             }
             catch (Exception e)
             {
                 Printer.Warning($"[OptionsProfile] ApplyEnforcedProfile failed: {e}");
-                DLG_Base.PushNewDialog(new DLG_Message("Error", new[] { "Failed to apply options profile. Check logs." }));
+                DLG_Base.PushNewDialog(new DLG_Message("Error", new[] { "Failed to apply the server profile. Check logs." }));
             }
+        }
+
+        private static int ApplyProfileFolderToConfig(string profileFolder, bool updateStateManifest)
+        {
+            Directory.CreateDirectory(ConfigPath);
+
+            RemovePreviouslyManagedFiles();
+
+            List<string> managedFiles = new List<string>();
+            int copied = 0;
+
+            foreach (string dir in Directory.GetDirectories(profileFolder, "*", SearchOption.AllDirectories))
+            {
+                string relDir = MakeRelative(profileFolder, dir);
+                if (string.IsNullOrEmpty(relDir)) continue;
+
+                string targetDir = Path.Combine(ConfigPath, relDir);
+                Directory.CreateDirectory(targetDir);
+            }
+
+            foreach (string file in Directory.GetFiles(profileFolder, "*", SearchOption.AllDirectories))
+            {
+                string name = Path.GetFileName(file);
+                if (ConfigProfileUtility.DefaultExcludeFiles.Contains(name)) continue;
+
+                string rel = MakeRelative(profileFolder, file);
+                if (string.IsNullOrEmpty(rel)) continue;
+
+                string dest = Path.Combine(ConfigPath, rel);
+                string destFolder = Path.GetDirectoryName(dest);
+                if (!string.IsNullOrEmpty(destFolder))
+                    Directory.CreateDirectory(destFolder);
+
+                File.Copy(file, dest, true);
+                managedFiles.Add(rel);
+                copied++;
+            }
+
+            if (updateStateManifest)
+            {
+                if (State == null)
+                    State = new SessionState();
+
+                State.ManagedFiles = managedFiles;
+            }
+
+            return copied;
+        }
+
+        private static void RemovePreviouslyManagedFiles()
+        {
+            try
+            {
+                if (State?.ManagedFiles == null || State.ManagedFiles.Count == 0) return;
+
+                for (int i = 0; i < State.ManagedFiles.Count; i++)
+                {
+                    string rel = State.ManagedFiles[i];
+                    if (string.IsNullOrWhiteSpace(rel)) continue;
+
+                    string full = Path.Combine(ConfigPath, rel);
+                    try
+                    {
+                        if (File.Exists(full))
+                            File.Delete(full);
+                    }
+                    catch { }
+                }
+            }
+            catch { }
         }
 
         private static void EnsureBackupExists()
@@ -441,41 +552,8 @@ namespace GameClient.Managers
             WipeDirectoryContents(ConfigPath);
             CopyDirectory(BackupPath, ConfigPath);
 
-            if (softReload) TrySoftReloadModSettings();
-        }
-
-        private static int ApplyProfileFolderToConfig_NonDestructive(string profileFolder, HashSet<string> excludeFiles)
-        {
-            Directory.CreateDirectory(ConfigPath);
-
-            int copied = 0;
-
-            foreach (string dir in Directory.GetDirectories(profileFolder, "*", SearchOption.AllDirectories))
-            {
-                string rel = MakeRelative(profileFolder, dir);
-                if (string.IsNullOrEmpty(rel)) continue;
-
-                string targetDir = Path.Combine(ConfigPath, rel);
-                Directory.CreateDirectory(targetDir);
-            }
-
-            foreach (string file in Directory.GetFiles(profileFolder, "*", SearchOption.AllDirectories))
-            {
-                string name = Path.GetFileName(file);
-                if (excludeFiles != null && excludeFiles.Contains(name)) continue;
-
-                string rel = MakeRelative(profileFolder, file);
-                if (string.IsNullOrEmpty(rel)) continue;
-
-                string dest = Path.Combine(ConfigPath, rel);
-                string destFolder = Path.GetDirectoryName(dest);
-                if (!string.IsNullOrEmpty(destFolder)) Directory.CreateDirectory(destFolder);
-
-                File.Copy(file, dest, overwrite: true);
-                copied++;
-            }
-
-            return copied;
+            if (softReload)
+                TrySoftReloadModSettings();
         }
 
         private static void WriteActiveMarker(string hash, long updatedTicks, int copiedFiles)
@@ -484,31 +562,17 @@ namespace GameClient.Managers
             {
                 Directory.CreateDirectory(ConfigPath);
 
-                string lines =
+                File.WriteAllText(
+                    ActiveMarkerPath,
                     $"RWT Options Profile Active{Environment.NewLine}" +
                     $"Hash={hash}{Environment.NewLine}" +
                     $"UpdatedUtcTicks={updatedTicks}{Environment.NewLine}" +
                     $"AppliedUtc={DateTime.UtcNow:o}{Environment.NewLine}" +
                     $"CopiedFiles={copiedFiles}{Environment.NewLine}" +
-                    $"ProfilesRoot={ProfilesRoot}{Environment.NewLine}" +
-                    $"BackupPath={BackupPath}{Environment.NewLine}";
-
-                File.WriteAllText(ActiveMarkerPath, lines);
+                    $"BackupPath={BackupPath}{Environment.NewLine}" +
+                    $"ProfilesRoot={ProfilesRoot}{Environment.NewLine}");
             }
             catch { }
-        }
-
-        private static int SafeCountFiles(string folder)
-        {
-            try
-            {
-                if (!Directory.Exists(folder)) return 0;
-                return Directory.GetFiles(folder, "*", SearchOption.AllDirectories).Length;
-            }
-            catch
-            {
-                return 0;
-            }
         }
 
         private static void LoadOrCreateState()
@@ -532,19 +596,27 @@ namespace GameClient.Managers
 
         private static void SaveState()
         {
-            try { Serializer.SerializeToFile(StatePath, State); }
+            try
+            {
+                Serializer.SerializeToFile(StatePath, State);
+            }
             catch { }
         }
 
         private static void ClearSessionState()
         {
+            if (State == null)
+                State = new SessionState();
+
             State.IsEnforcedActive = false;
-                EnforcementGuard.ClearMarker();
             State.ActiveProfileHash = string.Empty;
             State.ActiveProfileUpdatedUtcTicks = 0;
             State.LastAppliedUtcTicks = 0;
             State.LastAppliedFileCount = 0;
+            State.ManagedFiles = new List<string>();
+
             SaveState();
+            EnforcementGuard.ClearMarker();
 
             try
             {
@@ -562,7 +634,8 @@ namespace GameClient.Managers
         private static byte[] Combine(byte[][] parts)
         {
             int total = 0;
-            for (int i = 0; i < parts.Length; i++) total += parts[i]?.Length ?? 0;
+            for (int i = 0; i < parts.Length; i++)
+                total += parts[i]?.Length ?? 0;
 
             byte[] all = new byte[total];
             int offset = 0;
@@ -589,12 +662,12 @@ namespace GameClient.Managers
                 }
             }
             catch { }
+
             return false;
         }
 
         private static void CopyDirectory(string sourceDir, string targetDir)
         {
-            if (string.IsNullOrEmpty(sourceDir) || string.IsNullOrEmpty(targetDir)) return;
             if (!Directory.Exists(sourceDir))
             {
                 Directory.CreateDirectory(targetDir);
@@ -615,9 +688,10 @@ namespace GameClient.Managers
                 string dest = Path.Combine(targetDir, rel);
 
                 string destFolder = Path.GetDirectoryName(dest);
-                if (!string.IsNullOrEmpty(destFolder)) Directory.CreateDirectory(destFolder);
+                if (!string.IsNullOrEmpty(destFolder))
+                    Directory.CreateDirectory(destFolder);
 
-                File.Copy(file, dest, overwrite: true);
+                File.Copy(file, dest, true);
             }
         }
 
@@ -639,16 +713,18 @@ namespace GameClient.Managers
         private static void SafeDeleteDirectory(string dir)
         {
             if (!Directory.Exists(dir)) return;
-            try { Directory.Delete(dir, recursive: true); } catch { }
+            try { Directory.Delete(dir, true); } catch { }
         }
 
         private static string MakeRelative(string root, string fullPath)
         {
             string r = Path.GetFullPath(root);
-            if (!r.EndsWith(Path.DirectorySeparatorChar.ToString())) r += Path.DirectorySeparatorChar;
+            if (!r.EndsWith(Path.DirectorySeparatorChar.ToString()))
+                r += Path.DirectorySeparatorChar;
 
             string f = Path.GetFullPath(fullPath);
-            if (!f.StartsWith(r, StringComparison.OrdinalIgnoreCase)) return string.Empty;
+            if (!f.StartsWith(r, StringComparison.OrdinalIgnoreCase))
+                return string.Empty;
 
             return f.Substring(r.Length);
         }
@@ -659,7 +735,6 @@ namespace GameClient.Managers
             {
                 StopWatcher();
 
-                if (SessionHandler.CurrentNetworkState == ClientNetwork.ClientNetworkState.Disconnected) return;
                 if (State == null || !State.IsEnforcedActive) return;
                 if (!Directory.Exists(ConfigPath)) return;
 
@@ -667,7 +742,7 @@ namespace GameClient.Managers
                 {
                     IncludeSubdirectories = true,
                     EnableRaisingEvents = true,
-                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.DirectoryName
+                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.DirectoryName | NotifyFilters.Size
                 };
 
                 Watcher.Changed += OnConfigChanged;
@@ -709,9 +784,9 @@ namespace GameClient.Managers
 
         private static void OnConfigChanged(object sender, FileSystemEventArgs e)
         {
-            if (IsApplying) return;
+            if (IsInternalApplyInProgress) return;
             if (State == null || !State.IsEnforcedActive) return;
-            if (SessionHandler.CurrentNetworkState == ClientNetwork.ClientNetworkState.Disconnected) return;
+            if (SessionHandler.IsAdmin) return;
 
             Interlocked.Exchange(ref PendingReapplyFlag, 1);
         }
@@ -723,7 +798,6 @@ namespace GameClient.Managers
                 Thread.Sleep(250);
 
                 if (State == null || !State.IsEnforcedActive) continue;
-                if (SessionHandler.CurrentNetworkState == ClientNetwork.ClientNetworkState.Disconnected) continue;
 
                 if (Interlocked.CompareExchange(ref PendingReapplyFlag, 0, 1) == 1)
                 {
@@ -732,23 +806,16 @@ namespace GameClient.Managers
 
                     try
                     {
-                        IsApplying = true;
                         ReapplyProfileToDiskIfActive(softReload: false);
                     }
-                    finally
-                    {
-                        IsApplying = false;
-                    }
+                    catch { }
                 }
             }
         }
 
         [OnSessionEnd]
-        private static void RestoreOnGameExit()
+        private static void OnSessionEnd_StopWatcherOnly()
         {
-            // KMH: Do NOT restore on game exit - keep server configs so the user
-            // can restart and rejoin the same server without re-downloading.
-            // Only stop the watcher to avoid issues.
             StopWatcher();
         }
     }

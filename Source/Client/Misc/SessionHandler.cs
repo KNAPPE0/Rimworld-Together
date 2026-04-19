@@ -42,7 +42,6 @@ namespace GameClient.Misc
 
         public static List<ModConfig> CurrentMods { get; set; } = null;
 
-        // KMH: Options profile enforcement support
         public static ModConfigFile CurrentModConfig { get; set; } = new ModConfigFile();
 
         public static ScenarioConfigFile CurrentScenario { get; set; } = null;
@@ -108,7 +107,13 @@ namespace GameClient.Misc
         [OnUpdate]
         private static void ManageDevOptions()
         {
-            try { if (!IsAdmin) Prefs.DevMode = false; }
+            try
+            {
+                // Only force-disable DevMode for non-admins while actually connected.
+                // Disconnected enforcement is handled by Patch_EnforcedPrefsLock.
+                if (CurrentNetworkState != ClientNetworkState.Disconnected && !IsAdmin)
+                    Prefs.DevMode = false;
+            }
             catch { }
         }
 
@@ -151,6 +156,18 @@ namespace GameClient.Misc
             IsSynchronousHost = false;
             SynchronousMap = null;
 
+            IsAdmin = false;
+            HasFaction = false;
+            GlobalData = null;
+            CurrentActionValues = null;
+            CurrentMods = null;
+            CurrentModConfig = new ModConfigFile();
+            CurrentScenario = null;
+            CurrentStoryteller = null;
+            CurrentDifficulty = null;
+            CurrentWorld = null;
+            CurrentServerPlayers = int.MinValue;
+
             DLG_Chat.IsDialogOpen = false;
             DLG_Admin.IsDialogOpen = false;
             Patch_Page_SelectScenario_DoWindowContents.executedMessage = false;
@@ -158,7 +175,6 @@ namespace GameClient.Misc
 
             CurrentNetworkState = ClientNetworkState.Disconnected;
 
-            // KMH: Restore personal configs if enforcement was active
             try { GameClient.Managers.OptionsProfileSessionManager.TryRestoreOnDisconnect(); }
             catch { }
         }

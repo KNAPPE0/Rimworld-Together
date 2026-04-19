@@ -29,7 +29,12 @@ namespace GameClient.Hooks.TCPNetwork
             PacketHeader.GlobalDataManager,
             PacketHeader.RecountManager,
             PacketHeader.ChatManager,
-            PacketHeader.ConsoleManager
+            PacketHeader.ConsoleManager,
+
+            // CRITICAL:
+            // Enforcement/profile packets arrive during join before the client is ready.
+            // If this is not bypassed, join-time enforcement is dropped and never applies.
+            PacketHeader.ModManager
         };
 
         public enum ClientNetworkState { Disconnected, Connected }
@@ -37,14 +42,12 @@ namespace GameClient.Hooks.TCPNetwork
         private static Action<PacketHeader, byte[], ServerClient> OnReadPacket { get; set; } = delegate (PacketHeader header, byte[] buffer, ServerClient client)
         {
             if (!SessionHandler.IsReadyToPlay && !BypassReadyPackets.Contains(header)) return;
-            else
+
+            MainThreadHandler.Instance.Enqueue(delegate
             {
-                MainThreadHandler.Instance.Enqueue(delegate
-                {
-                    MethodInfo method = (MethodInfo)PM_Base.PacketDictionary[header][1];
-                    method.Invoke(PM_Base.PacketDictionary[header][0], new object[] { client, buffer, header });
-                });
-            }
+                MethodInfo method = (MethodInfo)PM_Base.PacketDictionary[header][1];
+                method.Invoke(PM_Base.PacketDictionary[header][0], new object[] { client, buffer, header });
+            });
         };
 
         private static Action<ServerClient> OnConnect { get; set; } = delegate
@@ -52,7 +55,7 @@ namespace GameClient.Hooks.TCPNetwork
             MainThreadHandler.Instance.Enqueue(delegate { HarmonyHandler.EnableMainPatches(); });
         };
 
-        private static Action<ServerClient> OnDisconnect { get; set; } = delegate 
+        private static Action<ServerClient> OnDisconnect { get; set; } = delegate
         {
             MainThreadHandler.Instance.Enqueue(delegate
             {
@@ -93,15 +96,16 @@ namespace GameClient.Hooks.TCPNetwork
         private static bool TryConnect()
         {
             if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected) return false;
-            else
+
+            try
             {
-                try
-                {
-                    ServerClient client = new ServerClient(new TcpClient(Network.Ip, Network.Port), new NetworkRuleset(OnConnect, OnDisconnect, OnReadPacket, null));
-                    Network.ServerEndpoint = client.Listener;
-                    return true;
-                }
-                catch { return false; }
+                ServerClient client = new ServerClient(new TcpClient(Network.Ip, Network.Port), new NetworkRuleset(OnConnect, OnDisconnect, OnReadPacket, null));
+                Network.ServerEndpoint = client.Listener;
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
     }

@@ -64,27 +64,31 @@ namespace GameClient.PacketManagers
         public static void UseLoginData()
         {
             if (SessionHandler.CurrentNetworkState != ClientNetworkState.Connected) return;
+
+            PKT_Login data = new PKT_Login();
+
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                data._username = "Test";
+                data._password = "1234";
+            }
             else
             {
-                PKT_Login data = new PKT_Login();
-
-                if (Input.GetKey(KeyCode.LeftShift))
-                {
-                    data._username = "Test";
-                    data._password = "1234";
-                }
-
-                else
-                {
-                    PersistentSettings settings = PersistentSettings.Load();
-                    data._username = settings.UserSettings.Username;
-                    data._password = settings.UserSettings.Password;
-                }
-
-                SessionHandler.Username = data._username;
-                data._runningMods = ModManagerH.GetRunningModList();
-                Network.ServerEndpoint.EnqueuePacket(PacketHeader.LoginManager, data);
+                PersistentSettings settings = PersistentSettings.Load();
+                data._username = settings.UserSettings.Username;
+                data._password = settings.UserSettings.Password;
             }
+
+            SessionHandler.Username = data._username;
+            data._runningMods = ModManagerH.GetRunningModList();
+
+            string activeHash = OptionsProfileSessionManager.GetActiveHash();
+            bool enforcedActive = OptionsProfileSessionManager.IsEnforcementActive();
+
+            data._hasActiveOptionsProfile = enforcedActive && !string.IsNullOrWhiteSpace(activeHash);
+            data._activeOptionsProfileHash = data._hasActiveOptionsProfile ? activeHash : string.Empty;
+
+            Network.ServerEndpoint.EnqueuePacket(PacketHeader.LoginManager, data);
         }
 
         public static void PromptCreateAccount()

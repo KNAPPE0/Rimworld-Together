@@ -32,7 +32,7 @@ namespace GameServer.Integrations.Discord
             // KMH: Show linked Discord name if available
             string discordInfo = GetDiscordInfoForUser(username);
             string displayName = string.IsNullOrEmpty(discordInfo) ? username : $"{username} ({discordInfo})";
-            string msg = $"🟢 {displayName} has joined the server!";
+            string msg = $"🟢 **{displayName}** has joined the server!";
 
             DiscordBridge.TryRelayServerConsoleLine($"SERVER: {displayName} joined", LogMode.Title);
             DiscordBridge.TryRelayServerNoticeToDiscordChat(msg);
@@ -50,7 +50,7 @@ namespace GameServer.Integrations.Discord
 
             string discordInfo = GetDiscordInfoForUser(username);
             string displayName = string.IsNullOrEmpty(discordInfo) ? username : $"{username} ({discordInfo})";
-            string msg = $"⚫ {displayName} has left the server!";
+            string msg = $"⚫ **{displayName}** has left the server!";
 
             DiscordBridge.TryRelayServerConsoleLine($"SERVER: {displayName} left", LogMode.Warning);
             DiscordBridge.TryRelayServerNoticeToDiscordChat(msg);

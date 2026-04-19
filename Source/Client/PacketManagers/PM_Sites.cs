@@ -23,7 +23,6 @@ using static Shared.CommonEnumerators;
 using static Shared.Misc.Printer;
 using static TCPNetwork.Packets.PKT_Site;
 
-
 namespace GameClient.PacketManagers
 {
     public class PM_Sites : PM_Base
@@ -35,6 +34,15 @@ namespace GameClient.PacketManagers
         private static CancellationTokenSource Token { get; set; } = new CancellationTokenSource();
 
         public static double RewardDelay { get; set; } = -1;
+
+        // KMH: pending custom build payment is charged only after server approval
+        private static bool PendingCustomSiteBuild { get; set; } = false;
+        private static int PendingCustomSiteTile { get; set; } = -1;
+        private static int PendingCustomSiteCost { get; set; } = 0;
+        private static Caravan PendingCustomSiteCaravan { get; set; } = null;
+        private static bool PendingStandardSiteBuild { get; set; } = false;
+        private static int PendingStandardSiteCost { get; set; } = 0;
+        private static Caravan PendingStandardSiteCaravan { get; set; } = null;
 
         [HandlesPacket(PacketHeader.SiteManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
@@ -70,6 +78,67 @@ namespace GameClient.PacketManagers
             }
         }
 
+        public static void BeginPendingCustomSiteBuild(int tile, int cost, Caravan caravan)
+        {
+            PendingCustomSiteBuild = true;
+            PendingCustomSiteTile = tile;
+            PendingCustomSiteCost = cost;
+            PendingCustomSiteCaravan = caravan;
+        }
+
+        private static void ClearPendingCustomSiteBuild()
+        {
+            PendingCustomSiteBuild = false;
+            PendingCustomSiteTile = -1;
+            PendingCustomSiteCost = 0;
+            PendingCustomSiteCaravan = null;
+        }
+
+        private static void TryFinalizePendingCustomSiteBuild(PKT_Site data)
+        {
+            if (!PendingCustomSiteBuild)
+                return;
+
+            try
+            {
+                string status = data?._statusMessage ?? string.Empty;
+                bool wasApproved = status.StartsWith("Custom site built!", StringComparison.OrdinalIgnoreCase);
+
+                if (wasApproved)
+                {
+                    Caravan caravan = PendingCustomSiteCaravan;
+                    int cost = PendingCustomSiteCost;
+
+                    if (caravan != null && cost > 0)
+                    {
+                        bool hasEnough = RimworldManager.CheckIfHasEnoughItemInCaravan(caravan, ThingDefOf.Silver.defName, cost);
+                        if (hasEnough)
+                        {
+                            RimworldManager.RemoveThingFromCaravan(
+                                caravan,
+                                DefDatabase<ThingDef>.GetNamed(ThingDefOf.Silver.defName),
+                                cost);
+
+                            Printer.Message($"Custom site build approved. Deducted {cost} silver.", LogImportanceMode.Verbose);
+                        }
+                        else
+                        {
+                            Printer.Warning($"Custom site approved, but caravan no longer had {cost} silver when attempting client-side deduction.");
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"Failed to finalize pending custom site build payment: {e}");
+            }
+            finally
+            {
+                // Any CustomInfo response after a pending build request is considered the result for that request.
+                ClearPendingCustomSiteBuild();
+            }
+        }
+
         public static void RequestSiteBuild(SiteType configFile)
         {
             if (!RimworldManager.CheckIfHasEnoughItemInCaravan(SessionHandler.ChosenCaravan, ThingDefOf.Silver.defName, configFile.Cost))
@@ -78,8 +147,9 @@ namespace GameClient.PacketManagers
                 return;
             }
 
-            RimworldManager.RemoveThingFromCaravan(SessionHandler.ChosenCaravan,
-                DefDatabase<ThingDef>.GetNamed(ThingDefOf.Silver.defName), configFile.Cost);
+            // Do NOT deduct silver yet.
+            // Wait until the server accepts the site build.
+            BeginPendingStandardSiteBuild(configFile.Cost, SessionHandler.ChosenCaravan);
 
             PKT_Site siteData = new PKT_Site();
             siteData._stepMode = SiteStepMode.Build;
@@ -170,21 +240,51 @@ namespace GameClient.PacketManagers
 
         public static void OnSiteBuild(SiteFile toAdd)
         {
-            if (Find.WorldObjects.Sites.FirstOrDefault(fetch => fetch.Tile == toAdd.Tile) != null) return;
-            else
+            if (toAdd == null || toAdd.Type == null)
             {
-                try
-                {
-                    SitePartDef siteDef = RTSitePartDefs.Defs.FirstOrDefault(fetch => fetch.defName == toAdd.Type.DefName);
-                    WO_Site site = (WO_Site)WorldObjectMaker.MakeWorldObject(DefDatabase<WorldObjectDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == "RTSite"));
-                    site.Tile = toAdd.Tile;
-                    site.SetFaction(PlanetManagerHelper.GetPlayerFactionFromGoodwill(toAdd.Goodwill));
-                    site.AddPart(new RTSitePart(site, siteDef));
+                Printer.Error("Failed to spawn site because SiteFile or SiteType was null.");
+                return;
+            }
 
-                    PlayerSites.Add(site);
-                    Find.WorldObjects.Add(site);
+            if (Find.WorldObjects.Sites.FirstOrDefault(fetch => fetch.Tile == toAdd.Tile) != null)
+                return;
+
+            try
+            {
+                SitePartDef siteDef = RTSitePartDefs.GetByDefName(toAdd.Type.DefName);
+                if (siteDef == null)
+                {
+                    Printer.Error($"Failed to spawn site at {toAdd.Tile}. Missing SitePartDef '{toAdd.Type.DefName}'.");
+                    return;
                 }
-                catch (Exception e) { Printer.Error($"Failed to spawn site at {toAdd.Tile}. Reason: {e}"); }
+
+                WO_Site site = (WO_Site)WorldObjectMaker.MakeWorldObject(
+                    DefDatabase<WorldObjectDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == "RTSite"));
+
+                if (site == null)
+                {
+                    Printer.Error($"Failed to spawn site at {toAdd.Tile}. WorldObjectDef 'RTSite' was null.");
+                    return;
+                }
+
+                site.Tile = toAdd.Tile;
+                site.SetFaction(PlanetManagerHelper.GetPlayerFactionFromGoodwill(toAdd.Goodwill));
+
+                RTSitePart part = new RTSitePart(site, siteDef);
+                site.AddPart(part);
+
+                if (site.parts == null || site.parts.Count == 0 || site.MainSitePartDef == null)
+                {
+                    Printer.Error($"Failed to spawn site at {toAdd.Tile}. Site part was not added correctly.");
+                    return;
+                }
+
+                PlayerSites.Add(site);
+                Find.WorldObjects.Add(site);
+            }
+            catch (Exception e)
+            {
+                Printer.Error($"Failed to spawn site at {toAdd.Tile}. Reason: {e}");
             }
         }
 
@@ -216,6 +316,7 @@ namespace GameClient.PacketManagers
 
         private static void OnSiteAccept()
         {
+            FinalizePendingStandardSiteBuild();
             RimworldManager.GenerateLetter("Site built", $"You've built a site!", LetterDefOf.PositiveEvent);
             DLG_Wait.Instance.Close();
             PM_Saves.ForceSave();
@@ -296,7 +397,12 @@ namespace GameClient.PacketManagers
         }
 
         [OnSessionEnd]
-        private static void StopTickingSites() { Token.Cancel(); }
+        private static void StopTickingSites()
+        {
+            Token.Cancel();
+            ClearPendingCustomSiteBuild();
+            ClearPendingStandardSiteBuild();
+        }
 
         public static void AskForSiteRewards()
         {
@@ -320,7 +426,7 @@ namespace GameClient.PacketManagers
             PM_Sites.SiteValues = SessionHandler.GlobalData._siteValues;
             PM_Sites.RewardDelay = SessionHandler.GlobalData._actionValues.SiteAction.TimeInterval;
         }
-    
+
         // KMH: Send worker join request - uses caravan pawn selection for skill
         public static void RequestWorkerJoin(int tile)
         {
@@ -448,11 +554,54 @@ namespace GameClient.PacketManagers
             // Close any waiting dialog
             try { if (DLG_Wait.Instance != null) DLG_Wait.Instance.Close(); } catch { }
 
+            TryFinalizePendingCustomSiteBuild(data);
+
             string msg = data._statusMessage ?? "No response from server.";
 
-            // Use the enforcement notice dialog for better sizing
             DLG_Base.PushNewDialog(new DLG_Message("Site Information", new string[] { msg }));
         }
 
+        private static void BeginPendingStandardSiteBuild(int cost, Caravan caravan)
+        {
+            PendingStandardSiteBuild = true;
+            PendingStandardSiteCost = cost;
+            PendingStandardSiteCaravan = caravan;
+        }
+
+        private static void ClearPendingStandardSiteBuild()
+        {
+            PendingStandardSiteBuild = false;
+            PendingStandardSiteCost = 0;
+            PendingStandardSiteCaravan = null;
+        }
+
+        private static void FinalizePendingStandardSiteBuild()
+        {
+            try
+            {
+                if (!PendingStandardSiteBuild)
+                    return;
+
+                if (PendingStandardSiteCaravan != null && PendingStandardSiteCost > 0)
+                {
+                    bool hasEnough = RimworldManager.CheckIfHasEnoughItemInCaravan(
+                        PendingStandardSiteCaravan,
+                        ThingDefOf.Silver.defName,
+                        PendingStandardSiteCost);
+
+                    if (hasEnough)
+                    {
+                        RimworldManager.RemoveThingFromCaravan(
+                            PendingStandardSiteCaravan,
+                            DefDatabase<ThingDef>.GetNamed(ThingDefOf.Silver.defName),
+                            PendingStandardSiteCost);
+                    }
+                }
+            }
+            finally
+            {
+                ClearPendingStandardSiteBuild();
+            }
+        }
     }
 }

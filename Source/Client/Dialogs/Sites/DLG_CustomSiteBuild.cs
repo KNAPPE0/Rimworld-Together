@@ -11,6 +11,7 @@ using TCPNetwork.Packets;
 using UnityEngine;
 using Verse;
 using Shared;
+using GameClient.PacketManagers;
 
 namespace GameClient.Dialogs.Sites
 {
@@ -236,7 +237,7 @@ namespace GameClient.Dialogs.Sites
                 // Relevant skill info
                 string relevantSkill = Shared.Files.Sites.CustomSiteData.DetermineRelevantSkill(_selectedItem.defName);
                 int bestSkill = GetBestColonistSkill(relevantSkill);
-                
+
                 GUI.color = new Color(0.6f, 0.9f, 1f);
                 Widgets.Label(new Rect(rightX, ry, rightW, 20f),
                     $"Relevant skill: {relevantSkill} (your best: {bestSkill})");
@@ -289,7 +290,7 @@ namespace GameClient.Dialogs.Sites
             try
             {
                 if (Find.CurrentMap == null) return 0;
-                
+
                 SkillDef skillDef = DefDatabase<SkillDef>.AllDefsListForReading
                     .FirstOrDefault(s => s.defName == skillDefName);
                 if (skillDef == null) return 0;
@@ -310,8 +311,10 @@ namespace GameClient.Dialogs.Sites
         {
             if (_selectedItem == null || _targetTile < 0) return;
 
-            // Check if caravan has enough silver
             int cost = CalculateCost();
+
+            // Keep client-side precheck only so the player gets immediate feedback.
+            // DO NOT deduct silver here anymore. We only deduct after the server confirms success.
             if (SessionHandler.ChosenCaravan != null)
             {
                 if (!RimworldManager.CheckIfHasEnoughItemInCaravan(SessionHandler.ChosenCaravan, ThingDefOf.Silver.defName, cost))
@@ -319,11 +322,9 @@ namespace GameClient.Dialogs.Sites
                     DLG_Base.PushNewDialog(new DLG_Message("Error", new string[] { $"Not enough silver! Need {cost} silver." }));
                     return;
                 }
-
-                // Deduct silver from caravan
-                RimworldManager.RemoveThingFromCaravan(SessionHandler.ChosenCaravan,
-                    DefDatabase<ThingDef>.GetNamed(ThingDefOf.Silver.defName), cost);
             }
+
+            PM_Sites.BeginPendingCustomSiteBuild(_targetTile, cost, SessionHandler.ChosenCaravan);
 
             PKT_Site packet = new PKT_Site();
             packet._stepMode = PKT_Site.SiteStepMode.CustomBuild;
@@ -341,13 +342,15 @@ namespace GameClient.Dialogs.Sites
 
             string relevantSkill = Shared.Files.Sites.CustomSiteData.DetermineRelevantSkill(_selectedItem.defName);
             int bestSkill = GetBestColonistSkill(relevantSkill);
+
             DLG_Base.PushNewDialog(new DLG_Message("Custom Site",
-                new string[] { 
-                    $"Building custom production site...",
-                    $"Item: {_selectedItem.label} x{_amount} per cycle",
-                    $"Cost: {CalculateCost()} silver | Cycle: {CalculateCycleMinutes()} min",
-                    $"Skill: {relevantSkill} (your best: {bestSkill})",
-                    $"Access: {_accessMode}"
+                new string[] {
+                    $"Submitting custom site build request...\n\n" +
+                    $"Item: {_selectedItem.label} x{_amount} per cycle\n" +
+                    $"Cost: {cost} silver | Cycle: {CalculateCycleMinutes()} min\n" +
+                    $"Skill: {relevantSkill} (your best: {bestSkill})\n" +
+                    $"Access: {_accessMode}\n\n" +
+                    $"Silver will only be removed if the server approves the build."
                 }));
         }
     }

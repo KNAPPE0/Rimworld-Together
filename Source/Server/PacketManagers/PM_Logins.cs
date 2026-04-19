@@ -64,7 +64,7 @@ namespace GameServer.PacketManager
             // KMH: Announce join to Discord
             GameServer.Integrations.Discord.DiscordPlayerAnnouncer.AnnounceFullyJoined(client.UserFile?.Username);
 
-            PostLogin(client);
+            PostLogin(client, data);
 
             return true;
         }
@@ -80,28 +80,33 @@ namespace GameServer.PacketManager
             LoginUser(client, data);
         }
 
-        private static void PostLogin(ServerClient client)
+        private static void PostLogin(ServerClient client, PKT_Login data)
         {
             client.VerifyUser();
-
             UserManager.SendPlayerRecount();
 
-            GlobalDataManager.SendServerGlobalData(client);
-
-            PM_Chat.SendLoginChatMessages(client);
-
-            // KMH: Auto-send enforcement profile if enforcement is enabled
-            if (GameServer.Core.Master.ModConfig != null && GameServer.Core.Master.ModConfig.IsEnforced)
+            // HARD GATE:
+            // If enforcement is active and this client does not already have the correct profile,
+            // do not continue into save/world sync yet.
+            if (OptionsProfileManager.IsClientMissingRequiredProfile(data))
             {
-                GameServer.Managers.OptionsProfileManager.TryPushProfile(client);
+                OptionsProfileManager.SendRequiredProfileForJoin(client);
+                return;
             }
+
+            FinishPostLogin(client);
+        }
+
+        private static void FinishPostLogin(ServerClient client)
+        {
+            GlobalDataManager.SendServerGlobalData(client);
+            PM_Chat.SendLoginChatMessages(client);
 
             if (PM_World.CheckIfWorldExists())
             {
                 if (PM_Saves.CheckIfUserHasSave(client)) PM_Saves.SendSaveToClient(client);
                 else PM_World.SendWorld(client);
             }
-
             else
             {
                 PM_World.RequireWorldFile(client);
@@ -113,7 +118,6 @@ namespace GameServer.PacketManager
                 Printer.Warning($"Giving first join admin permission to {client.UserFile.Username}");
             }
         }
-
         public static void RemoveOldClientSessions(ServerClient client)
         {
             ServerClient[] oldClients = ServerNetwork.GetConnectedClients().Where(fetch => fetch.UserFile.Username == client.UserFile.Username

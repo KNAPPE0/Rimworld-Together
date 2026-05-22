@@ -422,3 +422,22 @@ Mod/WindowsDouble.bat
 1.6/Assemblies
 /Server
 /Temp
+
+# ============================================================
+# KMH 26.5.22.1: build + release outputs
+# ============================================================
+
+# Self-contained per-RID server binaries produced by
+# Scripts/build-release.ps1. ~300 MB across all four RIDs.
+# Rebuilt fresh on every release; never check in.
+/LocalServer/
+
+# Staged Steam-Workshop-ready folder created by build-release.ps1
+# (or whatever -ReleaseDir was passed). Sibling of the mod root by
+# default — guard both shapes with leading/trailing slash.
+/KMH-Release/
+KMH-Release/
+
+# Local override / scratch
+*.local
+*.bak

@@ -15,6 +15,10 @@ namespace GameServer.PacketManager
 {
     public class PM_Logins : PM_Base
     {
+        // KMH: Compiled once instead of constructed per login attempt.
+        private static readonly Regex UsernameSanitizer =
+            new Regex(@"[^a-zA-Z0-9_\-]", RegexOptions.Compiled);
+
         [HandlesPacket(PacketHeader.LoginManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
@@ -30,7 +34,7 @@ namespace GameServer.PacketManager
             // KMH: Sanitize username to prevent path traversal and injection
             string sanitized = data._username ?? string.Empty;
             sanitized = sanitized.Trim();
-            sanitized = System.Text.RegularExpressions.Regex.Replace(sanitized, @"[^a-zA-Z0-9_\-]", "");
+            sanitized = UsernameSanitizer.Replace(sanitized, "");
             if (sanitized.Length > 32) sanitized = sanitized.Substring(0, 32);
             if (string.IsNullOrWhiteSpace(sanitized))
             {
@@ -60,6 +64,10 @@ namespace GameServer.PacketManager
 
             RemoveOldClientSessions(client);
 
+            // KMH 2.7: Register in the O(1) username→client index now that
+            // we've finished authentication + loaded the user file.
+            GameServer.Hooks.TCPNetwork.ServerNetwork.RegisterAuthenticatedClient(client);
+
             InformationDisplayer.DisplayLogin(client);
             // KMH: Announce join to Discord
             GameServer.Integrations.Discord.DiscordPlayerAnnouncer.AnnounceFullyJoined(client.UserFile?.Username);
@@ -78,6 +86,10 @@ namespace GameServer.PacketManager
             InformationDisplayer.DisplayRegister(client);
 
             LoginUser(client, data);
+
+            // KMH: New user file just created — drop the cache so subsequent
+            // login lookups see it.
+            UserManagerH.InvalidateUserCache();
         }
 
         private static void PostLogin(ServerClient client, PKT_Login data)
@@ -102,6 +114,20 @@ namespace GameServer.PacketManager
             GlobalDataManager.SendServerGlobalData(client);
             PM_Chat.SendLoginChatMessages(client);
 
+            // KMH: Push the linked-accounts map so dialogs render Discord names
+            // for every player from the first frame.
+            try { LinkedAccountsManager.SendSnapshot(client); }
+            catch { }
+
+            // KMH: surface the guild MOTD as a chat message right after login.
+            try
+            {
+                string motd = GuildManager.GetMotdForUser(client.UserFile?.Username);
+                if (!string.IsNullOrWhiteSpace(motd))
+                    PM_Chat.SendServerMessage(client, $"[Guild] {motd}");
+            }
+            catch { }
+
             if (PM_World.CheckIfWorldExists())
             {
                 if (PM_Saves.CheckIfUserHasSave(client)) PM_Saves.SendSaveToClient(client);
@@ -120,8 +146,16 @@ namespace GameServer.PacketManager
         }
         public static void RemoveOldClientSessions(ServerClient client)
         {
-            ServerClient[] oldClients = ServerNetwork.GetConnectedClients().Where(fetch => fetch.UserFile.Username == client.UserFile.Username
-                && fetch != client).ToArray();
+            // KMH: Filter null UserFile/Username to avoid NRE when a sibling
+            // client is mid-handshake during login race.
+            string username = client?.UserFile?.Username;
+            if (string.IsNullOrEmpty(username)) return;
+
+            ServerClient[] oldClients = ServerNetwork.GetConnectedClients()
+                .Where(fetch => fetch != client
+                    && fetch.UserFile != null
+                    && fetch.UserFile.Username == username)
+                .ToArray();
 
             foreach (ServerClient sc in oldClients) sc.Listener.MarkForDisconnect();
         }

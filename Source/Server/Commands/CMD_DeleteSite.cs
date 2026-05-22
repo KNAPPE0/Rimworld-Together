@@ -50,6 +50,8 @@ namespace GameServer.Commands
                 try { File.Delete(customPath); } catch { }
             }
 
+            GameServer.PacketManager.SiteManagerHelper.InvalidateCache();
+
             // Notify all connected clients to remove the site
             PKT_Site destroyData = new PKT_Site();
             destroyData._stepMode = PKT_Site.SiteStepMode.Destroy;

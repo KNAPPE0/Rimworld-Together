@@ -15,10 +15,12 @@ namespace GameClient.Dialogs.ServerBrowser
 
         private List<PKT_ServerTelemetry> Elements { get; set; } = new List<PKT_ServerTelemetry>();
 
-        public DLG_ServerBrowser(List<PKT_ServerTelemetry> elements) 
+        public DLG_ServerBrowser(List<PKT_ServerTelemetry> elements)
         {
-            this.Title = "Server Browser";
-            this.Description = $"Available servers in the browser [{elements.Count()}]";
+            // KMH 26.5.22.1: Show the count right in the title for fast
+            // glance — ported from upstream's title rework (Apr 2026).
+            this.Title = $"Server Browser [{elements.Count()}]";
+            this.Description = "Servers ordered by population (busiest first)";
             this.Elements = elements.OrderByDescending(fetch => fetch.CurrentPopulation).ToList();
         }
 

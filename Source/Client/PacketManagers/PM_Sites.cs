@@ -1,4 +1,4 @@
-﻿using GameClient.Defs;
+using GameClient.Defs;
 using GameClient.Dialogs;
 using GameClient.Dialogs.Default;
 using GameClient.Managers;
@@ -25,7 +25,14 @@ using static TCPNetwork.Packets.PKT_Site;
 
 namespace GameClient.PacketManagers
 {
-    public class PM_Sites : PM_Base
+    /// <summary>
+    /// Site packet entry point + standard build / destroy / info handling
+    /// + the periodic site-rewards request loop.
+    ///
+    /// Custom-site requests + pending-build payment tracking live in
+    /// <c>Sites/PM_Sites.CustomSites.cs</c>.
+    /// </summary>
+    public partial class PM_Sites : PM_Base
     {
         public static List<SiteType> SiteValues { get; set; }
 
@@ -34,15 +41,6 @@ namespace GameClient.PacketManagers
         private static CancellationTokenSource Token { get; set; } = new CancellationTokenSource();
 
         public static double RewardDelay { get; set; } = -1;
-
-        // KMH: pending custom build payment is charged only after server approval
-        private static bool PendingCustomSiteBuild { get; set; } = false;
-        private static int PendingCustomSiteTile { get; set; } = -1;
-        private static int PendingCustomSiteCost { get; set; } = 0;
-        private static Caravan PendingCustomSiteCaravan { get; set; } = null;
-        private static bool PendingStandardSiteBuild { get; set; } = false;
-        private static int PendingStandardSiteCost { get; set; } = 0;
-        private static Caravan PendingStandardSiteCaravan { get; set; } = null;
 
         [HandlesPacket(PacketHeader.SiteManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
@@ -75,67 +73,6 @@ namespace GameClient.PacketManagers
                 case SiteStepMode.CustomInfo:
                     ReceiveCustomSiteInfo(data);
                     break;
-            }
-        }
-
-        public static void BeginPendingCustomSiteBuild(int tile, int cost, Caravan caravan)
-        {
-            PendingCustomSiteBuild = true;
-            PendingCustomSiteTile = tile;
-            PendingCustomSiteCost = cost;
-            PendingCustomSiteCaravan = caravan;
-        }
-
-        private static void ClearPendingCustomSiteBuild()
-        {
-            PendingCustomSiteBuild = false;
-            PendingCustomSiteTile = -1;
-            PendingCustomSiteCost = 0;
-            PendingCustomSiteCaravan = null;
-        }
-
-        private static void TryFinalizePendingCustomSiteBuild(PKT_Site data)
-        {
-            if (!PendingCustomSiteBuild)
-                return;
-
-            try
-            {
-                string status = data?._statusMessage ?? string.Empty;
-                bool wasApproved = status.StartsWith("Custom site built!", StringComparison.OrdinalIgnoreCase);
-
-                if (wasApproved)
-                {
-                    Caravan caravan = PendingCustomSiteCaravan;
-                    int cost = PendingCustomSiteCost;
-
-                    if (caravan != null && cost > 0)
-                    {
-                        bool hasEnough = RimworldManager.CheckIfHasEnoughItemInCaravan(caravan, ThingDefOf.Silver.defName, cost);
-                        if (hasEnough)
-                        {
-                            RimworldManager.RemoveThingFromCaravan(
-                                caravan,
-                                DefDatabase<ThingDef>.GetNamed(ThingDefOf.Silver.defName),
-                                cost);
-
-                            Printer.Message($"Custom site build approved. Deducted {cost} silver.", LogImportanceMode.Verbose);
-                        }
-                        else
-                        {
-                            Printer.Warning($"Custom site approved, but caravan no longer had {cost} silver when attempting client-side deduction.");
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Printer.Warning($"Failed to finalize pending custom site build payment: {e}");
-            }
-            finally
-            {
-                // Any CustomInfo response after a pending build request is considered the result for that request.
-                ClearPendingCustomSiteBuild();
             }
         }
 
@@ -196,7 +133,10 @@ namespace GameClient.PacketManagers
             {
                 try
                 {
-                    ThingDef def = DefDatabase<ThingDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == reward.DefName);
+                    // KMH: GetNamedSilentFail is O(1) vs the previous O(N) AllDefs scan.
+                    ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(reward.DefName);
+                    if (def == null) continue;
+
                     Thing toMake = ThingMaker.MakeThing(def);
                     toMake.stackCount = reward.Amount;
                     toMake.HitPoints = def.BaseMaxHitPoints;
@@ -258,8 +198,14 @@ namespace GameClient.PacketManagers
                     return;
                 }
 
-                WO_Site site = (WO_Site)WorldObjectMaker.MakeWorldObject(
-                    DefDatabase<WorldObjectDef>.AllDefs.FirstOrDefault(fetch => fetch.defName == "RTSite"));
+                WorldObjectDef rtSiteDef = DefDatabase<WorldObjectDef>.GetNamedSilentFail("RTSite");
+                if (rtSiteDef == null)
+                {
+                    Printer.Error($"Failed to spawn site at {toAdd.Tile}. WorldObjectDef 'RTSite' is not registered.");
+                    return;
+                }
+
+                WO_Site site = (WO_Site)WorldObjectMaker.MakeWorldObject(rtSiteDef);
 
                 if (site == null)
                 {
@@ -336,6 +282,14 @@ namespace GameClient.PacketManagers
                 siteData._file.Tile = SessionHandler.ChosenSite.Tile;
                 siteData._file.WorkerString = ScribeManager.SerializeToString(toSend, ScribeManager.SerializableType.Thing);
 
+                // KMH 26.5.20.1: Read the pawn's best production skill and
+                // send it alongside the assign packet. The server stamps
+                // it as WorkerProgress.BaseSkillLevel so a freshly-assigned
+                // Crafting-15 pawn starts contributing at level 15 instead
+                // of L0 — matches what the player expects. Server clamps
+                // 0..20 so a modded client can't inflate beyond a sane max.
+                siteData._workerSkillLevel = GetBestProductionSkillLevel(toSend);
+
                 SessionHandler.ChosenCaravan.RemovePawn(toSend);
                 Find.WorldPawns.RemovePawn(toSend);
                 toSend.Destroy();
@@ -369,6 +323,47 @@ namespace GameClient.PacketManagers
                 DLG_Base.PushNewDialog(new DLG_ListingWithButton(title, description, contents.ToArray(), selectWorker, null));
             }
             else { DLG_Base.PushNewDialog(new DLG_YesNo("Do you want to retrieve the worker from the site?", retrieveWorker)); }
+        }
+
+        /// <summary>
+        /// KMH 26.5.20.1: Return the maximum skill level across a pawn's
+        /// "production-flavoured" skills — Crafting, Mining, Cooking,
+        /// Construction, Plants, Animals. This is what we pass to the
+        /// server when assigning a pawn to a custom site, so the server
+        /// can stamp the worker's BaseSkillLevel. We pick the MAX across
+        /// these because the client doesn't know which RimWorld skill the
+        /// site declared as relevant — the server picks the right one.
+        ///
+        /// Returns 0 on any error (null pawn, no skill tracker, etc.).
+        /// </summary>
+        private static int GetBestProductionSkillLevel(Pawn pawn)
+        {
+            try
+            {
+                if (pawn?.skills?.skills == null) return 0;
+                string[] productionDefs = new[]
+                {
+                    "Crafting", "Mining", "Cooking", "Construction", "Plants", "Animals",
+                    "Artistic", "Intellectual" // Intellectual covers tech, Artistic covers high-value crafts.
+                };
+                int best = 0;
+                foreach (var skill in pawn.skills.skills)
+                {
+                    if (skill?.def?.defName == null) continue;
+                    bool isProduction = false;
+                    foreach (string d in productionDefs)
+                    {
+                        if (skill.def.defName == d) { isProduction = true; break; }
+                    }
+                    if (!isProduction) continue;
+                    int lvl = skill.Level;
+                    if (lvl > best) best = lvl;
+                }
+                if (best < 0) best = 0;
+                if (best > 20) best = 20;
+                return best;
+            }
+            catch { return 0; }
         }
 
         [OnSessionStart]
@@ -425,183 +420,6 @@ namespace GameClient.PacketManagers
         {
             PM_Sites.SiteValues = SessionHandler.GlobalData._siteValues;
             PM_Sites.RewardDelay = SessionHandler.GlobalData._actionValues.SiteAction.TimeInterval;
-        }
-
-        // KMH: Send worker join request - uses caravan pawn selection for skill
-        public static void RequestWorkerJoin(int tile)
-        {
-            try
-            {
-                Caravan caravan = SessionHandler.ChosenCaravan;
-                if (caravan == null)
-                {
-                    // Use map colonists if no caravan
-                    int bestSkill = 0;
-                    if (Find.CurrentMap != null)
-                    {
-                        foreach (Pawn pawn in Find.CurrentMap.mapPawns.FreeColonists)
-                        {
-                            if (pawn.skills == null) continue;
-                            foreach (SkillRecord sr in pawn.skills.skills)
-                                if (sr.Level > bestSkill) bestSkill = sr.Level;
-                        }
-                    }
-                    SendWorkerJoinPacket(tile, bestSkill);
-                    return;
-                }
-
-                // Show pawn selection from caravan
-                List<Pawn> humans = caravan.PawnsListForReading
-                    .Where(p => RimworldManager.CheckIfThingIsHuman(p)).ToList();
-
-                if (humans.Count == 0)
-                {
-                    DLG_Base.PushNewDialog(new DLG_Message("Error", new string[] { "No colonists in this caravan." }));
-                    return;
-                }
-
-                List<string> labels = new List<string>();
-                foreach (Pawn p in humans)
-                {
-                    string skillInfo = "";
-                    if (p.skills != null)
-                    {
-                        int best = 0;
-                        string bestName = "";
-                        foreach (SkillRecord sr in p.skills.skills)
-                        {
-                            if (sr.Level > best) { best = sr.Level; bestName = sr.def.defName; }
-                        }
-                        skillInfo = $" (Best: {bestName} {best})";
-                    }
-                    labels.Add($"{p.LabelCap}{skillInfo}");
-                }
-
-                Action onSelect = delegate
-                {
-                    int idx = DLG_ListingWithButton.ResultInt;
-                    if (idx < 0 || idx >= humans.Count) return;
-                    Pawn chosen = humans[idx];
-                    int skill = 0;
-                    if (chosen.skills != null)
-                    {
-                        foreach (SkillRecord sr in chosen.skills.skills)
-                            if (sr.Level > skill) skill = sr.Level;
-                    }
-                    SendWorkerJoinPacket(tile, skill);
-                };
-
-                DLG_Base.PushNewDialog(new DLG_ListingWithButton(
-                    "Select Worker", "Choose a colonist to represent your colony at this site. Their skills affect production efficiency.",
-                    labels.ToArray(), onSelect, null));
-            }
-            catch { }
-        }
-
-        private static void SendWorkerJoinPacket(int tile, int skillLevel)
-        {
-            PKT_Site packet = new PKT_Site();
-            packet._stepMode = SiteStepMode.WorkerJoin;
-            packet._file = new SiteFile { Tile = tile };
-            packet._workerSkillLevel = skillLevel;
-            Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, packet);
-        }
-
-        // KMH: Send worker leave request for a custom site
-        public static void RequestWorkerLeave(int tile)
-        {
-            try
-            {
-                PKT_Site packet = new PKT_Site();
-                packet._stepMode = SiteStepMode.WorkerLeave;
-                packet._file = new SiteFile { Tile = tile };
-
-                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, packet);
-            }
-            catch { }
-        }
-
-        // KMH: Request site upgrade (owner only)
-        public static void RequestSiteUpgrade(int tile)
-        {
-            try
-            {
-                PKT_Site packet = new PKT_Site();
-                packet._stepMode = SiteStepMode.Upgrade;
-                packet._file = new SiteFile { Tile = tile };
-                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, packet);
-            }
-            catch { }
-        }
-
-        // KMH: Request custom site info
-        public static void RequestCustomSiteInfo(int tile)
-        {
-            try
-            {
-                PKT_Site packet = new PKT_Site();
-                packet._stepMode = SiteStepMode.CustomInfo;
-                packet._file = new SiteFile { Tile = tile };
-
-                Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, packet);
-            }
-            catch { }
-        }
-
-        // KMH: Handle custom site info/status response from server
-        private static void ReceiveCustomSiteInfo(PKT_Site data)
-        {
-            // Close any waiting dialog
-            try { if (DLG_Wait.Instance != null) DLG_Wait.Instance.Close(); } catch { }
-
-            TryFinalizePendingCustomSiteBuild(data);
-
-            string msg = data._statusMessage ?? "No response from server.";
-
-            DLG_Base.PushNewDialog(new DLG_Message("Site Information", new string[] { msg }));
-        }
-
-        private static void BeginPendingStandardSiteBuild(int cost, Caravan caravan)
-        {
-            PendingStandardSiteBuild = true;
-            PendingStandardSiteCost = cost;
-            PendingStandardSiteCaravan = caravan;
-        }
-
-        private static void ClearPendingStandardSiteBuild()
-        {
-            PendingStandardSiteBuild = false;
-            PendingStandardSiteCost = 0;
-            PendingStandardSiteCaravan = null;
-        }
-
-        private static void FinalizePendingStandardSiteBuild()
-        {
-            try
-            {
-                if (!PendingStandardSiteBuild)
-                    return;
-
-                if (PendingStandardSiteCaravan != null && PendingStandardSiteCost > 0)
-                {
-                    bool hasEnough = RimworldManager.CheckIfHasEnoughItemInCaravan(
-                        PendingStandardSiteCaravan,
-                        ThingDefOf.Silver.defName,
-                        PendingStandardSiteCost);
-
-                    if (hasEnough)
-                    {
-                        RimworldManager.RemoveThingFromCaravan(
-                            PendingStandardSiteCaravan,
-                            DefDatabase<ThingDef>.GetNamed(ThingDefOf.Silver.defName),
-                            PendingStandardSiteCost);
-                    }
-                }
-            }
-            finally
-            {
-                ClearPendingStandardSiteBuild();
-            }
         }
     }
 }

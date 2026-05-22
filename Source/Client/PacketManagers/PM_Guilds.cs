@@ -99,9 +99,21 @@ namespace GameClient.PacketManagers
 
             DLG_YesNo d2 = new DLG_YesNo("Are you sure you want to DELETE your guild?", r1, null);
 
+            // KMH 2.7: Surface the new Guild Hall + leaderboards from the
+            // legacy Guild Menu so players don't have to hunt for the
+            // separate gizmos. Order: most-used first (Hall, then ranks),
+            // then the original three management actions.
             DLG_Buttons d1 = new DLG_Buttons("Guild Management", "Manage your guild from here",
-                new string[] { "Members", "Delete", "Leave" },
-                new Action[] { delegate { r3(); }, delegate { DLG_Base.PushNewDialog(d2); }, delegate { DLG_Base.PushNewDialog(d3); } },
+                new string[] { "Guild Hall", "Guild Leaderboard", "Player Leaderboard", "Members", "Delete", "Leave" },
+                new Action[]
+                {
+                    delegate { DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_GuildHall()); },
+                    delegate { DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_GuildLeaderboard()); },
+                    delegate { DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_PlayerLeaderboard()); },
+                    delegate { r3(); },
+                    delegate { DLG_Base.PushNewDialog(d2); },
+                    delegate { DLG_Base.PushNewDialog(d3); }
+                },
                 null);
 
             DLG_Base.PushNewDialog(d1);

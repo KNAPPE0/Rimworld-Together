@@ -28,13 +28,45 @@ namespace GameServer.Integrations.Discord
 
         private static ulong ChatChannelId { get; set; }
         private static ulong AdminChannelId { get; set; }
+        private static ulong LeaderboardChannelId { get; set; }
         private static string CommandPrefix { get; set; } = "!";
 
         private static HashSet<ulong> AdminRoleIds { get; set; } = new HashSet<ulong>();
 
+        // KMH: This server's identity tag, used to label outbound messages
+        // and to differentiate them from other servers sharing the same channel.
+        public static string ServerTag { get; private set; } = "S?";
+
+        // Recognises a "bridge-formatted" chat line so the receiving bot can
+        // pull the (tag, user, message) tuple back out cleanly. Format we emit:
+        //     **[TAG] User:** message body
+        // We rely on Discord's own bot-author check (raw.Author.Id != our bot id)
+        // to distinguish "from another server" from "our own echo".
+        private static readonly Regex BridgeChatRegex =
+            new Regex(@"^\*\*\[(?<tag>[A-Za-z0-9_\-]{1,16})\]\s+(?<user>[^:*]{1,64})\:\*\*\s*(?<msg>.+)$",
+                RegexOptions.Compiled | RegexOptions.Singleline);
+
+        // Per-server cross-server bridge toggle.
+        public static bool CrossServerBridgeEnabled { get; private set; }
+
+        // Console embed/severity controls.
+        public static bool UseEmbedsForConsole { get; private set; } = true;
+        public static int ConsoleMinSeverity { get; private set; } = 0; // 0=all,1=warn+,2=error
+
         private static readonly ConcurrentQueue<OutboundMessage> Outbox = new ConcurrentQueue<OutboundMessage>();
         private static readonly SemaphoreSlim OutboxSignal = new SemaphoreSlim(0, int.MaxValue);
         private static Task OutboxWorkerTask { get; set; }
+
+        // KMH 2.7: Console-embed coalescing buffer. Each warning/error that
+        // arrives within ConsoleEmbedBatchWindowMs of the previous one is
+        // appended into the same embed body so admin commands that print
+        // many lines (e.g. !help) become a single Discord card instead
+        // of N separate embeds.
+        private static readonly object ConsoleEmbedLock = new object();
+        private static List<string> ConsoleEmbedBuffer { get; set; } = new List<string>();
+        private static LogMode ConsoleEmbedBufferMode { get; set; } = LogMode.Warning;
+        private static System.Threading.Timer ConsoleEmbedFlushTimer { get; set; }
+        private static int ConsoleEmbedBatchWindowMs { get; set; } = 1500;
 
         private static readonly AllowedMentions NoMentions = AllowedMentions.None;
 
@@ -85,7 +117,13 @@ namespace GameServer.Integrations.Discord
             if (AdminChannelId == 0) return;
             if (string.IsNullOrWhiteSpace(text)) return;
 
-            bool isImportant = mode == LogMode.Warning || mode == LogMode.Error;
+            bool isWarn = mode == LogMode.Warning;
+            bool isError = mode == LogMode.Error;
+            bool isImportant = isWarn || isError;
+
+            // KMH: severity gate — admins can mute info-level relays.
+            if (ConsoleMinSeverity >= 2 && !isError) return;
+            if (ConsoleMinSeverity >= 1 && !isImportant) return;
 
             if (!isImportant && DateTime.UtcNow > ConsoleMirrorUntilUtc) return;
 
@@ -122,12 +160,161 @@ namespace GameServer.Integrations.Discord
 
             if (!shouldSend) return;
 
+            // KMH: warnings + errors get an embed card with severity colour.
+            if (UseEmbedsForConsole && isImportant)
+            {
+                EnqueueConsoleEmbedLine(mode, cleaned);
+                return;
+            }
+
             string prefix = "";
-            if (mode == LogMode.Warning) prefix = "⚠️ ";
-            else if (mode == LogMode.Error) prefix = "❌ ";
+            if (isWarn) prefix = "⚠️ ";
+            else if (isError) prefix = "❌ ";
             else if (mode == LogMode.Title) prefix = "✅ ";
 
-            Enqueue(AdminChannelId, $"[{DateTime.Now:HH:mm:ss}] | {prefix}{cleaned}");
+            Enqueue(AdminChannelId, $"`[{ServerTag}]` `[{DateTime.Now:HH:mm:ss}]` {prefix}{cleaned}");
+        }
+
+        // KMH: Embed-styled console card for warnings/errors. Bypasses the
+        // text-batching outbox so colour/title render correctly.
+        /// <summary>
+        /// KMH: If a bridge-formatted chat line comes from another server's bot
+        /// in our chat channel, parse it and re-broadcast to our players.
+        /// Returns true if the message was a cross-server chat (and was handled),
+        /// otherwise false so the caller can drop it like any other bot noise.
+        /// </summary>
+        private static bool TryHandleCrossServerBridge(SocketMessage raw)
+        {
+            try
+            {
+                if (!CrossServerBridgeEnabled) return false;
+                if (ChatChannelId == 0 || raw.Channel.Id != ChatChannelId) return false;
+
+                string content = raw.Content?.Trim() ?? string.Empty;
+                if (string.IsNullOrEmpty(content)) return false;
+
+                Match m = BridgeChatRegex.Match(content);
+                if (!m.Success) return false;
+
+                string fromTag = m.Groups["tag"].Value;
+                string fromUser = m.Groups["user"].Value.Trim();
+                string fromMsg = m.Groups["msg"].Value.Trim();
+
+                // Defence-in-depth: if a bot somehow re-relays our own tag, ignore.
+                if (string.Equals(fromTag, ServerTag, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                if (string.IsNullOrWhiteSpace(fromUser) || string.IsNullOrWhiteSpace(fromMsg))
+                    return true;
+
+                // Cap length so a hostile actor can't flood our chat.
+                if (fromMsg.Length > 1000) fromMsg = fromMsg.Substring(0, 1000);
+
+                // Surface as Discord-coloured chat with a clear cross-server tag
+                // so our players can see WHICH server it came from.
+                PM_Chat.BroadcastDiscordMessage($"[{fromTag}] {fromUser}", fromMsg);
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Printer.Error($"[Discord] CrossServerBridge parse error: {e}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// KMH 2.7: Coalesces console embed lines that arrive close together
+        /// into a single embed. The first arrival starts a timer; subsequent
+        /// lines join the same embed until the timer fires. If an error
+        /// arrives while the buffer is mid-warning, it elevates the whole
+        /// batch to error severity (highest wins).
+        /// </summary>
+        private static void EnqueueConsoleEmbedLine(LogMode mode, string text)
+        {
+            if (Client == null || AdminChannelId == 0) return;
+
+            bool startTimer = false;
+            lock (ConsoleEmbedLock)
+            {
+                if (ConsoleEmbedBuffer.Count == 0)
+                {
+                    ConsoleEmbedBufferMode = mode;
+                    startTimer = true;
+                }
+                else if (mode == LogMode.Error && ConsoleEmbedBufferMode != LogMode.Error)
+                {
+                    ConsoleEmbedBufferMode = LogMode.Error;
+                }
+
+                ConsoleEmbedBuffer.Add(text);
+            }
+
+            if (startTimer)
+            {
+                ConsoleEmbedFlushTimer?.Dispose();
+                ConsoleEmbedFlushTimer = new System.Threading.Timer(
+                    _ => FlushConsoleEmbedBuffer(),
+                    null,
+                    ConsoleEmbedBatchWindowMs,
+                    System.Threading.Timeout.Infinite);
+            }
+        }
+
+        private static void FlushConsoleEmbedBuffer()
+        {
+            List<string> lines;
+            LogMode mode;
+            lock (ConsoleEmbedLock)
+            {
+                if (ConsoleEmbedBuffer.Count == 0) return;
+                lines = ConsoleEmbedBuffer;
+                mode = ConsoleEmbedBufferMode;
+                ConsoleEmbedBuffer = new List<string>();
+            }
+
+            _ = Task.Run(() => SendConsoleEmbedAsync(mode, lines));
+        }
+
+        private static async Task SendConsoleEmbedAsync(LogMode mode, List<string> lines)
+        {
+            try
+            {
+                if (Client == null) return;
+                var channel = Client.GetChannel(AdminChannelId) as IMessageChannel;
+                if (channel == null) return;
+
+                var color = mode == LogMode.Error
+                    ? new Color(220, 80, 80)
+                    : new Color(255, 196, 97);
+                string title = mode == LogMode.Error
+                    ? (lines.Count > 1 ? $"❌ Server Errors (×{lines.Count})" : "❌ Server Error")
+                    : (lines.Count > 1 ? $"⚠️ Server Warnings (×{lines.Count})" : "⚠️ Server Warning");
+
+                StringBuilder sb = new StringBuilder();
+                foreach (string line in lines)
+                {
+                    if (string.IsNullOrEmpty(line)) continue;
+                    if (sb.Length > 0) sb.Append('\n');
+                    sb.Append(line);
+                }
+
+                string body = sb.ToString();
+                // Discord embed description cap is 4096; leave headroom for code-block fences.
+                if (body.Length > 3800) body = body.Substring(0, 3800) + "\n…(truncated)";
+
+                var eb = new EmbedBuilder()
+                    .WithTitle(title)
+                    .WithDescription($"```\n{body}\n```")
+                    .WithColor(color)
+                    .WithFooter($"{ServerTag} · {DateTime.Now:HH:mm:ss}")
+                    .WithTimestamp(DateTimeOffset.UtcNow);
+
+                await SendSemaphore.WaitAsync();
+                try { await channel.SendMessageAsync(embed: eb.Build(), allowedMentions: NoMentions); }
+                finally { SendSemaphore.Release(); }
+            }
+            catch (Exception e) { Printer.Error($"[Discord] SendConsoleEmbed error: {e}"); }
         }
 
         // This is intentionally NOT timestamped and NOT gated by the mirror window.
@@ -140,6 +327,278 @@ namespace GameServer.Integrations.Discord
 
             string cleaned = SanitizeDiscordText(text.Trim());
             Enqueue(ChatChannelId, cleaned);
+        }
+
+        /// <summary>
+        /// KMH: Send a rich embed to the chat channel (or admin if chat is unset).
+        /// Embeds bypass the text-batching outbox and ship directly so the
+        /// formatting is preserved.
+        /// </summary>
+        public static void TryRelayEmbedToDiscordChat(Embed embed)
+        {
+            if (!Started || Client == null || embed == null) return;
+            ulong target = ChatChannelId != 0 ? ChatChannelId : AdminChannelId;
+            if (target == 0) return;
+            _ = Task.Run(() => SendEmbedAsync(target, embed));
+        }
+
+        private static async Task SendEmbedAsync(ulong channelId, Embed embed)
+        {
+            try
+            {
+                var channel = Client.GetChannel(channelId) as IMessageChannel;
+                if (channel == null) return;
+                await SendSemaphore.WaitAsync();
+                try { await channel.SendMessageAsync(embed: embed, allowedMentions: NoMentions); }
+                finally { SendSemaphore.Release(); }
+            }
+            catch (Exception e) { Printer.Error($"[Discord] SendEmbed error: {e}"); }
+        }
+
+        /// <summary>
+        /// KMH 2.7: Result of a showcase post — the channel the message lives
+        /// in (text channel ID or forum thread ID) and the message ID inside
+        /// it. Stored on UserFile so subsequent edits know what to update.
+        /// </summary>
+        public readonly struct ShowcasePostResult
+        {
+            public readonly ulong ChannelId;
+            public readonly ulong MessageId;
+            public readonly string PermalinkOrError;
+
+            public ShowcasePostResult(ulong channelId, ulong messageId, string permalinkOrError)
+            {
+                ChannelId = channelId;
+                MessageId = messageId;
+                PermalinkOrError = permalinkOrError;
+            }
+
+            public bool Success => ChannelId != 0 && MessageId != 0;
+        }
+
+        /// <summary>
+        /// KMH 2.7: Post or edit a player's `!showcase` embed. Handles both
+        /// forum channels (one thread per user, edits the OP on update) and
+        /// regular text channels (one edit-in-place message per user).
+        ///
+        /// Flow:
+        ///   * If <paramref name="existingChannelId"/> + <paramref name="existingMessageId"/>
+        ///     are set, try to edit that message. On success, return the same IDs.
+        ///   * On edit failure (deleted, thread archived, etc.) or first call,
+        ///     create a new post:
+        ///       - Forum channel → CreatePostAsync (new thread, OP carries the embed)
+        ///       - Text channel  → SendMessageAsync (new message)
+        ///     Return the new IDs.
+        ///
+        /// Returns a struct with the resulting IDs and a human-readable
+        /// permalink (for the chat-reply to the user) or an error string.
+        /// </summary>
+        public static async Task<ShowcasePostResult> PostOrEditShowcaseAsync(
+            ulong showcaseChannelId,
+            string threadTitle,
+            Embed embed,
+            ulong existingChannelId,
+            ulong existingMessageId)
+        {
+            if (!Started || Client == null || embed == null || showcaseChannelId == 0)
+                return new ShowcasePostResult(0, 0, "Discord bridge not started or showcase channel not configured.");
+
+            try
+            {
+                await SendSemaphore.WaitAsync();
+                try
+                {
+                    // -- Try to edit the existing post first. --
+                    if (existingChannelId != 0 && existingMessageId != 0)
+                    {
+                        try
+                        {
+                            var existingChannel = Client.GetChannel(existingChannelId) as IMessageChannel;
+                            if (existingChannel != null)
+                            {
+                                var existingMsg = await existingChannel.GetMessageAsync(existingMessageId);
+                                if (existingMsg is IUserMessage editable)
+                                {
+                                    await editable.ModifyAsync(props =>
+                                    {
+                                        props.Embed = embed;
+                                        props.Content = string.Empty;
+                                    });
+                                    return new ShowcasePostResult(existingChannelId, existingMessageId,
+                                        BuildJumpUrl(existingChannelId, existingMessageId));
+                                }
+                            }
+                        }
+                        catch (Exception editErr)
+                        {
+                            Printer.Warning($"[Discord] Showcase edit failed (will repost): {editErr.Message}", LogImportanceMode.Verbose);
+                        }
+                    }
+
+                    // -- No editable post → create a new one. Branch on
+                    //    forum vs text channel. --
+                    var target = Client.GetChannel(showcaseChannelId);
+                    if (target == null)
+                        return new ShowcasePostResult(0, 0, "Configured showcase channel not found.");
+
+                    if (target is IForumChannel forum)
+                    {
+                        // Trim the thread title to Discord's 100-char limit.
+                        string safeTitle = string.IsNullOrWhiteSpace(threadTitle) ? "Player Showcase" : threadTitle.Trim();
+                        if (safeTitle.Length > 100) safeTitle = safeTitle.Substring(0, 100);
+
+                        var thread = await forum.CreatePostAsync(
+                            title: safeTitle,
+                            archiveDuration: ThreadArchiveDuration.OneWeek,
+                            embeds: new[] { embed },
+                            allowedMentions: NoMentions);
+
+                        // The OP message in a forum thread is the FIRST message
+                        // inside the thread. We need its ID for future edits.
+                        ulong opId = 0;
+                        try
+                        {
+                            await foreach (var page in thread.GetMessagesAsync(1))
+                            {
+                                foreach (var msg in page)
+                                {
+                                    opId = msg.Id;
+                                    break;
+                                }
+                                if (opId != 0) break;
+                            }
+                        }
+                        catch (Exception getErr)
+                        {
+                            Printer.Warning($"[Discord] Showcase: couldn't fetch OP message ID: {getErr.Message}");
+                        }
+
+                        return new ShowcasePostResult(thread.Id, opId, BuildJumpUrl(thread.Id, opId));
+                    }
+                    else if (target is IMessageChannel textCh)
+                    {
+                        var newMsg = await textCh.SendMessageAsync(embed: embed, allowedMentions: NoMentions);
+                        ulong newId = newMsg?.Id ?? 0;
+                        return new ShowcasePostResult(showcaseChannelId, newId, BuildJumpUrl(showcaseChannelId, newId));
+                    }
+                    else
+                    {
+                        return new ShowcasePostResult(0, 0, "Configured showcase channel is not a text or forum channel.");
+                    }
+                }
+                finally { SendSemaphore.Release(); }
+            }
+            catch (Exception e)
+            {
+                Printer.Error($"[Discord] PostOrEditShowcase error: {e}");
+                return new ShowcasePostResult(0, 0, $"Discord error: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// KMH 2.7: Delete a previously-posted showcase. Returns true if the
+        /// message was successfully removed (or already gone). Forum threads
+        /// are deleted entirely; text-channel messages are removed without
+        /// touching anything else.
+        /// </summary>
+        public static async Task<bool> DeleteShowcaseAsync(ulong channelId, ulong messageId)
+        {
+            if (!Started || Client == null || channelId == 0) return false;
+
+            try
+            {
+                await SendSemaphore.WaitAsync();
+                try
+                {
+                    var ch = Client.GetChannel(channelId);
+                    if (ch is IThreadChannel thread)
+                    {
+                        await thread.DeleteAsync();
+                        return true;
+                    }
+                    if (ch is IMessageChannel textCh && messageId != 0)
+                    {
+                        try { await textCh.DeleteMessageAsync(messageId); }
+                        catch { /* already deleted - fine */ }
+                        return true;
+                    }
+                }
+                finally { SendSemaphore.Release(); }
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"[Discord] DeleteShowcase error: {e.Message}");
+            }
+            return false;
+        }
+
+        private static string BuildJumpUrl(ulong channelId, ulong messageId)
+        {
+            // Format: https://discord.com/channels/{guildId}/{channelId}/{messageId}
+            ulong guildId = GetPrimaryGuild()?.Id ?? 0;
+            if (guildId == 0 || channelId == 0 || messageId == 0) return string.Empty;
+            return $"https://discord.com/channels/{guildId}/{channelId}/{messageId}";
+        }
+
+        /// <summary>
+        /// KMH: Post or edit a leaderboard embed. Channel precedence:
+        ///   1. <c>DiscordLeaderboardChannelId</c> (dedicated channel)
+        ///   2. <c>DiscordChatChannelId</c> (chat fallback)
+        ///   3. <c>DiscordAdminChannelId</c> (last resort)
+        ///
+        /// If <paramref name="existingMessageId"/> is non-zero, attempts to
+        /// edit that message; on edit failure (deleted, etc.) falls back to
+        /// posting a new one. Returns the resulting message ID, or 0 on failure.
+        /// </summary>
+        public static async Task<ulong> PostOrEditEmbedAsync(Embed embed, ulong existingMessageId)
+        {
+            if (!Started || Client == null || embed == null) return 0;
+            // KMH: Prefer the dedicated leaderboard channel when configured,
+            // otherwise fall through to chat → admin like before.
+            ulong target = LeaderboardChannelId != 0
+                ? LeaderboardChannelId
+                : (ChatChannelId != 0 ? ChatChannelId : AdminChannelId);
+            if (target == 0) return 0;
+
+            try
+            {
+                var channel = Client.GetChannel(target) as IMessageChannel;
+                if (channel == null) return 0;
+
+                await SendSemaphore.WaitAsync();
+                try
+                {
+                    if (existingMessageId != 0)
+                    {
+                        try
+                        {
+                            var msg = await channel.GetMessageAsync(existingMessageId);
+                            if (msg is IUserMessage editable)
+                            {
+                                await editable.ModifyAsync(props =>
+                                {
+                                    props.Embed = embed;
+                                    props.Content = string.Empty;
+                                });
+                                return existingMessageId;
+                            }
+                        }
+                        catch (Exception editErr)
+                        {
+                            Printer.Warning($"[Discord] Edit failed (will repost): {editErr.Message}", LogImportanceMode.Verbose);
+                        }
+                    }
+
+                    var newMsg = await channel.SendMessageAsync(embed: embed, allowedMentions: NoMentions);
+                    return newMsg?.Id ?? 0;
+                }
+                finally { SendSemaphore.Release(); }
+            }
+            catch (Exception e)
+            {
+                Printer.Error($"[Discord] PostOrEditEmbed error: {e}");
+                return 0;
+            }
         }
 
         public static void TryStart()
@@ -167,8 +626,15 @@ namespace GameServer.Integrations.Discord
 
                 ChatChannelId = ParseUlong(cfg.DiscordChatChannelId);
                 AdminChannelId = ParseUlong(cfg.DiscordAdminChannelId);
+                LeaderboardChannelId = ParseUlong(cfg.DiscordLeaderboardChannelId);
                 CommandPrefix = string.IsNullOrWhiteSpace(cfg.DiscordCommandPrefix) ? "!" : cfg.DiscordCommandPrefix.Trim();
                 AdminRoleIds = ParseRoleIds(cfg.DiscordAdminRoleIdsCsv);
+
+                // KMH: server-identity + multi-server config.
+                ServerTag = SanitiseServerTag(cfg.DiscordServerTag, cfg.Port);
+                CrossServerBridgeEnabled = cfg.EnableCrossServerChatBridge;
+                UseEmbedsForConsole = cfg.DiscordUseEmbedsForConsole;
+                ConsoleMinSeverity = Math.Max(0, Math.Min(2, cfg.DiscordConsoleMinSeverity));
 
                 if (ChatChannelId == 0 && AdminChannelId == 0)
                 {
@@ -188,6 +654,8 @@ namespace GameServer.Integrations.Discord
 
                 Client = new DiscordSocketClient(socketCfg);
                 Client.MessageReceived += OnMessageReceivedAsync;
+                // KMH 26.5.20: Listen for button clicks on listing embeds.
+                Client.ButtonExecuted += OnButtonExecutedAsync;
 
                 await Client.LoginAsync(TokenType.Bot, token);
                 await Client.StartAsync();
@@ -250,10 +718,38 @@ namespace GameServer.Integrations.Discord
             try
             {
                 if (!Started) return;
-                if (raw.Author?.IsBot == true) return;
+
+                ulong ourBotId = Client?.CurrentUser?.Id ?? 0;
+                bool authorIsBot = raw.Author?.IsBot == true;
+                bool authorIsUs = raw.Author != null && raw.Author.Id == ourBotId;
+
+                // KMH: Cross-server chat bridge.
+                // Skip our own echoes always. Skip other bots unless the bridge is on
+                // AND this is a bridge-formatted chat message from a different server.
+                if (authorIsUs) return;
+                if (authorIsBot && !TryHandleCrossServerBridge(raw)) return;
 
                 var content = raw.Content?.Trim() ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(content)) return;
+
+                // KMH: Optional bot-mention gate. When DiscordRequireBotMention
+                // is on, every command must be addressed via @MyBot first —
+                // critical for multi-bot channels (multiple RWT servers in one
+                // Discord guild) so only the pinged bot responds.
+                bool requireMention = GameServer.Core.Master.ServerConfig?.DiscordRequireBotMention ?? false;
+                bool looksLikeCommand = content.StartsWith("!", StringComparison.Ordinal);
+
+                if (looksLikeCommand && requireMention)
+                {
+                    if (!TryStripLeadingBotMention(ref content, ourBotId))
+                        return; // no mention → not directed at us
+                }
+                else
+                {
+                    // Even when the gate is off, allow optional leading mention
+                    // (so users can always `@MyBot !market` if they like).
+                    TryStripLeadingBotMention(ref content, ourBotId);
+                }
 
                 // KMH: Handle !link command from any channel or DM
                 if (content.StartsWith("!link ", StringComparison.OrdinalIgnoreCase))
@@ -263,13 +759,27 @@ namespace GameServer.Integrations.Discord
                     return;
                 }
 
-                // KMH: Handle !profile command to show linked status
+                // KMH: !profile / !whoami — show your linked status.
+                // KMH 26.5.20: !profile <username> — public profile of any
+                // player (linked-or-not). No leaked admin flags / Discord IDs.
                 if (content.Equals("!profile", StringComparison.OrdinalIgnoreCase) ||
                     content.Equals("!whoami", StringComparison.OrdinalIgnoreCase))
                 {
-                    await HandleProfileCommand(raw);
+                    await HandleProfileCommand(raw, null);
                     return;
                 }
+                if (content.StartsWith("!profile ", StringComparison.OrdinalIgnoreCase))
+                {
+                    string target = content.Substring(9).Trim();
+                    await HandleProfileCommand(raw, target);
+                    return;
+                }
+
+                // KMH: Marketplace / treasury / quest commands run from any channel
+                // the bot can read. Dispatched BEFORE the chat-broadcast path so they
+                // don't leak into the in-game chat as a normal message.
+                if (await DiscordMarketCommands.TryDispatchAsync(raw, content))
+                    return;
 
                 if (ChatChannelId != 0 && raw.Channel.Id == ChatChannelId)
                 {
@@ -284,33 +794,85 @@ namespace GameServer.Integrations.Discord
                 if (AdminChannelId != 0 && raw.Channel.Id == AdminChannelId)
                 {
                     if (!content.StartsWith(CommandPrefix, StringComparison.Ordinal)) return;
-                    if (!IsAuthorizedAdmin(raw)) { await SafeReply(raw.Channel, "❌ Not authorized."); return; }
+                    if (!IsAuthorizedAdmin(raw))
+                    {
+                        await raw.Channel.SendMessageAsync(embed: DiscordResponseBuilder.Build(
+                            DiscordResponseBuilder.Style.Error, "Not Authorized",
+                            "You don't have permission to run admin commands here."));
+                        return;
+                    }
 
                     var cmd = content.Substring(CommandPrefix.Length).Trim();
                     if (string.IsNullOrWhiteSpace(cmd)) return;
 
-                    BeginConsoleMirrorWindow();
-
+                    // Capture output explicitly — DON'T open the console mirror window,
+                    // because it would re-relay every Printer.Warning line as its own
+                    // "Server Warning" embed. We collect once, render once.
                     string[] outputLines = CMD_Base.ExecuteCommand(cmd, fromDiscord: true);
 
-                    // Build reply with command output
-                    if (outputLines != null && outputLines.Length > 0)
+                    if (outputLines == null || outputLines.Length == 0)
                     {
-                        string output = string.Join("\n", outputLines);
-                        // Discord message limit is 2000 chars
-                        if (output.Length > 1900)
-                            output = output.Substring(0, 1900) + "\n... (truncated)";
-                        await SafeReply(raw.Channel, $"```\n{output}\n```");
+                        await raw.Channel.SendMessageAsync(embed: DiscordResponseBuilder.Build(
+                            DiscordResponseBuilder.Style.Success, "Executed",
+                            $"`{cmd}` ran with no output."));
+                        return;
                     }
-                    else
+
+                    // Strip standard log-level prefixes ("[OPTIONS]", " > ") that the
+                    // Printer adds, so the embed is clean.
+                    List<string> cleanedLines = new List<string>(outputLines.Length);
+                    foreach (string raw1 in outputLines)
                     {
-                        await SafeReply(raw.Channel, "✅ Executed (no output).");
+                        string ln = (raw1 ?? string.Empty).TrimEnd();
+                        if (ln.Length == 0) continue;
+                        cleanedLines.Add(ln);
                     }
+
+                    // Pagination: Discord embed body cap is ~4096 chars. We chunk
+                    // cleanedLines into pages whose size is driven by the
+                    // DiscordOutputMode config (Compact/Normal/Verbose).
+                    Embed pagedEmbed = DiscordResponseBuilder.BuildPaged(
+                        DiscordResponseBuilder.Style.Admin,
+                        $"`!{cmd}`",
+                        cleanedLines,
+                        pageOneIndexed: 1,
+                        pageSize: DiscordResponseBuilder.PageSizeFromConfig,
+                        footerHint: "use admin console for more pages");
+
+                    await raw.Channel.SendMessageAsync(embed: pagedEmbed);
                 }
             }
             catch (Exception e)
             {
                 Printer.Error($"[Discord] MessageReceived error: {e}");
+            }
+        }
+
+        /// <summary>
+        /// KMH 26.5.20: Discord component-button click handler. Dispatches
+        /// known custom-id prefixes to specific subsystems. Today we support:
+        ///   buy:&lt;listingId&gt;:&lt;qty&gt;     — quick-buy a listing from a button
+        /// </summary>
+        private static async Task OnButtonExecutedAsync(SocketMessageComponent component)
+        {
+            try
+            {
+                string id = component.Data?.CustomId ?? string.Empty;
+                if (id.StartsWith("buy:", StringComparison.Ordinal))
+                {
+                    await DiscordMarketCommands.HandleBuyButtonAsync(component, id);
+                    return;
+                }
+                // Unknown button → acknowledge so Discord doesn't show "this
+                // interaction failed" for buttons from a different bot
+                // version still hanging around.
+                await component.DeferAsync(ephemeral: true);
+            }
+            catch (Exception e)
+            {
+                Printer.Warning($"[Discord] ButtonExecuted error: {e}");
+                try { await component.RespondAsync($"❌ Button error: {e.Message}", ephemeral: true); }
+                catch { }
             }
         }
 
@@ -344,7 +906,9 @@ namespace GameServer.Integrations.Discord
                     mentionUserIds = mentionResult.UserIds;
                 }
 
-                Enqueue(ChatChannelId, $"**{safeUser}:** {safeMsg}", mentionUserIds);
+                // KMH: Tag with server identity. Format must match BridgeChatRegex
+                // so other servers' bots can parse + relay back in-game.
+                Enqueue(ChatChannelId, $"**[{ServerTag}] {safeUser}:** {safeMsg}", mentionUserIds);
             }
             catch (Exception e)
             {
@@ -477,63 +1041,80 @@ namespace GameServer.Integrations.Discord
                 string discordId = raw.Author.Id.ToString();
                 string discordName = GetBestName(raw);
 
-                // Search all user files for a matching token
-                string[] userFiles = System.IO.Directory.GetFiles(GameServer.Core.Master.UsersPath);
-                foreach (string userFilePath in userFiles)
+                // KMH 2.7: Use the in-memory UserManagerH cache rather than
+                // re-reading every UserFile from disk and SerializeToFile-ing
+                // them back. Two reasons:
+                //   1. The old path was O(n²) disk reads (every-file scan for
+                //      the token, then for every match a second every-file
+                //      scan to detect Discord-ID dupes).
+                //   2. More importantly, the old path could OVERWRITE live
+                //      in-flight stat updates: PlayerStatsManager mutates the
+                //      cached UserFile and calls SaveUserFile. The old !link
+                //      code re-read from disk into a NEW UserFile object and
+                //      stomped it back — silently dropping any stat increments
+                //      that happened between the disk read and the write.
+                //   3. SaveUserFile fires the OnUserFileSaved event so the
+                //      cache stays consistent.
+                TCPNetwork.Files.Client.UserFile[] all =
+                    GameServer.Managers.UserManagerH.GetAllUserFiles();
+
+                TCPNetwork.Files.Client.UserFile target = null;
+                foreach (TCPNetwork.Files.Client.UserFile uf in all)
                 {
-                    try
-                    {
-                        var userFile = Serializer.SerializeFromFile<TCPNetwork.Files.Client.UserFile>(userFilePath);
-                        if (userFile == null) continue;
-                        if (string.IsNullOrEmpty(userFile.DiscordLinkToken)) continue;
-                        if (userFile.DiscordLinkToken != token) continue;
-
-                        // Check expiry
-                        if (System.DateTime.UtcNow.Ticks > userFile.DiscordLinkTokenExpiry)
-                        {
-                            userFile.DiscordLinkToken = null;
-                            userFile.DiscordLinkTokenExpiry = 0;
-                            Serializer.SerializeToFile(userFilePath, userFile);
-                            await SafeReply(raw.Channel, "❌ Token expired. Generate a new one with `/link` in-game.");
-                            return;
-                        }
-
-                        // Check if this Discord account is already linked to someone else
-                        foreach (string otherPath in userFiles)
-                        {
-                            try
-                            {
-                                var other = Serializer.SerializeFromFile<TCPNetwork.Files.Client.UserFile>(otherPath);
-                                if (other != null && other.DiscordId == discordId && other.Username != userFile.Username)
-                                {
-                                    await SafeReply(raw.Channel, $"❌ Your Discord is already linked to `{other.Username}`. They must `/unlink` first.");
-                                    return;
-                                }
-                            }
-                            catch { }
-                        }
-
-                        // Link!
-                        userFile.DiscordId = discordId;
-                        userFile.DiscordUsername = discordName;
-                        userFile.DiscordLinkToken = null;
-                        userFile.DiscordLinkTokenExpiry = 0;
-                        Serializer.SerializeToFile(userFilePath, userFile);
-
-                        await SafeReply(raw.Channel, $"✅ Linked! Discord `{discordName}` ↔ In-game `{userFile.Username}`");
-
-                        // Notify in-game if player is online
-                        var onlineClient = GameServer.Hooks.TCPNetwork.ServerNetwork.GetConnectedClientFromUsername(userFile.Username);
-                        if (onlineClient != null)
-                            GameServer.PacketManager.PM_Chat.SendConsoleMessage(onlineClient, $"Discord linked to {discordName}!");
-
-                        Printer.Warning($"[Discord] Linked {discordName} ({discordId}) to {userFile.Username}");
-                        return;
-                    }
-                    catch { }
+                    if (uf == null) continue;
+                    if (string.IsNullOrEmpty(uf.DiscordLinkToken)) continue;
+                    if (uf.DiscordLinkToken != token) continue;
+                    target = uf;
+                    break;
                 }
 
-                await SafeReply(raw.Channel, "❌ Token not found. Generate one with `/link` in-game first.");
+                if (target == null)
+                {
+                    await SafeReply(raw.Channel, "❌ Token not found. Generate one with `/link` in-game first.");
+                    return;
+                }
+
+                // Token expiry — clear it via SaveUserFile so the cache stays
+                // consistent and any in-flight stat updates on this UserFile
+                // aren't dropped.
+                if (System.DateTime.UtcNow.Ticks > target.DiscordLinkTokenExpiry)
+                {
+                    target.DiscordLinkToken = null;
+                    target.DiscordLinkTokenExpiry = 0;
+                    target.SaveUserFile();
+                    await SafeReply(raw.Channel, "❌ Token expired. Generate a new one with `/link` in-game.");
+                    return;
+                }
+
+                // Duplicate-Discord-ID check — O(n) single pass over cache.
+                foreach (TCPNetwork.Files.Client.UserFile uf in all)
+                {
+                    if (uf == null || uf == target) continue;
+                    if (string.Equals(uf.DiscordId, discordId, StringComparison.Ordinal)
+                        && !string.Equals(uf.Username, target.Username, StringComparison.OrdinalIgnoreCase))
+                    {
+                        await SafeReply(raw.Channel,
+                            $"❌ Your Discord is already linked to `{uf.Username}`. They must `/unlink` first.");
+                        return;
+                    }
+                }
+
+                // Link via SaveUserFile so the cache + OnUserFileSaved event
+                // both fire correctly.
+                target.DiscordId = discordId;
+                target.DiscordUsername = discordName;
+                target.DiscordLinkToken = null;
+                target.DiscordLinkTokenExpiry = 0;
+                target.SaveUserFile();
+
+                await SafeReply(raw.Channel, $"✅ Linked! Discord `{discordName}` ↔ In-game `{target.Username}`");
+
+                // Notify in-game if player is online.
+                var onlineClient = GameServer.Hooks.TCPNetwork.ServerNetwork.GetConnectedClientFromUsername(target.Username);
+                if (onlineClient != null)
+                    GameServer.PacketManager.PM_Chat.SendConsoleMessage(onlineClient, $"Discord linked to {discordName}!");
+
+                Printer.Warning($"[Discord] Linked {discordName} ({discordId}) to {target.Username}");
             }
             catch (System.Exception e)
             {
@@ -542,38 +1123,107 @@ namespace GameServer.Integrations.Discord
             }
         }
 
-        private static async Task HandleProfileCommand(SocketMessage raw)
+        private static async Task HandleProfileCommand(SocketMessage raw, string targetUsername)
         {
             try
             {
-                string discordId = raw.Author.Id.ToString();
-                string[] userFiles = System.IO.Directory.GetFiles(GameServer.Core.Master.UsersPath);
+                // KMH 2.7: Cache-only lookup (no disk re-reads), no [ADMIN]
+                // flag leak, no Discord ID leak.
+                // KMH 26.5.20: When `targetUsername` is provided, look up
+                // THAT player's public profile instead of the caller's. Lets
+                // anyone (linked or not) check stats on any player.
+                TCPNetwork.Files.Client.UserFile userFile = null;
 
-                foreach (string path in userFiles)
+                if (!string.IsNullOrWhiteSpace(targetUsername))
                 {
-                    try
+                    // Public profile lookup by in-game username.
+                    userFile = GameServer.Managers.UserManagerH.GetUserFileFromName(targetUsername.Trim());
+                    if (userFile == null)
                     {
-                        var userFile = Serializer.SerializeFromFile<TCPNetwork.Files.Client.UserFile>(path);
-                        if (userFile?.DiscordId == discordId)
+                        await SafeReply(raw.Channel, $"❌ No player called `{targetUsername.Trim()}` on this server.");
+                        return;
+                    }
+                }
+                else
+                {
+                    // Default: the caller's own profile via their linked Discord ID.
+                    string discordId = raw.Author.Id.ToString();
+                    foreach (TCPNetwork.Files.Client.UserFile uf in GameServer.Managers.UserManagerH.GetAllUserFiles())
+                    {
+                        if (uf != null && string.Equals(uf.DiscordId, discordId, StringComparison.Ordinal))
                         {
-                            bool online = GameServer.Hooks.TCPNetwork.ServerNetwork.GetConnectedClientFromUsername(userFile.Username) != null;
-                            string status = online ? "🟢 Online" : "⚫ Offline";
-                            string admin = userFile.IsAdmin ? " [ADMIN]" : "";
-                            string guild = string.IsNullOrEmpty(userFile.GuildName) ? "None" : userFile.GuildName;
-
-                            await SafeReply(raw.Channel,
-                                $"**{userFile.Username}**{admin} {status}\n" +
-                                $"Guild: {guild}\n" +
-                                $"Discord: {userFile.DiscordUsername}");
-                            return;
+                            userFile = uf;
+                            break;
                         }
                     }
-                    catch { }
+                    if (userFile == null)
+                    {
+                        await SafeReply(raw.Channel,
+                            "❌ No linked account found. Use `/link` in-game first, then `!link <token>` here.\n" +
+                            "_Tip: you can look up another player without linking via_ `!profile <username>`.");
+                        return;
+                    }
                 }
 
-                await SafeReply(raw.Channel, "❌ No linked account found. Use `/link` in-game first.");
+                bool online = GameServer.Hooks.TCPNetwork.ServerNetwork.GetConnectedClientFromUsername(userFile.Username) != null;
+                string status = online ? "🟢 Online" : "⚫ Offline";
+                string guild = string.IsNullOrEmpty(userFile.GuildName) ? "_None_" : userFile.GuildName;
+
+                // Tenure
+                string tenure = "—";
+                if (userFile.FirstSeenUtcTicks > 0)
+                {
+                    System.TimeSpan span = System.DateTime.UtcNow - new System.DateTime(userFile.FirstSeenUtcTicks, System.DateTimeKind.Utc);
+                    if (span.TotalDays >= 1) tenure = $"{(int)span.TotalDays}d";
+                    else if (span.TotalHours >= 1) tenure = $"{(int)span.TotalHours}h";
+                    else tenure = $"{System.Math.Max(1, (int)span.TotalMinutes)}m";
+                }
+
+                // Build the public-safe embed. NO IsAdmin, NO Discord ID,
+                // NO token, NO IP — only what a player would expect to be
+                // visible on a public profile card.
+                var eb = new EmbedBuilder()
+                    .WithTitle($"👤 {userFile.Username}")
+                    .WithColor(new Color(112, 161, 255))
+                    .WithDescription(string.IsNullOrEmpty(userFile.DiscordUsername)
+                        ? null
+                        : $"_Linked to_ **{userFile.DiscordUsername}**")
+                    .AddField("Status", status, true)
+                    .AddField("Guild", guild, true)
+                    .AddField("Tenure", tenure, true)
+                    .AddField("Silver donated", $"`{userFile.LifetimeSilverDonated:N0}s`", true)
+                    .AddField("Sales earned", $"`{userFile.LifetimeSilverEarnedFromSales:N0}s`", true)
+                    .AddField("Quests done", $"`{userFile.LifetimeQuestsCompleted}`", true)
+                    .AddField("Sites built", $"`{userFile.LifetimeSitesBuilt}`", true)
+                    .AddField("Worker XP", $"`{userFile.LifetimeWorkerXpEarned:N0}`", true);
+
+                // If they have a showcase posted, link to it.
+                ulong scCh = 0, scMsg = 0;
+                ulong.TryParse(userFile.DiscordShowcaseChannelId ?? "0", out scCh);
+                ulong.TryParse(userFile.DiscordShowcaseMessageId ?? "0", out scMsg);
+                if (scCh != 0 && scMsg != 0)
+                {
+                    string link = BuildJumpUrl(scCh, scMsg);
+                    if (!string.IsNullOrEmpty(link))
+                        eb.AddField("🛒 Sell showcase", $"[Jump to showcase]({link})", false);
+                }
+
+                eb.WithFooter($"{ServerTag}");
+                await SendEmbedReplyAsync(raw.Channel, eb.Build());
             }
-            catch { }
+            catch (Exception e)
+            {
+                Printer.Warning($"[Discord] HandleProfileCommand error: {e}");
+            }
+        }
+
+        // KMH 26.5.20: Helper for embed replies (the existing SafeReply is plain text).
+        private static async Task SendEmbedReplyAsync(ISocketMessageChannel channel, Embed embed)
+        {
+            if (channel == null || embed == null) return;
+            await SendSemaphore.WaitAsync();
+            try { await channel.SendMessageAsync(embed: embed, allowedMentions: NoMentions); }
+            finally { SendSemaphore.Release(); }
         }
 
         private static async Task SafeReply(ISocketMessageChannel channel, string text)
@@ -667,10 +1317,58 @@ namespace GameServer.Integrations.Discord
             return set;
         }
 
+        /// <summary>
+        /// KMH: If <paramref name="content"/> starts with an @-mention of our
+        /// bot (the literal `&lt;@id&gt;` or `&lt;@!id&gt;` Discord uses), strip
+        /// it (and any trailing whitespace) and return true. Otherwise leave
+        /// the content alone and return false.
+        ///
+        /// Discord's mention text format:
+        ///   &lt;@USERID&gt;     — user mention
+        ///   &lt;@!USERID&gt;    — nickname mention (older client format)
+        /// </summary>
+        private static bool TryStripLeadingBotMention(ref string content, ulong botId)
+        {
+            if (string.IsNullOrEmpty(content) || botId == 0) return false;
+
+            string m1 = $"<@{botId}>";
+            string m2 = $"<@!{botId}>";
+
+            string trimmed = content.TrimStart();
+            int matchLen = 0;
+            if (trimmed.StartsWith(m1, StringComparison.Ordinal)) matchLen = m1.Length;
+            else if (trimmed.StartsWith(m2, StringComparison.Ordinal)) matchLen = m2.Length;
+            else return false;
+
+            content = trimmed.Substring(matchLen).TrimStart();
+            return true;
+        }
+
         private static ulong ParseUlong(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return 0;
             return ulong.TryParse(input.Trim(), out var v) ? v : 0;
+        }
+
+        /// <summary>
+        /// KMH: Sanitise the configured server-tag down to a short ASCII slug.
+        /// Falls back to "S{port}" so multi-server clusters still get a sensible
+        /// default if the operator forgot to set DiscordServerTag.
+        /// </summary>
+        private static string SanitiseServerTag(string raw, int port)
+        {
+            string r = (raw ?? string.Empty).Trim();
+            // Letters/digits/dash/underscore only, max 16 chars.
+            StringBuilder sb = new StringBuilder(r.Length);
+            foreach (char c in r)
+            {
+                if (char.IsLetterOrDigit(c) || c == '-' || c == '_') sb.Append(c);
+                if (sb.Length >= 16) break;
+            }
+            string clean = sb.ToString();
+            if (string.IsNullOrEmpty(clean))
+                clean = port > 0 ? $"S{port}" : "S?";
+            return clean;
         }
 
         private static string Escape(string s)

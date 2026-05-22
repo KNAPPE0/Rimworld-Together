@@ -13,34 +13,78 @@ namespace GameClient.Files
 
         public static string FilePath { get; set; } = string.Empty;
 
-        public static void SetFilePath(string path) { FilePath = path; }
+        // KMH 26.5.20.1: Per-frame disk I/O bug fix.
+        // Every Load() call did File.Exists + a JSON deserialise from disk.
+        // Five dialogs called this *inside* their DoWindowContents() to read
+        // the player's username — that's 5 disks reads + 5 JSON parses
+        // **per frame at 60fps**, every frame, for the entire time any of
+        // those dialogs was open.
+        //
+        // The settings file only changes via this class's Save(), so a
+        // process-wide cache is safe. SetFilePath / Regenerate explicitly
+        // invalidate it.
+        private static PersistentSettings _cached;
+        private static readonly object CacheLock = new object();
 
-        public void Save() { Serializer.SerializeToFile(FilePath, this); }
+        public static void SetFilePath(string path)
+        {
+            FilePath = path;
+            lock (CacheLock) { _cached = null; }
+        }
+
+        public void Save()
+        {
+            Serializer.SerializeToFile(FilePath, this);
+            // Refresh the cache so the in-memory copy matches what's on disk.
+            lock (CacheLock) { _cached = this; }
+        }
 
         public static PersistentSettings Load()
         {
-            if (!File.Exists(FilePath)) Regenerate();
-            try
+            // Fast path: cache hit. No lock needed because we only do an
+            // unsynchronised reference read — at worst we observe the old
+            // value during a Save, which is harmless.
+            PersistentSettings hit = _cached;
+            if (hit != null) return hit;
+
+            lock (CacheLock)
             {
-                PersistentSettings value = Serializer.SerializeFromFile<PersistentSettings>(FilePath);
-                if (value == null)
+                // Double-checked.
+                if (_cached != null) return _cached;
+
+                if (!File.Exists(FilePath)) RegenerateLocked();
+                try
                 {
-                    Printer.Error($"Error while parsing existing persistent settings file, was somehow null, returning default value,");
-                    value = new PersistentSettings();
+                    PersistentSettings value = Serializer.SerializeFromFile<PersistentSettings>(FilePath);
+                    if (value == null)
+                    {
+                        Printer.Error($"Error while parsing existing persistent settings file, was somehow null, returning default value,");
+                        value = new PersistentSettings();
+                    }
+                    _cached = value;
+                    return value;
                 }
-                return value;
-            }
-            catch (Exception e)
-            {
-                Printer.Error($"Error while parsing existing persistent settings file, returning default value\n{e}");
-                return new PersistentSettings();
+                catch (Exception e)
+                {
+                    Printer.Error($"Error while parsing existing persistent settings file, returning default value\n{e}");
+                    // Don't cache a temporary failure — we want the next call
+                    // to retry the disk read in case it was transient.
+                    return new PersistentSettings();
+                }
             }
         }
 
         public static void Regenerate()
         {
+            lock (CacheLock) { RegenerateLocked(); }
+        }
+
+        // Caller must hold CacheLock.
+        private static void RegenerateLocked()
+        {
             PersistentSettings settings = new PersistentSettings();
-            settings.Save();
+            Serializer.SerializeToFile(FilePath, settings);
+            _cached = settings;
         }
     }
 

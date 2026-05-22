@@ -3,6 +3,7 @@ using Shared;
 using Shared.Files;
 using Shared.Files.Guilds;
 using Shared.Files.Sites;
+using Shared.Misc;
 using TCPNetwork.Files.Client;
 using TCPNetwork.PacketManagers;
 using TCPNetwork.Packets.Goodwills;
@@ -26,8 +27,17 @@ namespace GameServer.PacketManager
             SettlementFile settlementFile = PM_Settlements.GetSettlementFileFromTile(data._tile);
             SiteFile siteFile = SiteManagerHelper.GetSiteFileFromTile(data._tile);
 
+            // KMH 26.5.20.1 ANTI-CHEAT: if the tile resolves to neither a
+            // settlement nor a site, this is a forged packet — bail rather
+            // than NPE on `siteFile.Username`. Server-authoritative
+            // username (never trust the client's _username field).
             if (settlementFile != null) data._username = settlementFile.Username;
-            else data._username = siteFile.Username;
+            else if (siteFile != null) data._username = siteFile.Username;
+            else
+            {
+                Printer.Warning($"[Goodwill] {client?.UserFile?.Username} sent change for orphan tile {data._tile}. Ignored.");
+                return;
+            }
 
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile.GuildName);
             if (guild != null && GuildManagerH.CheckIfUserIsInFaction(guild, data._username))
@@ -42,25 +52,29 @@ namespace GameServer.PacketManager
 
         public static void UpdateClientGoodwills(ServerClient client)
         {
-            SettlementFile[] settlements = PM_Settlements.GetAllSettlements().Where(fetch => fetch.Username != client.UserFile.Username).ToArray();
-            SiteFile[] sites = SiteManagerHelper.GetAllSites().Where(fetch => fetch.Username != client.UserFile.Username).ToArray();
-
+            // KMH 26.5.20.1: Was allocating two intermediate arrays via
+            // LINQ Where().ToArray() just to skip the requester's own
+            // settlements/sites. Inline the filter into the existing
+            // foreach so we walk each cached array exactly once with zero
+            // intermediate allocation.
+            string mine = client?.UserFile?.Username;
             PKT_FactionGoodwill factionGoodwillData = new PKT_FactionGoodwill();
-            foreach (SettlementFile settlement in settlements)
+
+            foreach (SettlementFile settlement in PM_Settlements.GetAllSettlements())
             {
+                if (settlement == null || settlement.Username == mine) continue;
                 PKT_SettlementGoodwill goodwill = new PKT_SettlementGoodwill();
                 goodwill.Tile = settlement.Tile;
                 goodwill.Goodwill = GetSettlementGoodwill(client, settlement);
-
                 factionGoodwillData._settlements.Add(goodwill);
             }
 
-            foreach (SiteFile site in sites)
+            foreach (SiteFile site in SiteManagerHelper.GetAllSites())
             {
+                if (site == null || site.Username == mine) continue;
                 PKT_SiteGoodwill goodwill = new PKT_SiteGoodwill();
                 goodwill.Tile = site.Tile;
                 goodwill.Goodwill = GetSiteGoodwill(client, site);
-
                 factionGoodwillData._sites.Add(goodwill);
             }
 

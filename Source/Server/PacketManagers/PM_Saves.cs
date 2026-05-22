@@ -5,6 +5,7 @@ using Shared;
 using Shared.Files;
 using Shared.Files.Sites;
 using Shared.Misc;
+using System;
 using TCPNetwork.Files.Client;
 using TCPNetwork.PacketManagers;
 using TCPNetwork.Packets;
@@ -34,13 +35,13 @@ namespace GameServer.PacketManager
        
         public static bool CheckIfUserHasSave(ServerClient client)
         {
-            string[] saves = Directory.GetFiles(Master.SavesPath);
-            foreach (string save in saves)
-            {
-                if (Path.GetFileNameWithoutExtension(save) == client.UserFile.Username) return true;
-            }
-
-            return false;
+            // KMH 26.5.20.1: Was Directory.GetFiles + foreach (scans the
+            // entire saves directory) to test for a single known filename.
+            // File.Exists is a single stat() call — orders of magnitude
+            // cheaper on a server with hundreds of saved players.
+            string username = client?.UserFile?.Username;
+            if (string.IsNullOrEmpty(username)) return false;
+            return File.Exists(Path.Combine(Master.SavesPath, username + CommonValues.DefaultSaveFormat));
         }
 
         public static void ResetClientSave(ServerClient client)
@@ -101,6 +102,22 @@ namespace GameServer.PacketManager
             File.WriteAllBytes(savePath, data._fileBytes);
 
             InformationDisplayer.DisplaySaveGame(client);
+
+            // KMH 2.7: Every save/autosave is a natural cue that some
+            // gameplay action may have completed (sites finished a cycle,
+            // worker XP banked, etc.) — push fresh leaderboard snapshots to
+            // every connected client so any open dialogs reflect the latest
+            // numbers immediately, without having to wait for the 8-second
+            // poll or the 3-second event-throttle window.
+            //
+            // The broadcasts use the existing PM_PlayerStats / PM_GuildHall
+            // infrastructure, so they're safe to call from this packet
+            // handler thread.
+            try { PM_PlayerStats.BroadcastSnapshotToAll(); }
+            catch (Exception e) { Printer.Warning($"[Saves] PlayerStats broadcast failed: {e}"); }
+            try { PM_GuildHall.BroadcastLeaderboardToAll(); }
+            catch (Exception e) { Printer.Warning($"[Saves] GuildLeaderboard broadcast failed: {e}"); }
+
             if (data._forceDisconnect) client.Listener.MarkForDisconnect();
         }
     }

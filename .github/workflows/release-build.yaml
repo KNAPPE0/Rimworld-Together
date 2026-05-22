@@ -1,3 +1,25 @@
+# KMH 26.5.22.1: Two-stage release pipeline.
+#
+#   Stage 1 (build-server):  Per-RID self-contained single-file server
+#                            binaries. Uploaded to the GitHub release
+#                            as individual zips (win-x64.zip etc.) so
+#                            anyone using LocalServerHandler's URL
+#                            fallback can pull just their platform.
+#
+#   Stage 2 (bundle-mod):    Downloads all four per-RID binaries from
+#                            Stage 1, assembles the complete Steam-
+#                            Workshop-ready mod folder (About/, 1.6/,
+#                            LocalServer/<RID>/, Scripts/, ...), zips
+#                            it as kmh-<tag>.zip, and uploads to the
+#                            same release. That single file IS your
+#                            Workshop upload — download from the
+#                            release, unzip, point your uploader at it.
+#
+# Drop the RID list to match LocalServerHandler.ResolveCurrentRid():
+# win-x64, linux-x64, osx-x64, osx-arm64. Upstream's old workflow
+# also matrixed linux-arm + win-x86 but KMH doesn't recognise either
+# at runtime.
+
 name: Project Release
 
 on:
@@ -6,39 +28,180 @@ on:
       - published
 
 jobs:
+  # ---------------- Stage 1: per-RID server publishes ----------------
   build-server:
     strategy:
+      fail-fast: false
       matrix:
         version:
           - 8.0.x
-        target: 
-          - linux-arm
-          - linux-arm64
+        target:
           - linux-x64
           - win-x64
-          - win-x86
+          - osx-x64
+          - osx-arm64
     if: "!github.event.release.prerelease"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup dotnet ${{ matrix.version }}
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ matrix.version}}
+          dotnet-version: ${{ matrix.version }}
+
+      # Flags match Scripts/build-release.ps1 + Dockerfile + Makefile
+      # so every distribution channel produces byte-equivalent binaries.
       - name: Compile target
-        run: dotnet publish Source/Server/GameServer.csproj -c Release -r ${{ matrix.target }} --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true
-      - name: Find release
-        run: ls Source/Server/bin/Release/net8.0/${{ matrix.target }}/publish
+        run: |
+          dotnet publish Source/Server/GameServer.csproj \
+            -c Release \
+            -r ${{ matrix.target }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:EnableCompressionInSingleFile=true \
+            -p:DebugType=embedded \
+            -p:WarningLevel=0 \
+            -o publish/${{ matrix.target }}
 
-      - name: Rename and Zip Linux release
-        run: zip -j ${{ matrix.target }}.zip Source/Server/bin/Release/net8.0/${{ matrix.target }}/publish/GameServer
-        if: startsWith( matrix.target, 'linux')
-      - name: Rename and Zip Windows release
-        run:  zip -j ${{ matrix.target }}.zip Source/Server/bin/Release/net8.0/${{ matrix.target }}/publish/GameServer.exe
-        if: startsWith( matrix.target, 'win')
+      - name: Show publish output
+        run: ls -la publish/${{ matrix.target }}
 
-      - name: Upload compressed release
+      # Zip filename uses the RID directly so the URL the player pastes
+      # into LocalServerHandler is predictable:
+      #   https://github.com/<owner>/<repo>/releases/download/<tag>/win-x64.zip
+      - name: Zip release (Linux)
+        if: startsWith(matrix.target, 'linux')
+        run: zip -j ${{ matrix.target }}.zip publish/${{ matrix.target }}/GameServer
+
+      - name: Zip release (Windows)
+        if: startsWith(matrix.target, 'win')
+        run: zip -j ${{ matrix.target }}.zip publish/${{ matrix.target }}/GameServer.exe
+
+      - name: Zip release (macOS)
+        if: startsWith(matrix.target, 'osx')
+        run: zip -j ${{ matrix.target }}.zip publish/${{ matrix.target }}/GameServer
+
+      - name: Upload per-RID zip to GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ matrix.target }}.zip
 
+      # KMH 26.5.22.1: ALSO upload the raw published binary as a workflow
+      # artifact so the bundle-mod job below can grab all four RIDs and
+      # assemble the complete Workshop bundle. Artifacts are workflow-
+      # scoped (free, fast, deleted after 90 days by default) — the
+      # release assets we just uploaded above are the public-facing
+      # download for URL-fallback users.
+      - name: Upload published binary as artifact (for bundle step)
+        uses: actions/upload-artifact@v4
+        with:
+          name: localserver-${{ matrix.target }}
+          path: publish/${{ matrix.target }}
+          retention-days: 7
+
+  # ---------------- Stage 2: complete mod bundle ----------------
+  # Depends on build-server so all four artifacts exist. Downloads them,
+  # assembles the Steam-Workshop-ready folder, zips it, uploads to the
+  # release. Result: one click on the release page → unzipped folder
+  # ready for Steam Workshop upload.
+  bundle-mod:
+    needs: build-server
+    if: "!github.event.release.prerelease"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup dotnet (for client build)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Build the client DLL fresh so 1.6/Assemblies/GameClient.dll is
+      # current with the release tag's source. KMH's client targets
+      # net472 which the .NET 8 SDK can still build via the Krafs ref
+      # pack.
+      - name: Build client (Release)
+        run: dotnet build Source/Client/GameClient.csproj -c Release -p:WarningLevel=0 --nologo
+
+      # Pull all four per-RID artifacts uploaded by build-server.
+      - name: Download win-x64 server
+        uses: actions/download-artifact@v4
+        with:
+          name: localserver-win-x64
+          path: bundle-stage/LocalServer/win-x64
+
+      - name: Download linux-x64 server
+        uses: actions/download-artifact@v4
+        with:
+          name: localserver-linux-x64
+          path: bundle-stage/LocalServer/linux-x64
+
+      - name: Download osx-x64 server
+        uses: actions/download-artifact@v4
+        with:
+          name: localserver-osx-x64
+          path: bundle-stage/LocalServer/osx-x64
+
+      - name: Download osx-arm64 server
+        uses: actions/download-artifact@v4
+        with:
+          name: localserver-osx-arm64
+          path: bundle-stage/LocalServer/osx-arm64
+
+      # Stage the Steam-Workshop-ready folder. Mirrors what
+      # Scripts/build-release.ps1 + Makefile do locally — keep these
+      # three in sync if you change the include list.
+      - name: Stage mod folder
+        run: |
+          set -eu
+          STAGE="bundle-stage"
+
+          # The LocalServer/ tree is already in $STAGE from the download
+          # steps above. Now layer on the static repo content.
+          cp -r About            "$STAGE/About"
+          cp -r 1.6              "$STAGE/1.6"
+          cp -r Scripts          "$STAGE/Scripts"
+          cp    LoadFolders.xml  "$STAGE/LoadFolders.xml"
+          cp    LICENSE          "$STAGE/LICENSE"
+          cp    README.md        "$STAGE/README.md" 2>/dev/null || true
+
+          # Scrub dev artefacts that might've snuck into the copies.
+          find "$STAGE" -type d \( -name 'bin' -o -name 'obj' -o -name '.vs' \) -exec rm -rf {} + 2>/dev/null || true
+          find "$STAGE" -type f \( -name '*.csproj' -o -name '*.sln' -o -name '*.pdb' -o -name '*.xml' \) -delete 2>/dev/null || true
+
+          # Strip the upstream PublishedFileId.txt if it slipped through
+          # — release CI shouldn't be carrying that across into a Workshop
+          # upload. Maintainers paste their own ID into About/ before
+          # publishing locally; CI bundles are for downstream packagers
+          # who need to set their own ID anyway.
+          if [ -f "$STAGE/About/PublishedFileId.txt" ]; then
+            PFID=$(tr -d '[:space:]' < "$STAGE/About/PublishedFileId.txt")
+            if [ "$PFID" = "3005289691" ]; then
+              echo "Stripping upstream PublishedFileId.txt (would conflict with KMH Workshop entry)"
+              rm "$STAGE/About/PublishedFileId.txt"
+            fi
+          fi
+
+          echo "--- Bundle contents ---"
+          find "$STAGE" -maxdepth 3 -print | sort
+          echo "--- Bundle size ---"
+          du -sh "$STAGE"
+
+      # Zip with a sensible name. KMH-${tag}.zip lands in the release
+      # asset list. Strip the leading "v" if the tag uses one (e.g.
+      # release tag "v26.5.22.1" → file "kmh-26.5.22.1.zip").
+      - name: Zip bundle
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          CLEAN_TAG="${TAG#v}"
+          OUT="kmh-${CLEAN_TAG}.zip"
+          (cd bundle-stage && zip -r "../${OUT}" .)
+          ls -lh "$OUT"
+          echo "ARTIFACT_NAME=${OUT}" >> "$GITHUB_ENV"
+
+      - name: Upload bundle to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ARTIFACT_NAME }}

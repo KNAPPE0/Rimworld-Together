@@ -18,6 +18,29 @@ namespace Shared
 
         public bool IsChatCommand { get; set; } = false;
 
+        /// <summary>
+        /// KMH: Optional category override — leave empty to auto-classify by
+        /// prefix substring. Categorisation is purely cosmetic (drives `!help`
+        /// grouping); it does not affect what commands are actually available.
+        /// </summary>
+        public string Category { get; set; } = string.Empty;
+
+        /// <summary>Resolves a display category, falling back to substring matching on Prefix.</summary>
+        public string ResolvedCategory
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(Category)) return Category;
+                string p = (Prefix ?? string.Empty).ToLowerInvariant();
+                if (p.Contains("ban") || p.Contains("kick") || p.Contains("op") || p.Contains("whitelist") || p.Contains("pardon") || p.Contains("reset")) return "Moderation";
+                if (p.Contains("treasury") || p.Contains("market") || p.Contains("quest") || p.Contains("guild") || p.Contains("housepool") || p.Contains("site")) return "Economy";
+                if (p.Contains("event") || p.Contains("storyteller") || p.Contains("scenario") || p.Contains("difficulty")) return "Events";
+                if (p.Contains("config") || p.Contains("enforce") || p.Contains("backup") || p.Contains("save")) return "Config";
+                if (p.Contains("debug") || p.Contains("dev") || p.Contains("gc") || p.Contains("clear") || p.Contains("test")) return "Admin";
+                return "Server";
+            }
+        }
+
         public abstract void Action();
 
         public static string[] CommandParameters { get; set; } = null;
@@ -127,7 +150,16 @@ namespace Shared
             {
                 int parameterCount = input.Split(' ').Length - 1;
                 string parsedPrefix = input.Split(' ')[0].ToLower();
-                CommandParameters = input.Replace(parsedPrefix + " ", "").Split(' ');
+
+                // KMH: Previously when no args were typed (input == "help"),
+                // input.Replace("help ", "") was a no-op (no trailing space to
+                // remove) and Split(' ') returned ["help"]. Commands that
+                // checked CommandParameters[0] then mis-read the prefix word
+                // as the first argument (e.g. `help help` → unknown category).
+                // Now we explicitly produce an empty array when there are no args.
+                CommandParameters = parameterCount == 0
+                    ? Array.Empty<string>()
+                    : input.Substring(parsedPrefix.Length + 1).Split(' ');
 
                 CMD_Base toFetch = Commands.FirstOrDefault(x => x.Prefix == parsedPrefix);
                 if (toFetch == null) Printer.Warning($"Command '{parsedPrefix}' was not found");

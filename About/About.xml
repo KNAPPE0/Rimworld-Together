@@ -1,10 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ModMetaData>
-	<name>RimWorld Together</name>
-	<author>Nova and Company</author>
-	<packageId>nova.rimworldtogether</packageId>
+	<name>RimWorld Together (KMH)</name>
+	<author>Nova and Company, KMH edition</author>
+	<!--
+		KMH 26.5.22.1: packageId aligned with Master.ModPackageID
+		("nova.rimworldtogether.kmh"). Distinct from upstream's
+		"nova.rimworldtogether" so both can coexist in a player's mod list
+		— and so RimWorld correctly resolves Master.ModMainPath at runtime
+		(which LocalServerHandler + PM_Version depend on).
+
+		Existing players on a previous KMH build with the old "nova.rimworldtogether"
+		id will see a one-time "missing mod" notice when loading old saves —
+		harmless, they just need to enable the new KMH entry alongside the
+		old one once, then disable the old one.
+	-->
+	<packageId>nova.rimworldtogether.kmh</packageId>
 	<supportedVersions>
-		<li>1.5</li>
+		<!--
+			KMH 26.5.22.1: 1.5 entry removed — KMH's client assemblies are
+			built only against the 1.6 reference pack (see
+			Source/Client/GameClient.csproj: Krafs.Rimworld.Ref Version="1.6.4633"),
+			so the mod cannot actually load on RimWorld 1.5. Keeping it in
+			supportedVersions just produces a half-loaded broken state and
+			confused players. The 1.5/ folder is preserved for the
+			XML assets (Defs/Languages/Sounds/Textures) that 1.5 still uses,
+			but the gameplay code lives in 1.6/Assemblies/.
+		-->
 		<li>1.6</li>
 	</supportedVersions>
 	<loadAfter>
@@ -14,6 +35,10 @@
 		<li>Ludeon.Rimworld.Ideology</li>
 		<li>Ludeon.Rimworld.Biotech</li>
 		<li>Ludeon.Rimworld.Odyssey</li>
+		<!-- Load after upstream RWT if a player has both installed, so KMH's
+		     patches take precedence (avoids the harmony-collision dialog
+		     firing on every login). -->
+		<li>nova.rimworldtogether</li>
 	</loadAfter>
 	<modDependencies>
 		<li>
@@ -24,11 +49,25 @@
 	</modDependencies>
 	<incompatibleWith>
 		<li>jikulopo.prepatcher</li>
+		<!-- Upstream RWT and KMH RWT cannot both be active — they share
+		     packet headers + Harmony patch targets and would deadlock the
+		     mod chain. RimWorld won't auto-resolve this but the listing
+		     warns the player. -->
+		<li>nova.rimworldtogether</li>
 	</incompatibleWith>
-	<description>Ever wondered how would it be to be able to play with other players online in the same RimWorld world?\n
-"RimWorld Together" is an early access community project founded by people who want to push the idea further!\n
-Join a playstyle in which other players will actually be able to affect you!\n
-Chat with them, trade with them, spy on them, raid them, build sites with them or even visit them in real time!\n
-The list only gets bigger, what are you waiting for? Play, Together!
-	</description>
+	<description>RimWorld Together (KMH) — a fork of RimWorld Together with extensive QoL, economy, and Discord-integration additions on top of the upstream multiplayer baseline.
+
+What KMH adds on top of vanilla RimWorld Together:
+  - Guild system with treasury, ranks, members, hall, and leaderboards
+  - Marketplace: post items for sale, browse, buy, list WTBs, treasury sourcing
+  - Quest board: post quests, accept, complete for rewards
+  - Live leaderboards: per-player and per-guild, sortable, with badges and own-row highlighting
+  - Discord bridge: link your account, !market / !buy / !sell / !showcase / !wtb commands, live leaderboard embeds, chat relay
+  - Custom-built sites with worker progression, skill XP, and KMH-only site types
+  - One-click local-host: bundled per-platform server, install + edit configs + launch from the main menu
+  - Stronger anti-cheat: wealth clamping, packet validation, per-player cooldowns, IP banning
+
+Drop-in replacement for the upstream "RimWorld Together" mod. Servers built with KMH speak a superset of the upstream protocol — KMH clients cannot connect to vanilla RWT servers and vice versa.
+
+For self-hosters: bundled server builds for Windows / Linux x64 / macOS Intel / macOS Apple Silicon ship inside the mod itself; click Host Local Server in the main menu, KMH copies the right binary into AppData, and one click later you're running.</description>
 </ModMetaData>

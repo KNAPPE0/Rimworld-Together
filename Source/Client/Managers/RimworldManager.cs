@@ -96,6 +96,21 @@ namespace GameClient.Managers
             return totalSilver;
         }
 
+        /// <summary>
+        /// KMH: Total stack count of any defName in a caravan. Generalises
+        /// <see cref="GetSilverInCaravan"/> for the treasury/marketplace dialogs.
+        /// </summary>
+        public static int GetItemCountInCaravan(Caravan caravan, string defName)
+        {
+            if (caravan == null || string.IsNullOrEmpty(defName)) return 0;
+            List<Thing> matches = CaravanInventoryUtility.AllInventoryItems(caravan)
+                .FindAll(x => x.def != null && x.def.defName == defName);
+
+            int total = 0;
+            foreach (Thing stack in matches) total += stack.stackCount;
+            return total;
+        }
+
         public static void GenerateLetter(string title, string description, LetterDef letterType)
         {
             Find.LetterStack.ReceiveLetter(title, description, letterType);

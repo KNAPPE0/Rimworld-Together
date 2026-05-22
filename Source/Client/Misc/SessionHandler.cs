@@ -95,6 +95,12 @@ namespace GameClient.Misc
             IsAdmin = GlobalData._isClientAdmin;
             HasFaction = GlobalData._isClientFactionMember;
             CurrentActionValues = GlobalData._actionValues;
+
+            // KMH 26.5.22.1: Refresh Discord Rich Presence now that we
+            // have a username + server endpoint. Safe to call any time —
+            // no-ops if Discord RP isn't available.
+            try { DiscordHandler.RefreshFromSession(); }
+            catch { }
         }
 
         [OnUpdate]
@@ -121,6 +127,27 @@ namespace GameClient.Misc
         private static void ForceBackgroundMode()
         {
             try { Prefs.RunInBackground = true; }
+            catch { }
+        }
+
+        /// <summary>
+        /// KMH 26.5.22.1: Ported from upstream RWT (May 2026 — "Patched
+        /// learning helper"). Vanilla RimWorld's Adaptive Training (the
+        /// little "did you know..." tutorial popups) pause the game,
+        /// interrupt UI, and confuse new multiplayer players. In a
+        /// connected session that's a hard nope — your colony might be
+        /// under raid while you're staring at a tutorial about hauling.
+        ///
+        /// <para>Forcing it off every tick is cheap (one bool set) and
+        /// resilient — even if the user re-enables it via vanilla
+        /// options, the next OnUpdate flips it back. We don't gate this
+        /// on connection state because the same "no popups please"
+        /// expectation applies the moment KMH is active.</para>
+        /// </summary>
+        [OnUpdate]
+        private static void ForceDisableLearningHelper()
+        {
+            try { Prefs.AdaptiveTrainingEnabled = false; }
             catch { }
         }
 
@@ -176,6 +203,11 @@ namespace GameClient.Misc
             CurrentNetworkState = ClientNetworkState.Disconnected;
 
             try { GameClient.Managers.OptionsProfileSessionManager.TryRestoreOnDisconnect(); }
+            catch { }
+
+            // KMH 26.5.22.1: Disconnect resets the Rich Presence so the
+            // player's Discord profile shows "On main menu" again.
+            try { DiscordHandler.RefreshFromSession(); }
             catch { }
         }
     }

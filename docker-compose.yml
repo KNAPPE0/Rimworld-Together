@@ -1,11 +1,51 @@
+# KMH 26.5.22.1: KMH RimWorld Together server, container-first.
+#
+# Two modes — uncomment whichever fits your setup:
+#
+#   1. "build" mode (default below): builds from the Dockerfile in this
+#      repo every time you `docker compose up --build`. Use this if you
+#      don't push a KMH image to a container registry, or if you want
+#      to ship a tweaked KMH build without re-uploading anywhere. The
+#      build is hermetic (Dockerfile pulls only Source/) and matches
+#      the LocalServer/linux-x64/GameServer that ships in the Steam
+#      Workshop bundle.
+#
+#   2. "image" mode: pulls a pre-built image from a container registry.
+#      Faster (no local build) but requires that you've pushed an image
+#      first via `.github/workflows/release.yaml` or `docker push`. The
+#      example below uses GitHub Container Registry under your KMH repo
+#      — replace `YOUR-GITHUB-USERNAME-OR-ORG` with the real handle
+#      before uncommenting. Upstream's `ghcr.io/rimworld-together/...`
+#      image does NOT speak KMH's packet protocol; KMH clients can't
+#      connect to it.
+#
+# Run:   docker compose up -d
+# Logs:  docker compose logs -f
+# Stop:  docker compose down
+
 services:
-  rimworld-together:
-    image: ghcr.io/rimworld-together/rimworld-together:latest
+  kmh-server:
+    # ---- Mode 1: build locally ---------------------------------
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # ---- Mode 2: pull a pre-built KMH image (uncomment + edit) -
+    # image: ghcr.io/YOUR-GITHUB-USERNAME-OR-ORG/rimworldtogether-kmh:latest
+
+    container_name: kmh-server
+    restart: unless-stopped
+
     ports:
-      - 25555:25555
+      - "25555:25555"
+
+    # Server writes Configs/, Saves/, Logs/, Assets/ into /Data inside
+    # the container — mount a host folder so they persist.
     volumes:
       - ./Data:/Data
-    container_name: rimworld-together
-    restart: always
+
+    # stdin_open + tty = interactive console attached when you run
+    # `docker compose attach kmh-server`. Without these the server's
+    # admin console isn't usable from the container.
     stdin_open: true
     tty: true

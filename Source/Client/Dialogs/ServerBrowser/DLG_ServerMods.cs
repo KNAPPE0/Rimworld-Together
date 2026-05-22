@@ -18,7 +18,12 @@ namespace GameClient.Dialogs.ServerBrowser
         public DLG_ServerMods(PKT_ServerTelemetry element)
         {
             this.Element = element;
-            this.Title = "Server Mods";
+            // KMH 26.5.22.1: Show the mod count in the title — ported
+            // from upstream RWT (Apr 2026 — "Server mod list now
+            // displays mod count"). Saves the user from scrolling to
+            // count rows.
+            int count = element?.Mods?.Count ?? 0;
+            this.Title = $"Server Mods [{count}]";
         }
 
         public override void DoWindowContents(Rect rect)

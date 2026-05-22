@@ -1,3 +1,4 @@
+using Shared.Files.Economy;
 using System;
 using System.Collections.Generic;
 
@@ -26,6 +27,12 @@ namespace Shared.Files.Sites
 
         /// <summary>Tile to build on.</summary>
         public int Tile { get; set; } = -1;
+
+        /// <summary>Owner's chosen reward destination at build time.</summary>
+        public RewardDestination OwnerRewardDestination { get; set; } = RewardDestination.Caravan;
+
+        /// <summary>Unit price (silver) used when reward destination is Marketplace.</summary>
+        public int MarketplaceUnitPrice { get; set; } = 1;
     }
 
     public enum SiteAccessMode
@@ -69,10 +76,19 @@ namespace Shared.Files.Sites
         public int MaxWorkers { get; set; } = 5;
 
         /// <summary>
-        /// Skill levels per worker. Key = username, Value = best relevant skill (0-20).
-        /// Used for efficiency bonus calculation.
+        /// Per-worker progress (XP, level, tenure, reward destination).
+        /// Replaces the legacy <c>WorkerSkills</c> dict where the client
+        /// could self-assert a skill value at join time.
         /// </summary>
-        public Dictionary<string, int> WorkerSkills { get; set; } = new Dictionary<string, int>();
+        public Dictionary<string, WorkerProgress> WorkerProgress { get; set; } = new Dictionary<string, WorkerProgress>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Owner's reward destination. Worker overrides live in WorkerProgress.
+        /// </summary>
+        public RewardDestination OwnerRewardDestination { get; set; } = RewardDestination.Caravan;
+
+        /// <summary>Unit price for marketplace auto-listing (when destination is Marketplace).</summary>
+        public int MarketplaceUnitPrice { get; set; } = 1;
 
         /// <summary>
         /// The RimWorld skill defName most relevant to this site's production.
@@ -87,28 +103,24 @@ namespace Shared.Files.Sites
         public double TotalSilverGenerated { get; set; } = 0;
 
         /// <summary>
-        /// Get the average skill level of all workers (0-20).
+        /// Average current level across all workers, derived from XP.
         /// </summary>
         public double GetAverageSkillLevel()
         {
-            if (WorkerSkills == null || WorkerSkills.Count == 0) return 0;
+            if (WorkerProgress == null || WorkerProgress.Count == 0) return 0;
             double total = 0;
-            foreach (var kv in WorkerSkills) total += kv.Value;
-            return total / WorkerSkills.Count;
+            foreach (var kv in WorkerProgress) total += kv.Value?.CurrentLevel ?? 0;
+            return total / WorkerProgress.Count;
         }
 
         /// <summary>
-        /// Calculate skill-based efficiency multiplier.
-        /// Skill 0-5: 0.6x - 0.8x (unskilled penalty)
-        /// Skill 6-10: 0.8x - 1.0x (baseline)
-        /// Skill 11-15: 1.0x - 1.3x (skilled bonus)
-        /// Skill 16-20: 1.3x - 1.6x (master bonus)
-        /// Formula: efficiency = 0.6 + (avgSkill / 20) * 1.0
+        /// Skill-based efficiency multiplier (0.6x at level 0 → 1.6x at level 20).
+        /// Levels are earned through cycles served at this site, not asserted by the client.
         /// </summary>
         public double GetSkillEfficiency()
         {
             double avgSkill = GetAverageSkillLevel();
-            if (avgSkill <= 0) return 1.0; // No skill data = no penalty
+            if (avgSkill <= 0) return 1.0;
             return 0.6 + (avgSkill / 20.0) * 1.0;
         }
 

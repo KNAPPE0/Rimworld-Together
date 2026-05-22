@@ -28,6 +28,19 @@ namespace GameClient.Dialogs.Default
             CalculateWindowSize();
         }
 
+        // KMH 26.5.20.1: Layout constants — single source of truth so the
+        // size calculation in CalculateWindowSize and the renderer here never
+        // drift apart. Earlier the size calc assumed 38px per button but the
+        // renderer added 6px spacing on top, so a 6-button stack overflowed
+        // the window and pushed "Leave" under the Cancel footer.
+        private const float ButtonHeight = 38f;
+        private const float ButtonSpacing = 8f;
+        private const float ButtonStride = ButtonHeight + ButtonSpacing; // = 46
+        private const float HeaderReserve = 44f;   // Title + horizontal line
+        private const float DescriptionReserve = 60f; // Up to ~2 lines of description
+        private const float FooterReserve = 58f;   // 38 button + 2×10 footer pad
+        private const float StackPad = 12f;        // Gap below description, above footer
+
         public override void DoWindowContents(Rect inRect)
         {
             float y = DrawStandardHeader(inRect);
@@ -43,28 +56,46 @@ namespace GameClient.Dialogs.Default
             Rect descRect = new Rect(content.x, content.y, content.width, Mathf.Min(descH, content.height));
             Widgets.Label(descRect, Description ?? string.Empty);
 
-            int count = Mathf.Min(3, Labels.Length);
-            float btnW = Mathf.Min(DefaultButtonSize.x, inRect.width - (ContentPad * 2f));
-            float btnH = DefaultButtonSize.y;
+            // KMH 26.5.20.1: cap raised from 3 → 6 so menus that need more
+            // options (e.g. Guild Management → Hall/Leaderboards/Members/
+            // Delete/Leave) can use this same dialog. We also reserve the
+            // scrollbar gutter unconditionally, so when 6+ buttons would
+            // overflow the available stack height they scroll cleanly
+            // instead of trampling the Cancel footer.
+            int count = Mathf.Min(6, Labels.Length);
+            float btnW = Mathf.Min(DefaultButtonSize.x, inRect.width - (ContentPad * 2f) - 20f);
+            float btnH = ButtonHeight;
 
-            float stackBottom = inRect.height - footerH - 8f;
-            float stackTop = Mathf.Max(descRect.yMax + 10f, content.y);
-            float stackH = stackBottom - stackTop;
+            float stackBottom = inRect.height - footerH - StackPad;
+            float stackTop = Mathf.Max(descRect.yMax + StackPad, content.y);
+            float stackH = Mathf.Max(0f, stackBottom - stackTop);
 
-            float spacing = 6f;
-            float needed = (count * btnH) + ((count - 1) * spacing);
-            float startY = stackTop + Mathf.Max(0f, (stackH - needed) / 2f);
+            float needed = (count * btnH) + ((count - 1) * ButtonSpacing);
+            Rect stackOuter = new Rect(0f, stackTop, inRect.width, stackH);
 
-            for (int i = 0; i < count; i++)
+            bool needScroll = needed > stackH + 1f;
+            if (needScroll)
             {
-                Rect btn = new Rect((inRect.width - btnW) / 2f, startY + i * (btnH + spacing), btnW, btnH);
-
-                string label = Labels[i] ?? $"Button {i + 1}";
-                if (Widgets.ButtonText(btn, label))
+                // KMH 26.5.20.1: Edge-case safety net — if the window was
+                // sized to fit the buttons but desktop scale clipped it
+                // (UI.screenHeight × 0.92 cap), the stack scrolls instead
+                // of clipping behind the Cancel footer.
+                Rect viewRect = new Rect(0f, 0f, inRect.width - 20f, needed);
+                Widgets.BeginScrollView(stackOuter, ref ScrollPosition, viewRect);
+                for (int i = 0; i < count; i++)
                 {
-                    if (i >= 0 && i < Actions.Length)
-                        Actions[i]?.Invoke();
-                    Close();
+                    Rect btn = new Rect((viewRect.width - btnW) / 2f, i * ButtonStride, btnW, btnH);
+                    DrawActionButton(i, btn);
+                }
+                Widgets.EndScrollView();
+            }
+            else
+            {
+                float startY = stackTop + Mathf.Max(0f, (stackH - needed) / 2f);
+                for (int i = 0; i < count; i++)
+                {
+                    Rect btn = new Rect((inRect.width - btnW) / 2f, startY + i * ButtonStride, btnW, btnH);
+                    DrawActionButton(i, btn);
                 }
             }
 
@@ -81,13 +112,39 @@ namespace GameClient.Dialogs.Default
             Text.Anchor = TextAnchor.UpperLeft;
         }
 
+        private void DrawActionButton(int i, Rect btn)
+        {
+            string label = Labels[i] ?? $"Button {i + 1}";
+            if (Widgets.ButtonText(btn, label))
+            {
+                if (i >= 0 && i < Actions.Length)
+                    Actions[i]?.Invoke();
+                Close();
+            }
+        }
+
         private void CalculateWindowSize()
         {
-            int count = Mathf.Clamp(Labels?.Length ?? 0, 0, 3);
+            // KMH 26.5.20.1: Permanent fix for the Guild Management overlap
+            // (Leave button hidden under Cancel). The previous formula used
+            // perButton = 38 with no spacing budget — for 6 buttons that
+            // under-counted by 6 × 8 = 48 px AND chrome (180) didn't include
+            // enough for the description block.
+            //
+            // New formula matches the renderer EXACTLY:
+            //   header(44) + descBudget(60) + footer(58) + 2×StackPad(24)
+            //   = 186 chrome
+            // Plus per-button: btn(38) + spacing(8) = 46 each (last button
+            // skips the trailing spacing, so we subtract one ButtonSpacing).
+            int count = Mathf.Clamp(Labels?.Length ?? 0, 0, 6);
 
-            Vector2 sizeVector = count <= 2
-                ? new Vector2(420f, 300f)
-                : new Vector2(420f, 340f);
+            const float chrome = HeaderReserve + DescriptionReserve + FooterReserve + (StackPad * 2f); // 186
+            float buttonsBudget = (count * ButtonStride) - (count > 0 ? ButtonSpacing : 0f); // n×46 − 8
+            float computedH = chrome + buttonsBudget + 12f /* safety margin */;
+
+            // Width: 480 px gives ~440 px of usable inside the content rect
+            // for a 250px button, the Cancel footer, and any descriptive text.
+            Vector2 sizeVector = new Vector2(480f, Mathf.Max(360f, computedH));
 
             float w = Mathf.Min(sizeVector.x, UI.screenWidth * 0.92f);
             float h = Mathf.Min(sizeVector.y, UI.screenHeight * 0.92f);

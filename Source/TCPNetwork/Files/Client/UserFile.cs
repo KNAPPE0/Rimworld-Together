@@ -41,7 +41,56 @@ namespace TCPNetwork.Files.Client
         public string DiscordLinkToken { get; set; } = null;
         public long DiscordLinkTokenExpiry { get; set; } = 0;
 
+        // KMH 2.7: Per-user marketplace showcase tracking. When a linked
+        // player runs `!showcase`, the bot posts a formatted embed of
+        // their current listings to the configured marketplace channel /
+        // forum and stores the message ID here so subsequent `!showcase
+        // update` and `!showcase delete` calls can find it. Stored as a
+        // string because Discord IDs are 64-bit unsigned and we don't want
+        // to round-trip through long on serialise.
+        public string DiscordShowcaseMessageId { get; set; } = null;
+        public string DiscordShowcaseChannelId { get; set; } = null;
+        // Optional personal "tag-line" the user supplies via
+        // `!showcase tagline <text>` — e.g. "DM me on Discord to haggle".
+        // Renders at the bottom of the embed. Capped server-side.
+        public string DiscordShowcaseTagline { get; set; } = null;
+        // KMH 26.5.20: Last time the user refreshed (or first posted) their
+        // showcase. The marketplace sweep deletes showcases stale beyond
+        // ShowcaseStaleHours so the channel/forum doesn't accumulate dead
+        // posts from inactive players.
+        public long DiscordShowcaseLastUpdatedUtcTicks { get; set; } = 0;
+
+        // KMH 26.5.20: Want-To-Buy board. Each linked player keeps a personal
+        // list of items they're shopping for, with a max unit price they'll
+        // pay. `!wtb add/remove/list/post` operate on this list. `!wtb post`
+        // publishes (or refreshes) an embed in the configured WTB channel/
+        // forum, mirroring how `!showcase` publishes sell listings.
+        public List<WantToBuyEntry> WantToBuyEntries { get; set; } = new List<WantToBuyEntry>();
+        public string DiscordWtbMessageId { get; set; } = null;
+        public string DiscordWtbChannelId { get; set; } = null;
+        public string DiscordWtbTagline { get; set; } = null;
+        public long DiscordWtbLastUpdatedUtcTicks { get; set; } = 0;
+
+        // KMH 2.7: Per-player lifetime stats for the player leaderboard.
+        // These accumulate forever and are mirrored from the gameplay
+        // managers (TreasuryManager, MarketplaceManager, QuestManager,
+        // SiteManager) on the relevant action paths.
+        public long LifetimeSilverDonated { get; set; } = 0;
+        public long LifetimeSilverEarnedFromSales { get; set; } = 0;
+        public long LifetimeSilverSpentOnPurchases { get; set; } = 0;
+        public int LifetimeQuestsCompleted { get; set; } = 0;
+        public int LifetimeQuestsPosted { get; set; } = 0;
+        public int LifetimeMarketplaceSalesCount { get; set; } = 0;
+        public int LifetimeSitesBuilt { get; set; } = 0;
+        public int LifetimeSitesRaided { get; set; } = 0;
+        public long LifetimeWorkerXpEarned { get; set; } = 0;
+        public long FirstSeenUtcTicks { get; set; } = 0;
+
         private Semaphore SavingSemaphore { get; set; } = new Semaphore(1, 1);
+
+        // KMH: Lets the server-side user-cache observe writes without TCPNetwork
+        // taking a dependency on the GameServer assembly.
+        public static event Action<UserFile> OnUserFileSaved;
 
         public void SaveUserFile()
         {
@@ -49,8 +98,10 @@ namespace TCPNetwork.Files.Client
 
             try { Serializer.SerializeToFile(Path.Combine(CommonValues.ServerUsersPath, Username + CommonValues.DefaultSaveFormat), this); }
             catch (Exception e) { throw new Exception(e.ToString()); }
+            finally { SavingSemaphore.Release(); }
 
-            SavingSemaphore.Release();
+            try { OnUserFileSaved?.Invoke(this); }
+            catch { }
         }
 
         public void UpdateFaction(GuildFile toUpdateWith)

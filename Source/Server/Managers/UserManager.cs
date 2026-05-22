@@ -1,4 +1,4 @@
-﻿using GameServer.Core;
+using GameServer.Core;
 using TCPNetwork.Packets;
 using Shared;
 using Shared.Files;
@@ -37,6 +37,7 @@ namespace GameServer.Managers
             }
 
             userFile.UpdateBan(true);
+            UserManagerH.InvalidateUserCache();
             Printer.Warning($"User '{userFile.Username}' has been banned from the server (IP: {userFile.LatestIP})");
 
             // Kick if currently online
@@ -58,6 +59,7 @@ namespace GameServer.Managers
                 else
                 {
                     userFile.UpdateBan(false);
+                    UserManagerH.InvalidateUserCache();
                     Printer.Warning($"User '{userFile.Username}' has been pardoned from the server");
                 }
             }
@@ -66,65 +68,144 @@ namespace GameServer.Managers
 
     public static class UserManagerH
     {
+        // KMH: In-memory cache of user files keyed by case-insensitive username.
+        // The previous implementation read+deserialized every user file on disk
+        // for every CheckIfUserExists / CheckIfUserAuthCorrect / GetAllUserFiles
+        // call, which fired twice per login attempt.
+        private static readonly object UserCacheLock = new object();
+        private static Dictionary<string, UserFile> UserCache;
+
+        static UserManagerH()
+        {
+            // Keep cache fresh whenever any UserFile is saved.
+            UserFile.OnUserFileSaved += saved =>
+            {
+                if (saved == null || string.IsNullOrEmpty(saved.Username)) return;
+                lock (UserCacheLock)
+                {
+                    if (UserCache != null) UserCache[saved.Username] = saved;
+                }
+            };
+        }
+
+        public static void InvalidateUserCache()
+        {
+            lock (UserCacheLock) { UserCache = null; }
+        }
+
+        private static Dictionary<string, UserFile> GetUserCache()
+        {
+            lock (UserCacheLock)
+            {
+                if (UserCache != null) return UserCache;
+
+                Dictionary<string, UserFile> cache = new Dictionary<string, UserFile>(StringComparer.OrdinalIgnoreCase);
+                try
+                {
+                    string[] userFiles = Directory.GetFiles(Master.UsersPath);
+                    foreach (string userPath in userFiles)
+                    {
+                        try
+                        {
+                            UserFile file = Serializer.SerializeFromFile<UserFile>(userPath);
+                            if (file != null && !string.IsNullOrEmpty(file.Username))
+                                cache[file.Username] = file;
+                        }
+                        catch { }
+                    }
+                }
+                catch (Exception ex) { Printer.Error($"Users could not be loaded: {ex.Message}"); }
+
+                UserCache = cache;
+                return cache;
+            }
+        }
+
         public static UserFile GetUserFile(ServerClient client)
         {
-            string[] userFiles = Directory.GetFiles(Master.UsersPath);
-
-            foreach (string userFile in userFiles)
-            {
-                UserFile file = Serializer.SerializeFromFile<UserFile>(userFile);
-                if (file.Username == client.UserFile.Username) return file;
-            }
-
-            return null;
+            if (client?.UserFile?.Username == null) return null;
+            GetUserCache().TryGetValue(client.UserFile.Username, out UserFile file);
+            return file;
         }
 
         public static UserFile GetUserFileFromName(string username)
         {
-            string[] userFiles = Directory.GetFiles(Master.UsersPath);
-
-            foreach (string userFile in userFiles)
-            {
-                UserFile file = Serializer.SerializeFromFile<UserFile>(userFile);
-                if (file.Username == username) return file;
-            }
-
-            return null;
+            if (string.IsNullOrEmpty(username)) return null;
+            GetUserCache().TryGetValue(username, out UserFile file);
+            return file;
         }
 
         public static UserFile[] GetAllUserFiles()
         {
-            List<UserFile> userFiles = new List<UserFile>();
+            // KMH 26.5.20: The previous implementation enumerated cache.Values
+            // outside the lock. The OnUserFileSaved hook mutates the cache
+            // (cache[username] = saved) under UserCacheLock, but C# Dictionary
+            // enumerators throw InvalidOperationException if the dictionary
+            // is structurally modified mid-iteration. On a busy server a stat
+            // tick during a !showcase sweep could nuke the enumerator.
+            //
+            // Fix: acquire the same lock that the writer uses while we copy
+            // the values into an array. The result array is then a true
+            // snapshot — callers can iterate it freely without risk.
+            lock (UserCacheLock)
+            {
+                Dictionary<string, UserFile> cache = GetUserCacheLocked();
+                UserFile[] result = new UserFile[cache.Count];
+                int i = 0;
+                foreach (UserFile uf in cache.Values) result[i++] = uf;
+                return result;
+            }
+        }
 
-            string[] existingUsers = Directory.GetFiles(Master.UsersPath);
-            foreach (string user in existingUsers) userFiles.Add(Serializer.SerializeFromFile<UserFile>(user));
-            return userFiles.ToArray();
+        /// <summary>
+        /// KMH 26.5.20: Lock-free cache accessor for callers that already
+        /// hold <see cref="UserCacheLock"/>. The public <see cref="GetUserCache"/>
+        /// path remains identical for callers that don't.
+        /// </summary>
+        private static Dictionary<string, UserFile> GetUserCacheLocked()
+        {
+            // Caller must hold UserCacheLock.
+            if (UserCache != null) return UserCache;
+
+            Dictionary<string, UserFile> cache = new Dictionary<string, UserFile>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                string[] userFiles = Directory.GetFiles(Master.UsersPath);
+                foreach (string userPath in userFiles)
+                {
+                    try
+                    {
+                        UserFile file = Serializer.SerializeFromFile<UserFile>(userPath);
+                        if (file != null && !string.IsNullOrEmpty(file.Username))
+                            cache[file.Username] = file;
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex) { Printer.Error($"Users could not be loaded: {ex.Message}"); }
+
+            UserCache = cache;
+            return cache;
         }
 
         public static bool CheckIfUserIsConnected(string username)
         {
             ServerClient toGet = ServerNetwork.GetConnectedClientFromUsername(username);
-            if (toGet != null) return true;
-            else return false;
+            return toGet != null;
         }
 
         public static bool CheckIfUserExists(ServerClient client, PKT_Login data)
         {
-            UserFile toFind = GetAllUserFiles().FirstOrDefault(fetch => fetch.Username.ToLower() == data._username.ToLower());
-            if (toFind != null) return true;
-            else return false;
+            return GetUserFileFromName(data._username) != null;
         }
 
         public static bool CheckIfUserAuthCorrect(ServerClient client, PKT_Login data)
         {
-            UserFile toFind = GetAllUserFiles().FirstOrDefault(fetch => fetch.Username == data._username && fetch.Password == data._password);
-            if (toFind != null) return true;
-            else
-            {
-                PM_Logins.DenyConnectionWithReason(client, LoginResponse.Invalid);
-                return false;
+            UserFile toFind = GetUserFileFromName(data._username);
+            if (toFind != null && toFind.Password == data._password) return true;
 
-            }
+            PM_Logins.DenyConnectionWithReason(client, LoginResponse.Invalid);
+            return false;
         }
 
         public static bool CheckIfUserBanned(ServerClient client)
@@ -151,13 +232,20 @@ namespace GameServer.Managers
 
         public static int[] GetUserStructuresTilesFromUsername(string username)
         {
-            SettlementFile[] settlements = PM_Settlements.GetAllSettlements().ToList().FindAll(x => x.Username == username).ToArray();
-            SiteFile[] sites = SiteManagerHelper.GetAllSites().ToList().FindAll(x => x.Username == username).ToArray();
-
+            // KMH 2.7: Single-pass collection rather than double-materialising
+            // each list (ToList → FindAll → ToArray was building 3 collections
+            // per call to find the same data). Now: stream both sources into
+            // one tile list.
+            if (string.IsNullOrEmpty(username)) return Array.Empty<int>();
             List<int> tilesToExclude = new List<int>();
-            foreach (SettlementFile settlement in settlements) tilesToExclude.Add(settlement.Tile);
-            foreach (SiteFile site in sites) tilesToExclude.Add(site.Tile);
-
+            foreach (SettlementFile s in PM_Settlements.GetAllSettlements())
+            {
+                if (s != null && s.Username == username) tilesToExclude.Add(s.Tile);
+            }
+            foreach (SiteFile site in SiteManagerHelper.GetAllSites())
+            {
+                if (site != null && site.Username == username) tilesToExclude.Add(site.Tile);
+            }
             return tilesToExclude.ToArray();
         }
     }

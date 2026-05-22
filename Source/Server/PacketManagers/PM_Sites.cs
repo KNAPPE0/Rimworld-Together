@@ -1,4 +1,4 @@
-﻿using GameServer.Core;
+using GameServer.Core;
 using GameServer.Misc;
 using Shared;
 using TCPNetwork.Packets;
@@ -12,7 +12,16 @@ using TCPNetwork.PacketManagers;
 
 namespace GameServer.PacketManager
 {
-    public class PM_Sites : PM_Base
+    /// <summary>
+    /// Site packet entry point. Routes incoming PKT_Site by step mode.
+    ///
+    /// Standard build/destroy/config and shared helpers live in this file.
+    /// Custom-site flow is in <c>Sites/PM_Sites.CustomBuild.cs</c>,
+    /// worker join/leave/upgrade in <c>Sites/PM_Sites.Workers.cs</c>,
+    /// info responses in <c>Sites/PM_Sites.Info.cs</c>, and reward
+    /// distribution in <c>Sites/PM_Sites.Rewards.cs</c>.
+    /// </summary>
+    public partial class PM_Sites : PM_Base
     {
         [HandlesPacket(PacketHeader.SiteManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
@@ -69,8 +78,9 @@ namespace GameServer.PacketManager
                     HandleWorkerLeave(client, data);
                     break;
 
-                case SiteStepMode.Upgrade:
-                    HandleSiteUpgrade(client, data);
+                case SiteStepMode.SetDestination:
+                    HandleWorkerSetDestination(client, data,
+                        (Shared.Files.Economy.RewardDestination)data._newRewardDestination);
                     break;
             }
         }
@@ -78,6 +88,7 @@ namespace GameServer.PacketManager
         public static void ConfirmNewSite(ServerClient client, SiteFile siteFile)
         {
             siteFile.SaveSite();
+            SiteManagerHelper.InvalidateCache();
 
             PKT_Site siteData = new PKT_Site();
             siteData._stepMode = SiteStepMode.Build;
@@ -98,6 +109,9 @@ namespace GameServer.PacketManager
         private static void AddNewSite(ServerClient client, PKT_Site siteData)
         {
             if (siteData == null || siteData._file == null || siteData._file.Type == null)
+                return;
+
+            if (siteData._file.Tile < 0)
                 return;
 
             if (PM_Settlements.CheckIfTileIsInUse(siteData._file.Tile))
@@ -123,15 +137,25 @@ namespace GameServer.PacketManager
             siteFile.Username = client.UserFile.Username;
             siteFile.Type = SiteManagerHelper.GetTypeFromDef(siteData._file.Type.DefName);
 
+            if (siteFile.Type == null)
+            {
+                Printer.Warning($"[Sites] {client.UserFile.Username} requested unknown site def '{siteData._file.Type.DefName}'.");
+                return;
+            }
+
             if (!string.IsNullOrEmpty(client.UserFile.GuildName))
                 siteFile.GuildName = client.UserFile.GuildName;
 
             ConfirmNewSite(client, siteFile);
+
+            // KMH 2.7: Lifetime stats — every standard site built counts.
+            try { PlayerStatsManager.RecordSiteBuilt(client.UserFile.Username); } catch { }
         }
 
         private static void DestroySite(ServerClient client, PKT_Site siteData)
         {
             SiteFile siteFile = SiteManagerHelper.GetSiteFileFromTile(siteData._file.Tile);
+            if (siteFile == null) return;
             if (siteFile.Username == client.UserFile.Username) DestroySiteFromFile(siteFile);
             else ResponseShortcutManager.SendNoPowerPacket(client);
         }
@@ -144,100 +168,115 @@ namespace GameServer.PacketManager
 
             ServerNetwork.SendPacketToAllClients(PacketHeader.SiteManager, siteData);
 
-            File.Delete(Path.Combine(Master.SitesPath, siteFile.Tile + CommonValues.DefaultSaveFormat));
+            try
+            {
+                File.Delete(Path.Combine(Master.SitesPath, siteFile.Tile + CommonValues.DefaultSaveFormat));
+            }
+            catch (Exception e) { Printer.Warning($"[Sites] Failed to delete site file: {e}"); }
 
+            try
+            {
+                string customPath = Path.Combine(Master.SitesPath, $"{siteFile.Tile}_custom.json");
+                if (File.Exists(customPath)) File.Delete(customPath);
+            }
+            catch { }
+
+            SiteManagerHelper.InvalidateCache();
             InformationDisplayer.DisplayRemoveSite(siteFile.Tile.ToString());
         }
 
         private static void ManageWorker(ServerClient client, PKT_Site data)
         {
             SiteFile site = SiteManagerHelper.GetSiteFileFromTile(data._file.Tile);
+            if (site == null) return;
+            if (site.Username != client.UserFile.Username) return;
+
+            bool assigning = !string.IsNullOrEmpty(data._file.WorkerString);
             site.WorkerString = data._file.WorkerString;
             site.SaveSite();
-        }
+            SiteManagerHelper.InvalidateCache();
 
-        public static void SendRewardsToEveryPlayer()
-        {
-            foreach (ServerClient client in ServerNetwork.GetConnectedClients())
+            // KMH 26.5.20.1: If this site has custom-site data, ALSO sync
+            // the cd.Workers list and per-worker progress. Previously the
+            // standard ManageWorker path only touched WorkerString, leaving
+            // the custom site's reward-distribution loop unable to recognise
+            // newly-assigned pawns — workers stayed at level 0 forever and
+            // retrieval never cleared the worker list. Now:
+            //   * Assign → caller added to cd.Workers, BaseSkillLevel stamped
+            //     from the client-supplied pawn skill (clamped 0-20).
+            //     A fresh-or-existing WorkerProgress is created.
+            //   * Retrieve → caller removed from cd.Workers (their XP +
+            //     BaseSkillLevel stay in cd.WorkerProgress so re-joining
+            //     resumes where they left off).
+            try
             {
-                SendRewardsToPlayer(client);
-            }
-        }
+                string username = client.UserFile.Username;
+                string customPath = System.IO.Path.Combine(Master.SitesPath, $"{site.Tile}_custom.json");
+                if (!System.IO.File.Exists(customPath)) return;
 
-        public static void SendRewardsToPlayer(ServerClient client)
-        {
-            string username = client.UserFile?.Username;
-            string guildName = client.UserFile?.GuildName;
+                Shared.Files.Sites.CustomSiteData cd = SiteManagerHelper.LoadCustomSiteData(customPath);
+                if (cd == null) return;
 
-            SiteFile[] allSites = SiteManagerHelper.GetAllSites();
-            if (allSites.Length == 0) return;
+                if (cd.Workers == null)
+                    cd.Workers = new System.Collections.Generic.List<string>();
+                if (cd.WorkerProgress == null)
+                    cd.WorkerProgress = new System.Collections.Generic.Dictionary<string, Shared.Files.Economy.WorkerProgress>(System.StringComparer.OrdinalIgnoreCase);
 
-            List<SiteReward> toReward = new List<SiteReward>();
-
-            foreach (SiteFile site in allSites)
-            {
-                if (site.Type != null && site.Type.IsCustom)
+                if (assigning)
                 {
-                    string customPath = System.IO.Path.Combine(Master.SitesPath, $"{site.Tile}_custom.json");
-                    if (!System.IO.File.Exists(customPath)) continue;
-
-                    try
+                    // Respect MaxWorkers cap.
+                    int effectiveMax = ResolveEffectiveMaxWorkers(cd, site);
+                    bool alreadyIn = cd.Workers.Contains(username);
+                    if (!alreadyIn)
                     {
-                        CustomSiteData customData = Serializer.SerializeFromFile<CustomSiteData>(customPath);
-
-                        bool isWorker = customData.Workers?.Contains(username) ?? false;
-                        bool isOwner = site.Username == username;
-                        if (!isWorker && !isOwner) continue;
-
-                        // Per-site cycle time check
-                        long nowTicks = System.DateTime.UtcNow.Ticks;
-                        double cycleMs = customData.GetEffectiveCycleTimeMs();
-                        double elapsedMs = (nowTicks - customData.LastRewardUtcTicks) / (double)System.TimeSpan.TicksPerMillisecond;
-                        if (elapsedMs < cycleMs) continue;
-
-                        customData.LastRewardUtcTicks = nowTicks;
-                        try { Serializer.SerializeToFile(customPath, customData); } catch { }
-
-                        if (site.Type.Rewards != null && site.Type.Rewards.Length > 0)
+                        if (cd.Workers.Count >= effectiveMax)
                         {
-                            foreach (SiteReward reward in site.Type.Rewards)
-                            {
-                                int amount = reward.Amount;
-                                double totalMult = customData.GetTotalProductionMultiplier();
-                                amount = (int)System.Math.Ceiling(amount * totalMult);
-
-                                if (!isOwner && customData.AccessMode == SiteAccessMode.Public && customData.OwnerTaxPercent > 0)
-                                {
-                                    double taxRate = customData.OwnerTaxPercent / 100.0;
-                                    amount = (int)(amount * (1.0 - taxRate));
-                                    if (amount < 1) amount = 1;
-                                }
-
-                                toReward.Add(new SiteReward { DefName = reward.DefName, Amount = amount });
-                            }
+                            // Hit the cap. Don't add. (Caller still got their
+                            // WorkerString slot — but they won't accumulate
+                            // XP or count for production. Mostly defensive;
+                            // the client UI usually filters this case.)
+                        }
+                        else
+                        {
+                            cd.Workers.Add(username);
                         }
                     }
-                    catch { }
+
+                    // Server-clamp the client-supplied skill to 0..20.
+                    int claimedSkill = data._workerSkillLevel;
+                    if (claimedSkill < 0) claimedSkill = 0;
+                    if (claimedSkill > 20) claimedSkill = 20;
+
+                    if (!cd.WorkerProgress.TryGetValue(username, out var wp) || wp == null)
+                    {
+                        wp = new Shared.Files.Economy.WorkerProgress
+                        {
+                            JoinedUtcTicks = DateTime.UtcNow.Ticks,
+                            Destination = (username == site.Username)
+                                ? cd.OwnerRewardDestination
+                                : Shared.Files.Economy.RewardDestination.Caravan
+                        };
+                        cd.WorkerProgress[username] = wp;
+                    }
+                    // Update BaseSkillLevel — take the higher of the existing
+                    // and the new claim (so swapping in a higher-skill pawn
+                    // upgrades the base, but swapping a lower-skill one in
+                    // doesn't downgrade what they've already earned).
+                    if (claimedSkill > wp.BaseSkillLevel) wp.BaseSkillLevel = claimedSkill;
                 }
                 else
                 {
-                    bool isOwnedOrGuild = site.Username == username ||
-                        (guildName != null && guildName == site.GuildName);
-                    if (!isOwnedOrGuild) continue;
-                    if (string.IsNullOrEmpty(site.WorkerString)) continue;
-
-                    PlayerSiteConfig config = client.UserFile.SiteConfigs?.FirstOrDefault(fetch => fetch.DefName == site.Type?.DefName);
-                    if (config?.Reward != null)
-                        toReward.Add(config.Reward);
+                    // Retrieval — remove from active workers list.
+                    // Keep cd.WorkerProgress[username] so XP/BaseSkillLevel
+                    // persists for next time they assign.
+                    cd.Workers.RemoveAll(w => string.Equals(w, username, System.StringComparison.OrdinalIgnoreCase));
                 }
-            }
 
-            if (toReward.Count > 0)
+                SiteManagerHelper.SaveCustomSiteData(customPath, cd);
+            }
+            catch (Exception e)
             {
-                PKT_Site siteData = new PKT_Site();
-                siteData._stepMode = SiteStepMode.Rewards;
-                siteData._rewardFiles = toReward.ToArray();
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, siteData);
+                Printer.Warning($"[Sites] ManageWorker custom-site sync failed: {e}");
             }
         }
 
@@ -286,502 +325,12 @@ namespace GameServer.PacketManager
             return tempList;
         }
 
-        private static void HandleCustomSiteBuild(ServerClient client, PKT_Site data)
+        // Shared helper used by all custom-site flows.
+        private static void RespondCustomInfo(ServerClient client, PKT_Site data, string message)
         {
-            if (data._customRequest == null) return;
-            if (!Master.ActionConfigs.SiteAction.AllowCustomSites)
-            {
-                data._statusMessage = "Custom sites are disabled on this server.";
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                return;
-            }
-
-            var req = data._customRequest;
-
-            // Validate
-            if (string.IsNullOrWhiteSpace(req.ItemDefName))
-            {
-                data._statusMessage = "Invalid item selected.";
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                return;
-            }
-
-            if (req.AmountPerCycle <= 0 || req.AmountPerCycle > Master.ActionConfigs.SiteAction.CustomSiteMaxRewardAmount)
-            {
-                data._statusMessage = $"Amount must be 1-{Master.ActionConfigs.SiteAction.CustomSiteMaxRewardAmount}.";
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                return;
-            }
-
-            if (req.OwnerTaxPercent < 0 || req.OwnerTaxPercent > 50)
-                req.OwnerTaxPercent = 10;
-
-            // Calculate cost and cycle time
-            float marketValue = System.Math.Max(1f, req.MarketValuePerUnit);
-            double multiplier = Master.ActionConfigs.SiteAction.CustomSitePriceMultiplier;
-            int cost = CustomSiteData.CalculateBuildCost(marketValue, req.AmountPerCycle, multiplier);
-            double cycleMs = CustomSiteData.CalculateCycleTimeMs(marketValue);
-            int cycleMin = (int)(cycleMs / 60000.0);
-
-            // Check tile
-            if (PM_Settlements.CheckIfTileIsInUse(req.Tile) || SiteManagerHelper.CheckIfTileIsInUse(req.Tile))
-            {
-                data._statusMessage = "That tile is already in use.";
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                return;
-            }
-
-            // Validate guild requirement for guild-only sites
-            if (req.AccessMode == SiteAccessMode.GuildOnly && string.IsNullOrWhiteSpace(client.UserFile.GuildName))
-            {
-                data._statusMessage = "You must be in a guild to create a guild-only site.";
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                return;
-            }
-
-            // Build the site
-            SiteFile siteFile = new SiteFile();
-            siteFile.Tile = req.Tile;
-            siteFile.Username = client.UserFile.Username;
-            siteFile.GuildName = client.UserFile.GuildName ?? string.Empty;
-            siteFile.Type = new SiteType
-            {
-                DefName = "RTCustomOutpost",
-                Cost = cost,
-                Description = $"Custom site producing {req.AmountPerCycle}x {req.ItemDefName} every {cycleMin} min",
-                CycleTimeMinutes = cycleMin,
-                IsCustom = true,
-                CreatedBy = client.UserFile.Username,
-                Rewards = new SiteReward[] { new SiteReward { DefName = req.ItemDefName, Amount = req.AmountPerCycle } }
-            };
-
-            // Save custom data alongside
-            string relevantSkill = CustomSiteData.DetermineRelevantSkill(req.ItemDefName);
-
-            CustomSiteData customData = new CustomSiteData
-            {
-                ItemDefName = req.ItemDefName,
-                BaseAmountPerCycle = req.AmountPerCycle,
-                MarketValuePerUnit = marketValue,
-                BaseCycleTimeMs = cycleMs,
-                AccessMode = req.AccessMode,
-                OwnerTaxPercent = req.OwnerTaxPercent,
-                MaxWorkers = 5,
-                LastRewardUtcTicks = System.DateTime.UtcNow.Ticks,
-                RelevantSkillDef = relevantSkill
-            };
-            customData.Workers.Add(client.UserFile.Username);
-            if (customData.WorkerSkills == null)
-                customData.WorkerSkills = new System.Collections.Generic.Dictionary<string, int>();
-
-            // Save both files
-            ConfirmNewSite(client, siteFile);
-
-            // Save custom data
-            try
-            {
-                string customPath = System.IO.Path.Combine(Master.SitesPath, $"{req.Tile}_custom.json");
-                Serializer.SerializeToFile(customPath, customData);
-            }
-            catch { }
-
-            data._statusMessage = $"Custom site built!\nProducing: {req.AmountPerCycle}x {req.ItemDefName}\nCycle: {cycleMin} min | Cost: {cost} silver\nRelevant Skill: {relevantSkill}\nMore workers with high {relevantSkill} skill = faster production!";
-            data._calculatedCost = cost;
-            data._calculatedCycleMinutes = cycleMin;
-            data._customData = customData;
+            data._statusMessage = message;
             data._stepMode = SiteStepMode.CustomInfo;
             client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-
-            Printer.Warning($"[CustomSite] {client.UserFile.Username} built custom site at tile {req.Tile}: {req.AmountPerCycle}x {req.ItemDefName} (cost: {cost}, cycle: {cycleMin}min)");
-        }
-
-        private static void HandleWorkerJoin(ServerClient client, PKT_Site data)
-        {
-            int tile = data._file?.Tile ?? -1;
-            if (tile < 0) return;
-
-            string customPath = System.IO.Path.Combine(Master.SitesPath, $"{tile}_custom.json");
-            if (!System.IO.File.Exists(customPath))
-            {
-                data._statusMessage = "Not a custom site.";
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                return;
-            }
-
-            try
-            {
-                CustomSiteData customData = Serializer.SerializeFromFile<CustomSiteData>(customPath);
-                SiteFile siteFile = SiteManagerHelper.GetSiteFileFromTile(tile);
-
-                // Check access
-                string username = client.UserFile.Username;
-                if (customData.AccessMode == SiteAccessMode.Private)
-                {
-                    data._statusMessage = "This site is private.";
-                    data._stepMode = SiteStepMode.CustomInfo;
-                    client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                    return;
-                }
-
-                if (customData.AccessMode == SiteAccessMode.GuildOnly)
-                {
-                    if (string.IsNullOrEmpty(client.UserFile.GuildName) ||
-                        client.UserFile.GuildName != siteFile?.GuildName)
-                    {
-                        data._statusMessage = "This site is guild-only. You're not in the right guild.";
-                        data._stepMode = SiteStepMode.CustomInfo;
-                        client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                        return;
-                    }
-                }
-
-                if (customData.Workers.Contains(username))
-                {
-                    data._statusMessage = "You're already a worker at this site.";
-                    data._stepMode = SiteStepMode.CustomInfo;
-                    client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                    return;
-                }
-
-                if (customData.Workers.Count >= customData.MaxWorkers)
-                {
-                    data._statusMessage = $"Site is full ({customData.Workers.Count}/{customData.MaxWorkers} workers).";
-                    data._stepMode = SiteStepMode.CustomInfo;
-                    client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                    return;
-                }
-
-                customData.Workers.Add(username);
-
-                // Record worker skill level
-                int skillLevel = data._workerSkillLevel;
-                if (skillLevel < 0) skillLevel = 0;
-                if (skillLevel > 20) skillLevel = 20;
-                if (customData.WorkerSkills == null)
-                    customData.WorkerSkills = new System.Collections.Generic.Dictionary<string, int>();
-                customData.WorkerSkills[username] = skillLevel;
-
-                Serializer.SerializeToFile(customPath, customData);
-
-                double effectiveMin = customData.GetEffectiveCycleTimeMs() / 60000.0;
-                double skillEff = customData.GetSkillEfficiency();
-                data._statusMessage = $"Joined as worker! Workers: {customData.Workers.Count}/{customData.MaxWorkers}\nSpeed: {customData.GetSpeedMultiplier():F1}x | Skill Eff: {skillEff:F0}% | Total: {customData.GetTotalProductionMultiplier():F1}x\nEffective Cycle: {(int)effectiveMin} min\nYour {customData.RelevantSkillDef} skill: {skillLevel}";
-                data._customData = customData;
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-
-                Printer.Warning($"[CustomSite] {username} joined site at tile {tile} as worker ({customData.Workers.Count}/{customData.MaxWorkers})");
-            }
-            catch (System.Exception e)
-            {
-                data._statusMessage = $"Failed to join: {e.Message}";
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-            }
-        }
-
-        private static void HandleWorkerLeave(ServerClient client, PKT_Site data)
-        {
-            int tile = data._file?.Tile ?? -1;
-            if (tile < 0) return;
-
-            string customPath = System.IO.Path.Combine(Master.SitesPath, $"{tile}_custom.json");
-            if (!System.IO.File.Exists(customPath)) return;
-
-            try
-            {
-                CustomSiteData customData = Serializer.SerializeFromFile<CustomSiteData>(customPath);
-                string username = client.UserFile.Username;
-
-                if (!customData.Workers.Contains(username))
-                {
-                    data._statusMessage = "You're not a worker at this site.";
-                    data._stepMode = SiteStepMode.CustomInfo;
-                    client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                    return;
-                }
-
-                customData.Workers.Remove(username);
-                if (customData.WorkerSkills != null)
-                    customData.WorkerSkills.Remove(username);
-                Serializer.SerializeToFile(customPath, customData);
-
-                data._statusMessage = $"Left the site. Workers: {customData.Workers.Count}/{customData.MaxWorkers}.";
-                data._customData = customData;
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-
-                Printer.Warning($"[CustomSite] {username} left site at tile {tile}");
-            }
-            catch { }
-        }
-
-        private static void HandleSiteUpgrade(ServerClient client, PKT_Site data)
-        {
-            int tile = data._file?.Tile ?? -1;
-            if (tile < 0) return;
-
-            string customPath = System.IO.Path.Combine(Master.SitesPath, $"{tile}_custom.json");
-            if (!System.IO.File.Exists(customPath))
-            {
-                data._statusMessage = "Not a custom site.";
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                return;
-            }
-
-            SiteFile siteFile = SiteManagerHelper.GetSiteFileFromTile(tile);
-            if (siteFile == null || siteFile.Username != client.UserFile.Username)
-            {
-                data._statusMessage = "Only the site owner can upgrade.";
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                return;
-            }
-
-            try
-            {
-                CustomSiteData cd = Serializer.SerializeFromFile<CustomSiteData>(customPath);
-
-                // Upgrade tiers: 5 -> 8 -> 12 -> 16 -> 20
-                int[] tiers = { 5, 8, 12, 16, 20 };
-                int currentTier = 0;
-                for (int i = 0; i < tiers.Length; i++)
-                {
-                    if (cd.MaxWorkers <= tiers[i]) { currentTier = i; break; }
-                }
-
-                if (currentTier >= tiers.Length - 1)
-                {
-                    data._statusMessage = $"Site is already at max upgrade level ({cd.MaxWorkers} workers).";
-                    data._stepMode = SiteStepMode.CustomInfo;
-                    client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                    return;
-                }
-
-                int nextMax = tiers[currentTier + 1];
-                // Upgrade cost: 500 silver per tier level
-                int upgradeCost = (currentTier + 1) * 500;
-
-                cd.MaxWorkers = nextMax;
-                Serializer.SerializeToFile(customPath, cd);
-
-                data._statusMessage = $"Site upgraded! Max workers: {nextMax}\nUpgrade cost: {upgradeCost} silver\n(Note: Silver deducted from next reward cycle)";
-                data._customData = cd;
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-
-                Printer.Warning($"[CustomSite] {client.UserFile.Username} upgraded site at tile {tile} to {nextMax} max workers");
-            }
-            catch
-            {
-                data._statusMessage = "Upgrade failed.";
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-            }
-        }
-
-        private static void HandleCustomSiteInfo(ServerClient client, PKT_Site data)
-        {
-            int tile = data._file?.Tile ?? -1;
-            if (tile < 0) return;
-
-            // Check if it's a custom site
-            string customPath = System.IO.Path.Combine(Master.SitesPath, $"{tile}_custom.json");
-            SiteFile siteFile = SiteManagerHelper.GetSiteFileFromTile(tile);
-
-            if (!System.IO.File.Exists(customPath))
-            {
-                // Standard site info
-                if (siteFile != null)
-                {
-                    string siteTypeName = siteFile.Type?.DefName ?? "Unknown";
-                    string siteGuild = string.IsNullOrEmpty(siteFile.GuildName) ? "None" : siteFile.GuildName;
-                    string workerStatus = string.IsNullOrEmpty(siteFile.WorkerString) ? "None assigned" : "Active";
-                    int siteCost = siteFile.Type?.Cost ?? 0;
-                    data._statusMessage = $"Standard Site: {siteTypeName}\nOwner: {siteFile.Username}\nGuild: {siteGuild}\nWorker: {workerStatus}\nCost: {siteCost} silver";
-                }
-                else
-                {
-                    data._statusMessage = "Site data not found.";
-                }
-                data._stepMode = SiteStepMode.CustomInfo;
-                client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-                return;
-            }
-
-            try
-            {
-                CustomSiteData cd = Serializer.SerializeFromFile<CustomSiteData>(customPath);
-                data._customData = cd;
-
-                double speedMult = cd.GetSpeedMultiplier();
-                double skillEff = cd.GetSkillEfficiency();
-                double totalMult = cd.GetTotalProductionMultiplier();
-                int effectiveAmount = (int)System.Math.Ceiling(cd.BaseAmountPerCycle * totalMult);
-                double effectiveCycleMin = cd.GetEffectiveCycleTimeMs() / 60000.0;
-                double baseCycleMin = cd.BaseCycleTimeMs / 60000.0;
-
-                // Build detailed info
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine($"=== Custom Site (KMH) ===");
-                sb.AppendLine($"Item: {cd.ItemDefName} x{cd.BaseAmountPerCycle}/cycle");
-                string ownerName = siteFile?.Username ?? "Unknown";
-                sb.AppendLine($"Owner: {ownerName}");
-                string guildName = string.IsNullOrEmpty(siteFile?.GuildName) ? "None" : siteFile.GuildName;
-                sb.AppendLine($"Guild: {guildName}");
-                sb.AppendLine($"Access: {cd.AccessMode}");
-                if (cd.AccessMode == SiteAccessMode.Public)
-                    sb.AppendLine($"Owner Tax: {cd.OwnerTaxPercent}%");
-                sb.AppendLine();
-
-                // Workers section
-                sb.AppendLine($"--- Workers ({cd.Workers?.Count ?? 0}/{cd.MaxWorkers}) ---");
-                if (cd.Workers != null && cd.Workers.Count > 0)
-                {
-                    foreach (string worker in cd.Workers)
-                    {
-                        int skill = 0;
-                        if (cd.WorkerSkills != null && cd.WorkerSkills.ContainsKey(worker))
-                            skill = cd.WorkerSkills[worker];
-                        string ownerTag = (worker == siteFile?.Username) ? " [OWNER]" : "";
-                        sb.AppendLine($"  {worker}{ownerTag} - {cd.RelevantSkillDef}: {skill}");
-                    }
-                }
-                else
-                {
-                    sb.AppendLine("  No workers assigned");
-                }
-                sb.AppendLine();
-
-                // Production stats
-                sb.AppendLine($"--- Production ---");
-                sb.AppendLine($"Relevant Skill: {cd.RelevantSkillDef}");
-                sb.AppendLine($"Worker Speed: {speedMult:F2}x");
-                sb.AppendLine($"Skill Efficiency: {skillEff:P0}");
-                sb.AppendLine($"Total Multiplier: {totalMult:F2}x");
-                sb.AppendLine($"Effective Output: {effectiveAmount}x {cd.ItemDefName}/cycle");
-                sb.AppendLine($"Base Cycle: {(int)baseCycleMin} min");
-                sb.AppendLine($"Effective Cycle: {(int)effectiveCycleMin} min");
-
-                // Value estimate
-                double valuePerCycle = cd.MarketValuePerUnit * effectiveAmount;
-                double cyclesPerHour = 60.0 / effectiveCycleMin;
-                sb.AppendLine($"Value: ~${valuePerCycle:F0}/cycle (~${(valuePerCycle * cyclesPerHour):F0}/hr)");
-
-                data._statusMessage = sb.ToString();
-                data._calculatedCycleMinutes = (int)baseCycleMin;
-            }
-            catch (System.Exception e)
-            {
-                data._statusMessage = $"Failed to load custom site data: {e.Message}";
-            }
-
-            data._stepMode = SiteStepMode.CustomInfo;
-            client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-        }
-
-    }
-
-    public static class SiteManagerHelper
-    {
-        public static SiteFile[] GetAllSitesFromUsername(string username)
-        {
-            List<SiteFile> sitesList = new List<SiteFile>();
-
-            string[] sites = Directory.GetFiles(Master.SitesPath);
-            foreach (string site in sites)
-            {
-                if (site.Contains("_custom")) continue;
-                try
-                {
-                    SiteFile siteFile = Serializer.SerializeFromFile<SiteFile>(site);
-                    if (siteFile != null && siteFile.Username == username) sitesList.Add(siteFile);
-                }
-                catch { }
-            }
-
-            return sitesList.ToArray();
-        }
-
-        public static SiteFile GetSiteFileFromTile(int tileToGet)
-        {
-            string[] sites = Directory.GetFiles(Master.SitesPath);
-            foreach (string site in sites)
-            {
-                if (site.Contains("_custom")) continue;
-                try
-                {
-                    SiteFile siteFile = Serializer.SerializeFromFile<SiteFile>(site);
-                    if (siteFile != null && siteFile.Tile == tileToGet) return siteFile;
-                }
-                catch { }
-            }
-
-            return null;
-        }
-
-        public static void GetSiteInfo(ServerClient client, PKT_Site data)
-        {
-            SiteFile siteFile = GetSiteFileFromTile(data._file.Tile);
-            data._stepMode = SiteStepMode.Info;
-            data._file = siteFile;
-
-            client.Listener.EnqueuePacket(PacketHeader.SiteManager, data);
-        }
-
-        public static SiteFile[] GetAllSites()
-        {
-            List<SiteFile> sitesList = new List<SiteFile>();
-            try
-            {
-                string[] sites = Directory.GetFiles(Master.SitesPath);
-                foreach (string site in sites)
-                {
-                    // Skip custom site data files
-                    if (site.Contains("_custom")) continue;
-
-                    try
-                    {
-                        SiteFile siteFile = Serializer.SerializeFromFile<SiteFile>(site);
-                        if (siteFile != null) sitesList.Add(siteFile);
-                    }
-                    catch { }
-                }
-            }
-            catch (Exception ex) { Printer.Error($"Sites could not be loaded: {ex.Message}"); }
-
-            return sitesList.ToArray();
-        }
-
-        public static bool CheckIfTileIsInUse(int tileToCheck)
-        {
-            string[] sites = Directory.GetFiles(Master.SitesPath);
-            foreach (string site in sites)
-            {
-                if (site.Contains("_custom")) continue;
-                try
-                {
-                    SiteFile siteFile = Serializer.SerializeFromFile<SiteFile>(site);
-                    if (siteFile != null && siteFile.Tile == tileToCheck) return true;
-                }
-                catch { }
-            }
-
-            return false;
-        }
-
-        public static SiteType GetTypeFromDef(string defName)
-        {
-            SiteType site = Master.ActionConfigs.SiteAction.SiteTypes.Where(S => S.DefName == defName).FirstOrDefault();
-            if (site != null) return site;
-            return null;
         }
     }
 }

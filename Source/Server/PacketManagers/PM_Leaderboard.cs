@@ -16,6 +16,36 @@ namespace GameServer.PacketManager
     {
         private static float ScoreMultiplier = 0.001f;
 
+        // KMH 26.5.20.1: Cache for the rich-entries snapshot. Every
+        // BuildRichEntries call used to:
+        //   1. Directory.GetFiles on the maps directory
+        //   2. Deserialize every MapFile from disk
+        //   3. For each, look up its settlement + Discord handle
+        // Called by SendLeaderboard (every leaderboard window open) AND
+        // HandleLeaderboardRequest (every page change / sort flip). On a
+        // server with 50 settlements that's 50 JSON parses per click.
+        //
+        // Invalidates whenever UpdateLeaderboard fires (which is the only
+        // mutation point — called from PM_Maps.SaveUserMap after a map is
+        // written).
+        private static readonly object EntriesCacheLock = new object();
+        private static LeaderboardEntryFile[] _entriesCache;
+
+        public static void InvalidateEntriesCache()
+        {
+            lock (EntriesCacheLock) { _entriesCache = null; }
+        }
+
+        private static LeaderboardEntryFile[] GetCachedEntries()
+        {
+            lock (EntriesCacheLock)
+            {
+                if (_entriesCache != null) return _entriesCache;
+                _entriesCache = BuildRichEntries();
+                return _entriesCache;
+            }
+        }
+
         [HandlesPacket(PacketHeader.LeaderboardManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header) { SendLeaderboard(client); }
 
@@ -27,7 +57,8 @@ namespace GameServer.PacketManager
             // KMH: Populate rich entries from all map files for the enhanced UI
             try
             {
-                data._file.Entries = BuildRichEntries();
+                // KMH 26.5.20.1: Read through the cache (rebuilt only on save).
+                data._file.Entries = GetCachedEntries();
             }
             catch (Exception e)
             {
@@ -99,28 +130,34 @@ namespace GameServer.PacketManager
             LeaderboardFile file = (LeaderboardFile)LeaderboardFile.Load<LeaderboardFile>(LeaderboardFile.SavePath);
             double scoreValue = Math.Round(map.Wealth * ScoreMultiplier) + 1;
 
-            if (!file.Scores.Keys.Contains(client.UserFile.Username)) file.Scores.Add(client.UserFile.Username, scoreValue);
-            else
+            // KMH 26.5.20.1: Was iterating the entire Scores dictionary as
+            // an allocated array just to find the user's existing score and
+            // remove+re-add it. Direct dictionary access is O(1).
+            string user = client?.UserFile?.Username;
+            if (!string.IsNullOrEmpty(user))
             {
-                foreach (KeyValuePair<string, double> pair in file.Scores.ToArray())
-                {
-                    if (pair.Key == client.UserFile.Username)
-                    {
-                        double currentScore = pair.Value;
-                        file.Scores.Remove(pair.Key);
-                        file.Scores.Add(client.UserFile.Username, currentScore + scoreValue);
-                    }
-                }
+                if (file.Scores.TryGetValue(user, out double existing))
+                    file.Scores[user] = existing + scoreValue;
+                else
+                    file.Scores[user] = scoreValue;
             }
 
             LeaderboardFile.Save(LeaderboardFile.SavePath, file);
+
+            // KMH 26.5.20.1: A map just changed → drop the rich-entries
+            // cache so the next leaderboard request rebuilds with the new
+            // wealth/colonist data instead of returning stale numbers.
+            InvalidateEntriesCache();
         }
         // KMH: Handle rich leaderboard request via PKT_Information (paginated + sorted)
         public static void HandleLeaderboardRequest(ServerClient client, PKT_Information data)
         {
             try
             {
-                LeaderboardEntryFile[] all = BuildRichEntries();
+                // KMH 26.5.20.1: Pull from cache. Page changes / sort flips
+                // can fire many times per second as a user scrolls — without
+                // the cache that was a full disk-scan per click.
+                LeaderboardEntryFile[] all = GetCachedEntries();
 
                 // Apply sort
                 IEnumerable<LeaderboardEntryFile> sorted = all;

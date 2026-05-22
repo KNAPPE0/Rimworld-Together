@@ -38,6 +38,11 @@ namespace GameServer.Core
 
         public static string GuildsPath { get; set; } = Path.Combine(Master.AssetsPath, "Guilds");
 
+        // KMH: economy storage paths
+        public static string TreasuriesPath { get; set; } = Path.Combine(Master.AssetsPath, "Treasuries");
+        public static string MarketplaceFilePath { get; set; } = Path.Combine(Master.AssetsPath, "Marketplace.json");
+        public static string QuestBoardFilePath { get; set; } = Path.Combine(Master.AssetsPath, "QuestBoard.json");
+
         public static string SettlementsPath { get; set; } = Path.Combine(Master.AssetsPath, "Settlements");
 
         public static string EventsPath { get; set; } = Path.Combine(Master.AssetsPath, "Events");

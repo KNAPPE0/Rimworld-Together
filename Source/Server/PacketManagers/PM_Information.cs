@@ -1,4 +1,5 @@
 ﻿using GameServer.Hooks.TCPNetwork;
+using GameServer.Managers;
 using Shared;
 using Shared.Files;
 using TCPNetwork.Files.Client;
@@ -40,7 +41,17 @@ namespace GameServer.PacketManager
 
         private static void SendInformation(ServerClient client, PKT_Information data)
         {
+            // KMH 26.5.22.1: Guard against the settlement file being missing
+            // — a malicious or stale client could ask for a tile that the
+            // server never registered, and the old code would NRE on
+            // .Username. Mirrors the upstream wealth fix for symmetry.
             SettlementFile settlementToFind = PM_Settlements.GetSettlementFileFromTile(data._settlementTile);
+            if (settlementToFind == null)
+            {
+                ResponseShortcutManager.SendUnavailablePacket(client);
+                return;
+            }
+
             ServerClient clientToFind = ServerNetwork.GetConnectedClientFromUsername(settlementToFind.Username);
 
             data._isPlayerOnline = clientToFind != null ? true : false;
@@ -50,6 +61,19 @@ namespace GameServer.PacketManager
 
         private static void SendWealth(ServerClient client, PKT_Information data)
         {
+            // KMH 26.5.22.1: Ported from upstream "Fixed issue relating
+            // wealth on unsaved maps" (Apr 2026). Without this guard, a
+            // client asking for wealth on a tile that the server hasn't
+            // saved a map for would NullReferenceException on .Wealth and
+            // crash the packet handler. We respond with the standard
+            // "unavailable" packet so the client UI can show "—" instead
+            // of hanging waiting for a reply.
+            if (!PM_Maps.CheckIfMapExists(data._settlementTile))
+            {
+                ResponseShortcutManager.SendUnavailablePacket(client);
+                return;
+            }
+
             data._settlementWealth = PM_Maps.GetMapFromTile(data._settlementTile).Wealth;
             client.Listener.EnqueuePacket(PacketHeader.InformationManager, data);
         }

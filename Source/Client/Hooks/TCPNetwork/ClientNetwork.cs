@@ -34,7 +34,13 @@ namespace GameClient.Hooks.TCPNetwork
             // CRITICAL:
             // Enforcement/profile packets arrive during join before the client is ready.
             // If this is not bypassed, join-time enforcement is dropped and never applies.
-            PacketHeader.ModManager
+            PacketHeader.ModManager,
+
+            // KMH: The server pushes the linked-accounts snapshot during PostLogin
+            // (before the client flips IsReadyToPlay). Without this entry the very
+            // first snapshot is silently discarded and Discord names never appear
+            // in any dialog until the next change broadcast.
+            PacketHeader.LinkedAccountsManager
         };
 
         public enum ClientNetworkState { Disconnected, Connected }

@@ -85,20 +85,60 @@ namespace GameClient.WorldObjects
                 }
             });
 
+            // KMH: Reward routing per site (owner) / per worker (claimer).
+            gizmos.Add(new Command_Action
+            {
+                defaultLabel = "Reward Destination",
+                defaultDesc = "Choose where this site's rewards go: caravan, treasury, or auto-list on marketplace",
+                icon = ContentFinder<Texture2D>.Get("Commands/Worker"),
+                action = delegate
+                {
+                    int tile = Tile;
+                    DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_RewardDestination(
+                        Shared.Files.Economy.RewardDestination.Caravan,
+                        sel => PM_Sites.RequestSetDestination(tile, sel)));
+                }
+            });
+
+            // KMH: Open treasury / marketplace from any owned site too.
             if (IsOwnerOrGuild)
             {
                 gizmos.Add(new Command_Action
                 {
-                    defaultLabel = "Upgrade",
-                    defaultDesc = "Increase max worker capacity (owner only)",
+                    defaultLabel = "Treasury",
+                    defaultDesc = "Open your guild (or personal) treasury vault",
                     icon = ContentFinder<Texture2D>.Get("Commands/Site"),
                     action = delegate
                     {
-                        SessionHandler.ChosenSite = this;
-                        PM_Sites.RequestSiteUpgrade(Tile);
+                        DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_Treasury());
                     }
                 });
 
+                gizmos.Add(new Command_Action
+                {
+                    defaultLabel = "Marketplace",
+                    defaultDesc = "Browse player listings, buy and sell",
+                    icon = ContentFinder<Texture2D>.Get("Commands/Site"),
+                    action = delegate
+                    {
+                        DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_Marketplace());
+                    }
+                });
+
+                gizmos.Add(new Command_Action
+                {
+                    defaultLabel = "Quest Board",
+                    defaultDesc = "Browse open quests, claim bounties, post your own",
+                    icon = ContentFinder<Texture2D>.Get("Commands/Worker"),
+                    action = delegate
+                    {
+                        DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_Quests());
+                    }
+                });
+            }
+
+            if (IsOwnerOrGuild)
+            {
                 gizmos.Add(new Command_Action
                 {
                     defaultLabel = "Destroy",
@@ -139,45 +179,23 @@ namespace GameClient.WorldObjects
                 }
             });
 
-            if (IsOwnerOrGuild)
-            {
-                gizmos.Add(new Command_Action
-                {
-                    defaultLabel = "Assign Pawn",
-                    defaultDesc = "Assign or retrieve a pawn worker at this site",
-                    icon = ContentFinder<Texture2D>.Get("Commands/Worker"),
-                    action = delegate
-                    {
-                        DLG_Base.PushNewDialog(new DLG_Wait());
-                        SessionHandler.ChosenCaravan = caravan;
-                        SessionHandler.ChosenSite = this;
-                        PM_Sites.AskForInformation();
-                    }
-                });
-            }
-
+            // KMH 2.7: Single "Assign Pawn" gizmo for everyone — owners,
+            // guildmates, and outsiders. The same dialog handles assigning a
+            // new worker, retrieving one, and viewing site info; the server
+            // enforces access checks on the actual join action so non-owners
+            // simply get a "no permission" reply if the site is private.
+            // Eliminates the redundant Join Site / Leave Site pair.
             gizmos.Add(new Command_Action
             {
-                defaultLabel = "Join Site",
-                defaultDesc = "Join as a worker (server checks access permissions)",
-                icon = ContentFinder<Texture2D>.Get("Commands/Site"),
+                defaultLabel = "Assign Pawn",
+                defaultDesc = "Assign or retrieve a pawn worker at this site (access enforced server-side)",
+                icon = ContentFinder<Texture2D>.Get("Commands/Worker"),
                 action = delegate
                 {
+                    DLG_Base.PushNewDialog(new DLG_Wait());
                     SessionHandler.ChosenCaravan = caravan;
                     SessionHandler.ChosenSite = this;
-                    PM_Sites.RequestWorkerJoin(Tile);
-                }
-            });
-
-            gizmos.Add(new Command_Action
-            {
-                defaultLabel = "Leave Site",
-                defaultDesc = "Leave this site as a worker",
-                icon = ContentFinder<Texture2D>.Get("Commands/Site"),
-                action = delegate
-                {
-                    SessionHandler.ChosenSite = this;
-                    PM_Sites.RequestWorkerLeave(Tile);
+                    PM_Sites.AskForInformation();
                 }
             });
 

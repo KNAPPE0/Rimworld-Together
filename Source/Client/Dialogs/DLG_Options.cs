@@ -54,15 +54,19 @@ namespace GameClient.Dialogs
             Widgets.Label(new Rect(0f, y, cw, 32f), "RimWorld Together");
             Text.Font = GameFont.Tiny;
             GUI.color = new Color(0.6f, 0.6f, 0.6f);
-            Widgets.Label(new Rect(0f, y + 22f, cw, 14f), "KMH Edition v26.4.22.1");
+            Widgets.Label(new Rect(0f, y + 22f, cw, 14f), "KMH Edition v26.5.22.1");
             GUI.color = Color.white;
             Text.Font = GameFont.Small;
             y += 40f;
 
             // === GAMEPLAY ===
+            // KMH 26.5.20.1: Gameplay toggles via DialogLayout.DrawTightCheckbox
+            // so the ☐ marker sits flush against the label instead of floating
+            // ~400 px to the right of "Reject all transfers" (previous behaviour
+            // stretched the checkbox across the full content width).
             DrawSectionHeader(ref y, cw, "Gameplay");
-            Widgets.CheckboxLabeled(new Rect(0f, y, cw, 24f), "Reject all transfers", ref AutorejectTransfersBool); y += 26f;
-            Widgets.CheckboxLabeled(new Rect(0f, y, cw, 24f), "Reject all site rewards", ref AutorejectSiteRewardsBool); y += 26f;
+            DialogLayout.DrawTightCheckbox(0f, y, "Reject all transfers", ref AutorejectTransfersBool); y += 26f;
+            DialogLayout.DrawTightCheckbox(0f, y, "Reject all site rewards", ref AutorejectSiteRewardsBool); y += 26f;
 
             Widgets.Label(new Rect(0f, y, btnX, 28f), "Syncing mode");
             if (Widgets.ButtonText(new Rect(btnX, y, btnW, 28f), $"{CurrentSyncingMode}")) ShowSyncMenu();

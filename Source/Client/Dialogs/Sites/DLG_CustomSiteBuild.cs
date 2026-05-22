@@ -1,7 +1,9 @@
 using GameClient.Dialogs.Default;
+using GameClient.Dialogs.Economy;
 using GameClient.Misc;
 using GameClient.Managers;
 using RimWorld;
+using Shared.Files.Economy;
 using Shared.Files.Sites;
 using System;
 using System.Collections.Generic;
@@ -17,7 +19,14 @@ namespace GameClient.Dialogs.Sites
 {
     public class DLG_CustomSiteBuild : DLG_Base
     {
-        public override Vector2 InitialSize => new Vector2(700f, 600f);
+        public override Vector2 InitialSize => new Vector2(820f, 680f);
+
+        // Reserved space for footer buttons. Right-pane scroll uses this so
+        // its content never overlaps the Build/Cancel buttons.
+        private const float ScrollFooterReserve = 56f;
+
+        // Internal scroll for the right config pane.
+        private Vector2 _rightScroll = Vector2.zero;
 
         private string _searchText = "";
         private Vector2 _itemScroll = Vector2.zero;
@@ -27,15 +36,15 @@ namespace GameClient.Dialogs.Sites
         private int _taxPercent = 10;
         private int _targetTile = -1;
 
+        // KMH: Owner's chosen reward routing for this site.
+        private RewardDestination _rewardDestination = RewardDestination.Caravan;
+        private int _marketplaceUnitPrice = 1;
+
         private List<ThingDef> _filteredItems = null;
         private string _lastSearch = null;
 
         private const float Pad = 10f;
         private const float RowH = 26f;
-
-        // Pricing constants (must match server)
-        private const double PriceMultiplier = 3.0;
-        private const int MinCost = 500;
 
         public DLG_CustomSiteBuild(int tile)
         {
@@ -69,24 +78,15 @@ namespace GameClient.Dialogs.Sites
             return _filteredItems;
         }
 
-        private int CalculateCost()
-        {
-            if (_selectedItem == null) return 0;
-            int cost = (int)Math.Ceiling(_selectedItem.BaseMarketValue * _amount * PriceMultiplier);
-            return Math.Max(MinCost, cost);
-        }
+        private int CalculateCost() => CustomSiteBuildCalc.CalculateCost(_selectedItem, _amount);
 
-        private int CalculateCycleMinutes()
-        {
-            if (_selectedItem == null) return 30;
-            double min = 30.0 + (_selectedItem.BaseMarketValue / 5.0);
-            return (int)Math.Min(240, Math.Max(30, min));
-        }
+        private int CalculateCycleMinutes() => CustomSiteBuildCalc.CalculateCycleMinutes(_selectedItem);
 
         public override void DoWindowContents(Rect rect)
         {
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(0f, 0f, rect.width, 32f), "Build Custom Production Site");
+            // KMH 26.5.20.1: Shared title via DialogLayout, then the
+            // dialog-specific KMH version badge on top of it.
+            DialogLayout.DrawTitle(rect, "Build Custom Production Site");
             Text.Font = GameFont.Tiny;
             GUI.color = new Color(0.5f, 0.5f, 0.5f);
             Widgets.Label(new Rect(rect.width - 120f, 4f, 120f, 16f), "KMH Custom Sites");
@@ -97,8 +97,8 @@ namespace GameClient.Dialogs.Sites
 
             float y = 40f;
             float leftW = rect.width * 0.45f;
-            float rightX = leftW + Pad;
-            float rightW = rect.width - rightX;
+            float outerRightX = leftW + Pad;
+            float outerRightW = rect.width - outerRightX;
 
             // === LEFT: Item search + list ===
             Widgets.Label(new Rect(0f, y, leftW, 20f), "<b>Select Item to Produce</b>");
@@ -150,8 +150,24 @@ namespace GameClient.Dialogs.Sites
             }
             Widgets.EndScrollView();
 
-            // === RIGHT: Configuration ===
-            float ry = 40f;
+            // === RIGHT: Configuration (scrollable) ===
+            // Reserve space at the bottom for footer buttons. Right pane content
+            // scrolls so it can never overlap the buttons regardless of how
+            // tall the cost preview / reward destination sections grow.
+            float rightPaneTop = 40f;
+            float rightPaneHeight = rect.height - rightPaneTop - ScrollFooterReserve;
+            Rect rightPaneRect = new Rect(outerRightX, rightPaneTop, outerRightW, rightPaneHeight);
+
+            float estimatedContentHeight = _selectedItem != null ? 720f : 80f;
+            Rect rightView = new Rect(0f, 0f, outerRightW - 18f, Mathf.Max(rightPaneHeight, estimatedContentHeight));
+            Widgets.BeginScrollView(rightPaneRect, ref _rightScroll, rightView);
+
+            // Inside the scroll view: shadow rightX/rightW so the existing draw
+            // code keeps working at view-local coordinates.
+            float rightX = 0f;
+            float rightW = rightView.width;
+
+            float ry = 0f;
             Widgets.Label(new Rect(rightX, ry, rightW, 20f), "<b>Site Configuration</b>");
             ry += 24f;
 
@@ -236,7 +252,7 @@ namespace GameClient.Dialogs.Sites
 
                 // Relevant skill info
                 string relevantSkill = Shared.Files.Sites.CustomSiteData.DetermineRelevantSkill(_selectedItem.defName);
-                int bestSkill = GetBestColonistSkill(relevantSkill);
+                int bestSkill = CustomSiteBuildCalc.GetBestColonistSkill(relevantSkill);
 
                 GUI.color = new Color(0.6f, 0.9f, 1f);
                 Widgets.Label(new Rect(rightX, ry, rightW, 20f),
@@ -256,9 +272,32 @@ namespace GameClient.Dialogs.Sites
                 Widgets.Label(new Rect(rightX, ry, rightW, 48f),
                     $"Workers with high {relevantSkill} skill produce more.\n" +
                     "Skill 0-5: 60-80% efficiency | Skill 16-20: 130-160%\n" +
-                    "2 workers = 1.35x speed, 5 workers = 1.8x speed.");
+                    "Workers gain XP each cycle they're present.");
                 GUI.color = Color.white;
                 Text.Font = GameFont.Small;
+                ry += 52f;
+
+                // KMH: Reward destination picker.
+                Widgets.DrawLineHorizontal(rightX, ry, rightW); ry += 6f;
+                Widgets.Label(new Rect(rightX, ry, rightW, 20f), "<b>Reward Destination</b>");
+                ry += 22f;
+
+                if (Widgets.ButtonText(new Rect(rightX, ry, rightW, 26f), $"{_rewardDestination}"))
+                {
+                    DLG_Base.PushNewDialog(new DLG_RewardDestination(
+                        _rewardDestination,
+                        sel => _rewardDestination = sel));
+                }
+                ry += 30f;
+
+                // Marketplace unit price field — only when relevant.
+                if (_rewardDestination == RewardDestination.Marketplace)
+                {
+                    Widgets.Label(new Rect(rightX, ry, 160f, 20f), "Unit price:");
+                    string raw = Widgets.TextField(new Rect(rightX + 160f, ry, 100f, 22f), _marketplaceUnitPrice.ToString());
+                    if (int.TryParse(raw, out int newPrice) && newPrice > 0) _marketplaceUnitPrice = newPrice;
+                    ry += 28f;
+                }
             }
             else
             {
@@ -267,9 +306,11 @@ namespace GameClient.Dialogs.Sites
                 GUI.color = Color.white;
             }
 
-            // === Bottom Buttons ===
-            float btnY = rect.height - 38f;
-            float btnW = 160f;
+            Widgets.EndScrollView();
+
+            // === Bottom Buttons (always visible — sit below the scroll view) ===
+            float btnY = rect.height - 40f;
+            float btnW = 180f;
 
             if (_selectedItem != null)
             {
@@ -282,29 +323,6 @@ namespace GameClient.Dialogs.Sites
 
             if (Widgets.ButtonText(new Rect(rect.width / 2f + 5f, btnY, btnW, 34f), "Cancel"))
                 Close();
-        }
-
-        /// <summary>Find the best skill level among all player colonists for a given skill.</summary>
-        private int GetBestColonistSkill(string skillDefName)
-        {
-            try
-            {
-                if (Find.CurrentMap == null) return 0;
-
-                SkillDef skillDef = DefDatabase<SkillDef>.AllDefsListForReading
-                    .FirstOrDefault(s => s.defName == skillDefName);
-                if (skillDef == null) return 0;
-
-                int best = 0;
-                foreach (Pawn pawn in Find.CurrentMap.mapPawns.FreeColonists)
-                {
-                    SkillRecord skill = pawn.skills?.GetSkill(skillDef);
-                    if (skill != null && skill.Level > best)
-                        best = skill.Level;
-                }
-                return best;
-            }
-            catch { return 0; }
         }
 
         private void SendCustomBuildRequest()
@@ -335,13 +353,15 @@ namespace GameClient.Dialogs.Sites
                 MarketValuePerUnit = _selectedItem.BaseMarketValue,
                 AccessMode = _accessMode,
                 OwnerTaxPercent = _taxPercent,
-                Tile = _targetTile
+                Tile = _targetTile,
+                OwnerRewardDestination = _rewardDestination,
+                MarketplaceUnitPrice = _marketplaceUnitPrice
             };
 
             Network.ServerEndpoint.EnqueuePacket(PacketHeader.SiteManager, packet);
 
             string relevantSkill = Shared.Files.Sites.CustomSiteData.DetermineRelevantSkill(_selectedItem.defName);
-            int bestSkill = GetBestColonistSkill(relevantSkill);
+            int bestSkill = CustomSiteBuildCalc.GetBestColonistSkill(relevantSkill);
 
             DLG_Base.PushNewDialog(new DLG_Message("Custom Site",
                 new string[] {

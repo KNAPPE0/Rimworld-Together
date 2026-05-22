@@ -70,7 +70,12 @@ namespace GameClient.Misc
 
         public static bool CheckForModCollision()
         {
+            // KMH 26.5.22.1: Honour both the persistent bypass (mod
+            // settings menu) and the session-only one ("Continue anyway"
+            // button in DLG_Compatibility). Either flag is enough — the
+            // user has explicitly opted out of the safety net.
             if (ModConfigGetter.BypassModCompatibilityCheck) return true;
+            if (ModConfigGetter.BypassModCheckThisSession) return true;
 
             EnableMainPatches();
 

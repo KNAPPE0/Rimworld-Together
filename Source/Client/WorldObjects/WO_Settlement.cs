@@ -217,6 +217,88 @@ namespace GameClient.WorldObjects
             if (this.Map != null) gizmos.Add(command_Caravan);
             if (SessionHandler.HasFaction) gizmos.Add(command_FactionMenu);
 
+            // KMH: Economy — only on the player's own settlement.
+            // When the server enables RequireSiteAccessForEconomy, marketplace
+            // and quest board are reserved for site-only interaction; treasury
+            // and guild-hall stay on the settlement because they're always
+            // safe (no inventory side-effects from just opening the dialog).
+            if (this.Faction == Faction.OfPlayer)
+            {
+                bool siteOnly = SessionHandler.CurrentActionValues?.SiteAction?.RequireSiteAccessForEconomy ?? false;
+
+                gizmos.Add(new Command_Action
+                {
+                    defaultLabel = "Treasury",
+                    defaultDesc = "Open your guild (or personal) treasury vault",
+                    icon = ContentFinder<Texture2D>.Get("Commands/Site"),
+                    action = delegate
+                    {
+                        DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_Treasury());
+                    }
+                });
+
+                if (!siteOnly)
+                {
+                    gizmos.Add(new Command_Action
+                    {
+                        defaultLabel = "Marketplace",
+                        defaultDesc = "Browse player listings, buy and sell goods",
+                        icon = ContentFinder<Texture2D>.Get("Commands/Transfer"),
+                        action = delegate
+                        {
+                            DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_Marketplace());
+                        }
+                    });
+
+                    gizmos.Add(new Command_Action
+                    {
+                        defaultLabel = "Quest Board",
+                        defaultDesc = "Browse open quests, claim bounties, post your own",
+                        icon = ContentFinder<Texture2D>.Get("Commands/Worker"),
+                        action = delegate
+                        {
+                            DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_Quests());
+                        }
+                    });
+                }
+
+                if (SessionHandler.HasFaction)
+                {
+                    gizmos.Add(new Command_Action
+                    {
+                        defaultLabel = "Guild Hall",
+                        defaultDesc = "Members, contributions, perks, settings",
+                        icon = ContentFinder<Texture2D>.Get("Commands/Faction"),
+                        action = delegate
+                        {
+                            DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_GuildHall());
+                        }
+                    });
+                }
+
+                // KMH 2.7: Player leaderboard is global — available regardless of guild membership.
+                if (!siteOnly)
+                {
+                    gizmos.Add(new Command_Action
+                    {
+                        defaultLabel = "Leaderboards",
+                        defaultDesc = "Cross-server rankings — players and guilds",
+                        icon = ContentFinder<Texture2D>.Get("Commands/Worker"),
+                        action = delegate
+                        {
+                            List<FloatMenuOption> opts = new List<FloatMenuOption>
+                            {
+                                new FloatMenuOption("Player Leaderboard",
+                                    () => DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_PlayerLeaderboard())),
+                                new FloatMenuOption("Guild Leaderboard",
+                                    () => DLG_Base.PushNewDialog(new GameClient.Dialogs.Economy.DLG_GuildLeaderboard()))
+                            };
+                            Find.WindowStack.Add(new FloatMenu(opts));
+                        }
+                    });
+                }
+            }
+
             return gizmos;
         }
 

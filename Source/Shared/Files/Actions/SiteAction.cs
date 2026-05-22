@@ -21,6 +21,33 @@ namespace Shared.Files.Actions
         /// <summary>Maximum reward items per cycle for custom sites.</summary>
         public int CustomSiteMaxRewardAmount { get; set; } = 50;
 
+        // === KMH: Economy / treasury / marketplace ===
+
+        /// <summary>Marketplace tax (0-50). Goes to the server "house" silver pool.</summary>
+        public int MarketplaceTaxPercent { get; set; } = 5;
+
+        /// <summary>How long a marketplace listing lives before unsold stock returns to seller treasury.</summary>
+        public int MarketplaceListingLifetimeHours { get; set; } = 168; // 7 days
+
+        /// <summary>Hard cap on simultaneous open listings per seller — anti-spam.</summary>
+        public int MarketplaceMaxOpenListingsPerUser { get; set; } = 25;
+
+        /// <summary>Silver per unit floor for any marketplace listing — anti-flooding.</summary>
+        public int MarketplaceMinUnitPrice { get; set; } = 1;
+
+        /// <summary>Silver per unit cap — prevents int-overflow shenanigans.</summary>
+        public int MarketplaceMaxUnitPrice { get; set; } = 100_000;
+
+        /// <summary>Multiplier on XP gained per cycle by workers. 1.0 = default.</summary>
+        public double WorkerXpMultiplier { get; set; } = 1.0;
+
+        /// <summary>
+        /// When true, marketplace listing/buying packets require the caller to
+        /// have an active caravan or be at a site. Admins always bypass.
+        /// Quest posting/claiming follows the same rule.
+        /// </summary>
+        public bool RequireSiteAccessForEconomy { get; set; } = false;
+
         public List<SiteType> SiteTypes { get; set; } = new List<SiteType>()
         {
             // === BASIC RESOURCE SITES (Low Cost: 300-500 silver) ===

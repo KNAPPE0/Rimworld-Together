@@ -1,4 +1,5 @@
 ﻿using GameClient.Core;
+using System;
 using GameClient.Dialogs;
 using GameClient.Dialogs.Default;
 using GameClient.Managers;
@@ -142,11 +143,22 @@ namespace GameClient.PacketManagers
 
         public static void OnSave()
         {
-            if (DLG_Options.CurrentSyncingMode == DLG_Options.SyncingMode.Complete || SessionHandler.IsExiting)
-            {
-                Printer.Message("Sending maps to server", LogImportanceMode.Verbose);
-                MapManager.SendPlayerMapsToServer();
-            }
+            // KMH 26.5.20.1: ALWAYS push map data on save. Previously this
+            // was gated to Complete sync mode or exit only, so the
+            // community/wealth leaderboard never refreshed during regular
+            // gameplay — players only saw updated rankings after a full
+            // quit-and-reconnect cycle. The autosave is the natural cue
+            // to refresh leaderboard data; sending the map on every save
+            // means every dialog reflects current wealth/colonist/playtime
+            // within seconds of any autosave landing.
+            //
+            // Server-side this triggers the anti-cheat clamping in
+            // PM_Maps.SaveUserMap (wealth/colonist caps, ownership check)
+            // and then broadcasts a fresh leaderboard snapshot to every
+            // connected client via PM_PlayerStats + PM_GuildHall.
+            Printer.Message("Sending maps to server", LogImportanceMode.Verbose);
+            try { MapManager.SendPlayerMapsToServer(); }
+            catch (Exception e) { Printer.Warning($"[Saves] SendPlayerMapsToServer failed: {e.Message}"); }
 
             Printer.Message("Sending save to server", LogImportanceMode.Verbose);
             PM_Saves.SendSaveToServer();

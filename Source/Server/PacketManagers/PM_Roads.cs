@@ -17,9 +17,25 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.RoadManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
+            // KMH 26.5.22.1: Two-layer guard. First the global feature
+            // toggle (disabled features should be cheap to deny — no
+            // packet deserialisation cost). Second the per-player
+            // cooldown so a connected client can't spam Add/Remove
+            // requests faster than the configured interval. Ported from
+            // upstream's "Security checks for sites, settlements, roads
+            // and pollution" (May 2026), adapted to KMH's epoch-based
+            // cooldown convention.
             if (!Master.ActionConfigs.RoadsAction.IsEnabled)
             {
                 ResponseShortcutManager.SendIllegalPacket(client, "Tried to use disabled feature!");
+                return;
+            }
+
+            if (!PlayerCooldown.CheckIfCanRoad(client.UserFile,
+                    Master.ActionConfigs.RoadsAction.IsEnabled,
+                    Master.ActionConfigs.RoadsAction.Cooldown))
+            {
+                ResponseShortcutManager.SendUnavailablePacket(client);
                 return;
             }
 
@@ -49,6 +65,13 @@ namespace GameServer.PacketManager
             SaveRoad(data._details, client);
 
             ServerNetwork.SendPacketToAllClients(PacketHeader.RoadManager, data);
+
+            // KMH 26.5.22.1: Stamp the cooldown only AFTER a successful
+            // Save+broadcast. If save throws or validation rejects, the
+            // user shouldn't be locked out — the action didn't happen.
+            client.UserFile.Cooldowns.SetRoadTimer(
+                Shared.TimeConverter.GetCurrentTimeToEpoch(),
+                client.UserFile);
         }
 
         private static void RemoveRoad(ServerClient client, PKT_Road data)

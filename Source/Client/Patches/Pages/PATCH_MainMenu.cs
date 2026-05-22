@@ -45,6 +45,25 @@ namespace GameClient.Patches.Pages
             if (optList == null || optList.Count == 0) return true;
             if (optList.FirstOrDefault()?.GetType() != typeof(ListableOption)) return true;
 
+            // KMH 26.5.22.1: "Host Local Server" entry — visible when
+            // EITHER (a) a bundled server is found in the mod folder
+            // (<ModRoot>/LocalServer/GameServer.exe), OR (b) a fallback
+            // URL is configured in mod settings. Both sources must be
+            // KMH-built (vanilla RWT speaks a different protocol — it
+            // would immediate-disconnect on the first KMH packet).
+            //
+            // LocalServerHandler.IsAvailable wraps both checks. If
+            // neither path exists, the menu entry stays hidden so the
+            // player never sees a button that can't function.
+            if (LocalServerHandler.IsAvailable)
+            {
+                optList.Insert(0, new ListableOption("Host Local Server", delegate
+                {
+                    if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected) return;
+                    LocalServerHandler.ManageLocalServer();
+                }));
+            }
+
             optList.Insert(0, new ListableOption("Server Browser", delegate
             {
                 if (SessionHandler.CurrentNetworkState != ClientNetworkState.Disconnected) return;

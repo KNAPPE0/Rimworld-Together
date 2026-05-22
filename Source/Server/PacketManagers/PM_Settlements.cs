@@ -4,6 +4,8 @@ using GameServer.Managers;
 using GameServer.Misc;
 using Shared;
 using Shared.Files;
+using Shared.Misc;
+using System;
 using TCPNetwork.Files.Client;
 using TCPNetwork.PacketManagers;
 using TCPNetwork.Packets;
@@ -13,6 +15,62 @@ namespace GameServer.PacketManager
 {
     public class PM_Settlements : PM_Base
     {
+        // KMH 26.5.20.1: In-memory cache for settlement files.
+        // Pre-cache, every lookup helper (CheckIfTileIsInUse,
+        // GetSettlementFileFromTile, GetAllSettlements, etc.) did a full
+        // Directory.GetFiles + deserialize-every-file scan. These get called
+        // on EVERY settlement add (to validate the tile isn't in use), on
+        // EVERY goodwill broadcast, on EVERY world refresh — and several
+        // dialogs poll them. On a server with 50 settlements that's 50
+        // disk reads + 50 JSON parses per call.
+        //
+        // The cache is invalidated on AddSettlement / RemoveSettlement
+        // (the only paths that write a settlement file). All other helpers
+        // are pure reads through the cache.
+        private static readonly object SettlementCacheLock = new object();
+        private static Dictionary<int, SettlementFile> _byTile; // tile → file
+        private static SettlementFile[] _allCached;
+
+        public static void InvalidateSettlementCache()
+        {
+            lock (SettlementCacheLock)
+            {
+                _byTile = null;
+                _allCached = null;
+            }
+        }
+
+        private static SettlementFile[] EnsureCache()
+        {
+            lock (SettlementCacheLock)
+            {
+                if (_allCached != null) return _allCached;
+
+                Dictionary<int, SettlementFile> dict = new Dictionary<int, SettlementFile>();
+                List<SettlementFile> list = new List<SettlementFile>();
+                try
+                {
+                    string[] settlements = Directory.GetFiles(Master.SettlementsPath);
+                    foreach (string path in settlements)
+                    {
+                        try
+                        {
+                            SettlementFile sf = Serializer.SerializeFromFile<SettlementFile>(path);
+                            if (sf == null) continue;
+                            dict[sf.Tile] = sf;
+                            list.Add(sf);
+                        }
+                        catch { /* one corrupt file shouldn't break the cache */ }
+                    }
+                }
+                catch (Exception ex) { Printer.Error($"[Settlements] Cache build failed: {ex.Message}"); }
+
+                _byTile = dict;
+                _allCached = list.ToArray();
+                return _allCached;
+            }
+        }
+
         [HandlesPacket(PacketHeader.SettlementManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
@@ -42,6 +100,7 @@ namespace GameServer.PacketManager
                 settlementData._settlementFile = settlementFile;
 
                 Serializer.SerializeToFile(Path.Combine(Master.SettlementsPath, settlementFile.Tile + CommonValues.DefaultSaveFormat), settlementFile);
+                InvalidateSettlementCache();
 
                 settlementData._stepMode = SettlementStepMode.Add;
                 foreach (ServerClient cClient in ServerNetwork.GetConnectedClients())
@@ -89,6 +148,7 @@ namespace GameServer.PacketManager
             void Delete()
             {
                 File.Delete(Path.Combine(Master.SettlementsPath, settlementFile.Tile + CommonValues.DefaultSaveFormat));
+                InvalidateSettlementCache();
 
                 InformationDisplayer.DisplayRemoveSettlement(settlementFile.Tile.ToString());
             }
@@ -101,64 +161,47 @@ namespace GameServer.PacketManager
             }
         }
 
+        // KMH 26.5.20.1: All helpers now read through the cache instead of
+        // re-scanning disk. The cache lives until AddSettlement /
+        // RemoveSettlement / explicit InvalidateSettlementCache call.
+
         public static bool CheckIfTileIsInUse(int tileToCheck)
         {
-            string[] settlements = Directory.GetFiles(Master.SettlementsPath);
-            foreach (string settlement in settlements)
-            {
-                SettlementFile settlementJSON = Serializer.SerializeFromFile<SettlementFile>(settlement);
-                if (settlementJSON.Tile == tileToCheck) return true;
-            }
-
-            return false;
+            EnsureCache();
+            lock (SettlementCacheLock) { return _byTile.ContainsKey(tileToCheck); }
         }
 
         public static SettlementFile GetSettlementFileFromTile(int tileToGet)
         {
-            string[] settlements = Directory.GetFiles(Master.SettlementsPath);
-            foreach (string settlement in settlements)
+            EnsureCache();
+            lock (SettlementCacheLock)
             {
-                SettlementFile settlementFile = Serializer.SerializeFromFile<SettlementFile>(settlement);
-                if (settlementFile.Tile == tileToGet) return settlementFile;
+                return _byTile.TryGetValue(tileToGet, out SettlementFile sf) ? sf : null;
             }
-
-            return null;
         }
 
         public static SettlementFile GetSettlementFileFromUsername(string usernameToGet)
         {
-            string[] settlements = Directory.GetFiles(Master.SettlementsPath);
-            foreach (string settlement in settlements)
-            {
-                SettlementFile settlementFile = Serializer.SerializeFromFile<SettlementFile>(settlement);
-                if (settlementFile.Username == usernameToGet) return settlementFile;
-            }
-
+            if (string.IsNullOrEmpty(usernameToGet)) return null;
+            SettlementFile[] all = EnsureCache();
+            foreach (SettlementFile sf in all)
+                if (sf != null && sf.Username == usernameToGet) return sf;
             return null;
         }
 
         public static SettlementFile[] GetAllSettlements()
         {
-            List<SettlementFile> settlementList = new List<SettlementFile>();
-
-            string[] settlements = Directory.GetFiles(Master.SettlementsPath);
-            foreach (string settlement in settlements) settlementList.Add(Serializer.SerializeFromFile<SettlementFile>(settlement));
-
-            return settlementList.ToArray();
+            return EnsureCache();
         }
 
         public static SettlementFile[] GetAllSettlementsFromUsername(string usernameToCheck)
         {
-            List<SettlementFile> settlementList = new List<SettlementFile>();
-
-            string[] settlements = Directory.GetFiles(Master.SettlementsPath);
-            foreach (string settlement in settlements)
-            {
-                SettlementFile settlementFile = Serializer.SerializeFromFile<SettlementFile>(settlement);
-                if (settlementFile.Username == usernameToCheck) settlementList.Add(settlementFile);
-            }
-
-            return settlementList.ToArray();
+            if (string.IsNullOrEmpty(usernameToCheck)) return Array.Empty<SettlementFile>();
+            SettlementFile[] all = EnsureCache();
+            List<SettlementFile> match = new List<SettlementFile>();
+            foreach (SettlementFile sf in all)
+                if (sf != null && sf.Username == usernameToCheck) match.Add(sf);
+            return match.ToArray();
         }
 
         public static List<SettlementFile> GetSettlementsFromGoodwill(ServerClient client)

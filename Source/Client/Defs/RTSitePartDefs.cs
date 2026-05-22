@@ -1,4 +1,5 @@
-﻿using RimWorld;
+using RimWorld;
+using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
@@ -8,6 +9,9 @@ namespace GameClient.Defs
     public static class RTSitePartDefs
     {
         public static SitePartDef[] Defs { get; private set; }
+
+        // KMH: Backing dictionary so GetByDefName is O(1).
+        private static Dictionary<string, SitePartDef> DefsByName;
 
         static RTSitePartDefs()
         {
@@ -29,6 +33,13 @@ namespace GameClient.Defs
             .Where(d => d != null)
             .Distinct()
             .ToArray();
+
+            DefsByName = new Dictionary<string, SitePartDef>(Defs.Length);
+            foreach (SitePartDef def in Defs)
+            {
+                if (def != null && !string.IsNullOrEmpty(def.defName))
+                    DefsByName[def.defName] = def;
+            }
         }
 
         public static SitePartDef GetByDefName(string defName)
@@ -36,12 +47,10 @@ namespace GameClient.Defs
             if (string.IsNullOrWhiteSpace(defName))
                 return null;
 
-            SitePartDef direct = Defs.FirstOrDefault(fetch => fetch != null && fetch.defName == defName);
-            if (direct != null)
-                return direct;
+            if (DefsByName.TryGetValue(defName, out SitePartDef cached))
+                return cached;
 
-            return DefDatabase<SitePartDef>.AllDefsListForReading
-                .FirstOrDefault(fetch => fetch != null && fetch.defName == defName);
+            return DefDatabase<SitePartDef>.GetNamedSilentFail(defName);
         }
     }
 }

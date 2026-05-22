@@ -4,7 +4,7 @@ namespace TCPNetwork.Packets
 {
     public class PKT_Site : PKT_Base
     {
-        public enum SiteStepMode { Accept, Build, Destroy, Info, Config, Rewards, Worker, CustomBuild, CustomInfo, WorkerJoin, WorkerLeave, Upgrade }
+        public enum SiteStepMode { Accept, Build, Destroy, Info, Config, Rewards, Worker, CustomBuild, CustomInfo, WorkerJoin, WorkerLeave, Upgrade, SetDestination }
 
         public SiteStepMode _stepMode { get; set; } = SiteStepMode.Accept;
 
@@ -29,7 +29,16 @@ namespace TCPNetwork.Packets
         /// <summary>Message from server about the custom site operation.</summary>
         public string _statusMessage { get; set; } = string.Empty;
 
-        /// <summary>Best relevant skill level of the joining worker (0-20).</summary>
+        /// <summary>
+        /// KMH 26.5.20.1: Re-enabled. Best relevant skill level of the
+        /// joining worker (0-20). Sent by the client when assigning a pawn
+        /// to a custom site so the server can stamp WorkerProgress.BaseSkillLevel.
+        /// Server-clamped — anti-cheat impact is bounded (max +60% production
+        /// multiplier even if claimed L20 by a fresh client).
+        /// </summary>
         public int _workerSkillLevel { get; set; } = 0;
+
+        /// <summary>For SetDestination step: the new RewardDestination as int.</summary>
+        public int _newRewardDestination { get; set; } = 0;
     }
 }

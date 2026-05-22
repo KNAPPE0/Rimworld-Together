@@ -12,7 +12,10 @@ namespace GameClient.Dialogs.Sites
 {
     public class DLG_SiteMenu : DLG_Base
     {
-        public override Vector2 InitialSize => new Vector2(720f, 480f);
+        // KMH 26.5.20.1: Bumped 720x480 → 760x540 to accommodate the new
+        // 80 px bottom strip (KMH Feature tag + Build Custom Site button)
+        // without the site list feeling cramped.
+        public override Vector2 InitialSize => new Vector2(760f, 540f);
 
         private bool IsInConfigMode { get; set; }
 
@@ -30,7 +33,16 @@ namespace GameClient.Dialogs.Sites
             float y = DrawStandardHeader(inRect, drawTopBorder: true, drawBottomBorder: true, closeX: true);
             if (y < 0f) return;
 
-            Rect listOuter = new Rect(0f, y, inRect.width, inRect.height - y).ContractedBy(ContentPad);
+            // KMH 26.5.20.1: Reserve space at the bottom for the
+            // "Build Custom Site" button so it doesn't render OVER the
+            // scroll list. Bumped from 56 → 80 px so the "KMH Feature"
+            // tag above the button has clean vertical breathing room
+            // (the old 56 px envelope left the tag clipping into the
+            // MenuSection border).
+            const float customButtonReserve = 80f;
+            float listBottomReserve = IsInConfigMode ? 0f : customButtonReserve;
+
+            Rect listOuter = new Rect(0f, y, inRect.width, inRect.height - y - listBottomReserve).ContractedBy(ContentPad);
 
             Widgets.DrawMenuSection(listOuter);
             Rect mainRect = listOuter.ContractedBy(10f);
@@ -63,25 +75,38 @@ namespace GameClient.Dialogs.Sites
                 Widgets.EndScrollView();
             }
 
-            // KMH: Custom Site button (only in build mode, not config mode)
+            // KMH: Custom Site button (only in build mode, not config mode).
+            // KMH 26.5.20.1: Centered "KMH Feature" tag + button at the
+            // reserved 80 px bottom strip of the dialog. The tag is rendered
+            // 28 px above the button (was 16) with a 20 px tall rect (was
+            // 14) and 280 px wide rect (was 200) so the text never clips
+            // against the menu section border above OR the button below.
             if (!IsInConfigMode)
             {
-                float btnH = 32f;
-                float btnW = 200f;
+                const float btnH = 32f;
+                const float btnW = 220f;
                 Rect customBtnRect = new Rect(
                     (inRect.width - btnW) / 2f,
-                    inRect.height - btnH - 8f,
+                    inRect.height - btnH - 12f,
                     btnW, btnH);
 
-                // KMH Custom Sites feature
+                const float tagW = 280f;
+                const float tagH = 20f;
+                Rect tagRect = new Rect(
+                    (inRect.width - tagW) / 2f,
+                    customBtnRect.y - tagH - 6f,
+                    tagW, tagH);
+
                 Text.Font = GameFont.Tiny;
+                Text.Anchor = TextAnchor.MiddleCenter;
                 GUI.color = new Color(0.5f, 0.7f, 0.9f);
-                Widgets.Label(new Rect(customBtnRect.x, customBtnRect.y - 16f, btnW, 14f), "KMH Feature");
-                GUI.color = new Color(0.4f, 0.8f, 1f);
+                Widgets.Label(tagRect, "✦ KMH Feature ✦");
+                GUI.color = Color.white;
+                Text.Anchor = TextAnchor.UpperLeft;
                 Text.Font = GameFont.Small;
+
                 if (Widgets.ButtonText(customBtnRect, "Build Custom Site"))
                 {
-                    GUI.color = Color.white;
                     Close();
                     int tile = SessionHandler.ChosenCaravan?.Tile ?? -1;
                     if (tile >= 0)
@@ -89,7 +114,6 @@ namespace GameClient.Dialogs.Sites
                     else
                         DLG_Base.PushNewDialog(new DLG_Message("Error", new string[] { "No caravan selected. Select a caravan on the world map first." }));
                 }
-                GUI.color = Color.white;
             }
         }
 

@@ -96,11 +96,22 @@ namespace GameServer.Hooks.ServerBrowser
 
         private static async void SetupConnection(BrowserMode mode)
         {
-            ServerIPV4 = await GetPublicIP();
+            // KMH 26.5.22.1: Cache the resolved public IP across reconnects.
+            // GetPublicIP() hits ipify.org — under network flap the call
+            // can take 30+ seconds, and upstream's pattern re-queries on
+            // every reconnect (so a churning connection thrashes ipify).
+            // We only fetch once per process lifetime.
+            if (!WasStartedOnce || string.IsNullOrEmpty(ServerIPV4))
+                ServerIPV4 = await GetPublicIP();
 
             PKT_ServerTelemetry telemetry = new PKT_ServerTelemetry();
             telemetry.Name = Master.ServerConfig.Name;
             telemetry.Description = Master.ServerConfig.Description;
+            // KMH 26.5.22.1: Publish Workshop + Discord URLs so the
+            // browser dialog can render one-click buttons. Empty values
+            // hide the button on the client side.
+            telemetry.SteamWorkshopURL = Master.ServerConfig.SteamWorkshopURL ?? string.Empty;
+            telemetry.DiscordURL = Master.ServerConfig.DiscordURL ?? string.Empty;
             telemetry.Version = CommonValues.ExecutableVersion;
             telemetry.Endpoint = ServerIPV4;
             telemetry.Port = Master.ServerConfig.Port;
@@ -109,16 +120,31 @@ namespace GameServer.Hooks.ServerBrowser
             telemetry.MaxPopulation = Master.ServerConfig.MaxPlayers;
             telemetry.Mods = Master.ModConfig.ModConfigs.Where(fetch => fetch.Type != ModConfigFile.ModType.Forbidden)
                 .OrderBy(fetch => fetch.FileName).ToList();
-            
+
             Network.BrowserEndpoint.EnqueuePacket(PacketHeader.ServerBrowserTelemetry, telemetry);
         }
 
         public static async Task<string> GetPublicIP()
         {
-            using (HttpClient client = new HttpClient())
+            // KMH 26.5.22.1: Wrapped in try/catch — upstream let the
+            // exception propagate, which crashed the SetupConnection task
+            // and silently left the server unlisted forever. Now we log
+            // and return empty so telemetry just publishes with no
+            // resolved endpoint (browser will still show the entry, just
+            // without the joinable IP — server admins can still see it
+            // and fix their networking).
+            try
             {
-                string address = await client.GetStringAsync("https://api.ipify.org");
-                return address;
+                using (HttpClient client = new HttpClient())
+                {
+                    string address = await client.GetStringAsync("https://api.ipify.org");
+                    return address;
+                }
+            }
+            catch (Exception ex)
+            {
+                Printer.Error(ex, LogImportanceMode.Ludicrous);
+                return string.Empty;
             }
         }
     }

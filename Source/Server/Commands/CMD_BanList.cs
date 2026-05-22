@@ -18,7 +18,7 @@ namespace GameServer.Commands
         {
             UserFile[] userFiles = UserManagerH.GetAllUserFiles().Where(x => x.IsBanned).ToArray();
 
-            Printer.Title($"Banned players: [{userFiles.Count()}]");
+            Printer.Title($"Banned players: [{userFiles.Length}]");
             Printer.Title("----------------------------------------");
             foreach (UserFile user in userFiles) Printer.Warning($"{user.Username} - {user.LatestIP}");
             Printer.Title("----------------------------------------");

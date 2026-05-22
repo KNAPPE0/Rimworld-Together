@@ -249,7 +249,7 @@ namespace GameServer.Integrations.Discord
         }
 
         /// <summary>
-        /// KMH 2.7: Combined live leaderboard — Top Guilds AND Top Players in
+        /// Combined live leaderboard — Top Guilds AND Top Players in
         /// a single embed, code-block formatted for column alignment.
         /// </summary>
         public static Embed BuildCombinedLeaderboardEmbed(
@@ -299,7 +299,7 @@ namespace GameServer.Integrations.Discord
             return eb.Build();
         }
 
-        // KMH 2.7: Table formatting rules for Discord code blocks.
+        // Table formatting rules for Discord code blocks.
         //   * NO emojis inside the table — Discord's monospace code-block
         //     font renders 🥇/🥈/🥉 at ~2× the width of an ASCII char, which
         //     desyncs every column after the rank. Use plain " 1 " etc.
@@ -407,7 +407,7 @@ namespace GameServer.Integrations.Discord
         }
 
         /// <summary>
-        /// KMH 2.7: Width-stable pad helper. <paramref name="right"/>: when
+        /// Width-stable pad helper. <paramref name="right"/>: when
         /// true → left-align (pad on the right side), when false → right-align
         /// (pad on the left). Truncates if longer than <paramref name="width"/>.
         /// </summary>
@@ -419,7 +419,7 @@ namespace GameServer.Integrations.Discord
         }
 
         /// <summary>
-        /// KMH 2.7: 3-char-wide rank tag. " 1.", " 2.", " 3.", "10.", "100".
+        /// 3-char-wide rank tag. " 1.", " 2.", " 3.", "10.", "100".
         /// Avoids medal emojis because they break monospace alignment in
         /// Discord code blocks.
         /// </summary>
@@ -461,7 +461,7 @@ namespace GameServer.Integrations.Discord
         // -- showcase --
 
         /// <summary>
-        /// KMH 2.7: Builds the per-user marketplace showcase embed. Includes
+        /// Builds the per-user marketplace showcase embed. Includes
         /// every active listing the player owns, with item label, quality +
         /// stuff annotation, qty, unit price, and a buy hint (`!buy &lt;id&gt;`).
         /// Falls back to a single "no listings" embed when the player has
@@ -555,11 +555,7 @@ namespace GameServer.Integrations.Discord
             return eb.Build();
         }
 
-        /// <summary>
-        /// KMH 26.5.20: Builds the per-user Want-To-Buy embed. Mirrors
-        /// <see cref="BuildShowcaseEmbed"/> in style so a player browsing
-        /// the WTB channel and the sells channel sees consistent layout.
-        /// </summary>
+        // WTB embed — same style as BuildShowcaseEmbed for layout consistency.
         public static Embed BuildWtbEmbed(
             string buyerUsername,
             string buyerDiscordHandle,

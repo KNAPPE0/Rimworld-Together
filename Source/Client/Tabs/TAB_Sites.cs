@@ -27,7 +27,7 @@ namespace GameClient.Tabs
 
         protected override void FillTab()
         {
-            tabTitle = $"Player Sites [{PM_Sites.PlayerSites.Count()}]";
+            tabTitle = $"Player Sites [{PM_Sites.PlayerSites.Count}]";
 
             float horizontalLineDif = Text.CalcSize(tabTitle).y + 3f + 10f;
 
@@ -42,9 +42,10 @@ namespace GameClient.Tabs
 
         private void GenerateList(Rect mainRect)
         {
-            var orderedDictionary = PM_Sites.PlayerSites.OrderBy(x => x.Label);
+            // Materialise once — OrderBy was previously enumerated for .Count() AND the foreach.
+            var ordered = PM_Sites.PlayerSites.OrderBy(x => x.Label).ToList();
 
-            float height = 6f + orderedDictionary.Count() * 30f;
+            float height = 6f + ordered.Count * 30f;
             Rect viewRect = new Rect(mainRect.x, mainRect.y, mainRect.width - 16f, height);
 
             Widgets.BeginScrollView(mainRect, ref scrollPosition, viewRect);
@@ -54,7 +55,7 @@ namespace GameClient.Tabs
             float num3 = scrollPosition.y + mainRect.height;
             int num4 = 0;
 
-            foreach (WO_Site playerSite in orderedDictionary)
+            foreach (WO_Site playerSite in ordered)
             {
                 if (num > num2 && num < num3)
                 {
@@ -79,16 +80,10 @@ namespace GameClient.Tabs
             float buttonX = 47f;
             float buttonY = 30f;
             Widgets.Label(fixedRect, $"{playerSite.Label} - {playerSite.Tile}");
+            // Was: re-scan PlayerSites for the same Tile to recover the same reference. Pointless.
             if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonX, rect.y), new Vector2(buttonX, buttonY)), "Focus"))
             {
-                foreach (WO_Site site in PM_Sites.PlayerSites)
-                {
-                    if (site.Tile == playerSite.Tile)
-                    {
-                        CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(site));
-                        break;
-                    }
-                }
+                CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(playerSite));
             }
         }
     }

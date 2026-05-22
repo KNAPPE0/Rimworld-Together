@@ -49,7 +49,7 @@ namespace GameClient.Dialogs.Economy
         }
 
         /// <summary>
-        /// KMH 2.7: Single source of truth for client-side defName → friendly
+        /// Single source of truth for client-side defName → friendly
         /// label resolution. Tries RimWorld's DefDatabase first (handles the
         /// player's loaded mods), then falls back to a humanizer so unloaded
         /// defs still render reasonably (e.g. `Apparel_PowerArmor` → `Power
@@ -69,7 +69,7 @@ namespace GameClient.Dialogs.Economy
         }
 
         /// <summary>
-        /// KMH 2.7: Fallback humanizer for defNames the client's DefDatabase
+        /// Fallback humanizer for defNames the client's DefDatabase
         /// doesn't know about (e.g. modded items on the server that the local
         /// player doesn't have installed). Matches the server-side
         /// <c>DefNameHumanizer</c> so labels stay consistent across server

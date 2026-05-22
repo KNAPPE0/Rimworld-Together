@@ -43,7 +43,7 @@ namespace GameClient.Core
             Master.AppdataRTPath = Path.Combine(Master.AppdataPath, "RimWorld Together");
             Master.AppdataTempPath = Path.Combine(Master.AppdataRTPath, "Temp");
             Master.AppdataVersionPath = Path.Combine(Master.AppdataTempPath, "Version");
-            // KMH 26.5.22.1: LocalServer install dir (see LocalServerHandler).
+            // LocalServer install dir (see LocalServerHandler).
             Master.AppdataLocalServerPath = Path.Combine(Master.AppdataRTPath, "LocalServer");
 
             var modContent = LoadedModManager.RunningMods.FirstOrDefault(m => (m.PackageId == Master.ModPackageID || m.PackageId == Master.ModPackageID + "_steam") 

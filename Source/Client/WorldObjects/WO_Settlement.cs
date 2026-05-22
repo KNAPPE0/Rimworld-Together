@@ -276,7 +276,7 @@ namespace GameClient.WorldObjects
                     });
                 }
 
-                // KMH 2.7: Player leaderboard is global — available regardless of guild membership.
+                // Player leaderboard is global — available regardless of guild membership.
                 if (!siteOnly)
                 {
                     gizmos.Add(new Command_Action

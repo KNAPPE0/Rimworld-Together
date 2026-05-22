@@ -46,7 +46,8 @@ namespace GameClient.Dialogs
 
         private void FillMainRect(Rect mainRect)
         {
-            float height = 6f + Elements.Count() * 30f;
+            int count = Elements.Count;
+            float height = 6f + count * 30f;
             Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
             float num = 0;
@@ -54,7 +55,7 @@ namespace GameClient.Dialogs
             float num3 = ScrollPosition.y + mainRect.height;
             int num4 = 0;
 
-            for (int i = 0; i < Elements.Count(); i++)
+            for (int i = 0; i < count; i++)
             {
                 if (num > num2 && num < num3)
                 {

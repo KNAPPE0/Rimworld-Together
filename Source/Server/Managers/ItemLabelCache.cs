@@ -8,17 +8,8 @@ using static Shared.Misc.Printer;
 
 namespace GameServer.Managers
 {
-    /// <summary>
-    /// KMH 2.7: Server-side cache of (defName → human label).
-    ///
-    /// Populated by <c>PKT_ItemLabels</c> from clients on login. Persisted to
-    /// disk so that even before any client has reconnected, queued Discord
-    /// commands and the leaderboard can render proper labels.
-    ///
-    /// Resolution order in <see cref="LabelFor"/>:
-    ///   1. Cached label (set by a connected client)
-    ///   2. <see cref="DefNameHumanizer.Humanize"/> fallback (works without DefDatabase)
-    /// </summary>
+    // defName → human label. Populated from clients on login, persisted so Discord
+    // commands work before any client reconnects.
     public static class ItemLabelCache
     {
         private static string SavePath => Path.Combine(Master.AssetsPath, "ItemLabels.json");
@@ -88,10 +79,7 @@ namespace GameServer.Managers
             }
         }
 
-        /// <summary>
-        /// Returns the prettiest label we know for this defName.
-        /// Never returns null — falls back to a humanized form of the defName.
-        /// </summary>
+        // Never returns null — falls back to humanized defName.
         public static string LabelFor(string defName)
         {
             if (string.IsNullOrEmpty(defName)) return string.Empty;
@@ -103,32 +91,15 @@ namespace GameServer.Managers
             return DefNameHumanizer.Humanize(defName);
         }
 
-        /// <summary>
-        /// Try to resolve a user-typed query (e.g. "plasteel", "knife", "melee weapon")
-        /// to a defName from the cache. Returns the best match or null.
-        ///
-        /// Search order:
-        ///   1. Exact defName match (case-insensitive)
-        ///   2. Exact label match (case-insensitive)
-        ///   3. Single label that contains the query as a whole word
-        ///   4. Single label that starts with the query
-        ///   5. null (ambiguous or unknown)
-        ///
-        /// Populates <paramref name="candidates"/> with up to 8 matches when
-        /// the query is ambiguous so the caller can show a helpful list.
-        /// </summary>
+        // Resolves a fuzzy item query. Order: exact defName → exact label → whole-word
+        // contains → starts-with → contains. Ambiguous matches fill `candidates` (up to 8).
         public static string ResolveDefNameByQuery(string query, out List<string> candidates)
         {
             candidates = new List<string>();
             if (string.IsNullOrWhiteSpace(query)) return null;
             string q = query.Trim();
 
-            // KMH 26.5.20.1 security: cap query length. Without this, a
-            // hostile Discord user can pass a 1500-char string (Discord's
-            // message cap is 2000) and the per-label .Contains() inside the
-            // loop below becomes O(label×query) over EVERY label in the
-            // cache — easily 10k items × 1500 chars per call. Pure
-            // server-CPU DoS. Real defNames / labels never exceed 64 chars.
+            // Cap query — per-label O(label×query) over 10k items would DoS server CPU.
             const int MaxQueryLen = 64;
             if (q.Length > MaxQueryLen) q = q.Substring(0, MaxQueryLen);
 
@@ -177,10 +148,8 @@ namespace GameServer.Managers
 
         private static IEnumerable<string> Take8(List<string> src)
         {
-            int n = Math.Min(8, src.Count);
-            List<string> r = new List<string>(n);
-            for (int i = 0; i < n; i++) r.Add(src[i]);
-            return r;
+            // Cheap clamp + slice; avoids allocating a second list when src already has ≤8.
+            return src.Count <= 8 ? src : src.GetRange(0, 8);
         }
 
         private static bool ContainsWord(string haystack, string needle)

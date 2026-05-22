@@ -8,7 +8,7 @@ using TCPNetwork.Packets;
 namespace GameServer.PacketManager
 {
     /// <summary>
-    /// KMH 2.7: Receives a client's defName → label snapshot (sent on login)
+    /// Receives a client's defName → label snapshot (sent on login)
     /// and merges it into <see cref="ItemLabelCache"/>. The cache feeds
     /// Discord output so listings, treasury dumps, and quest descriptions
     /// stop showing raw defNames.

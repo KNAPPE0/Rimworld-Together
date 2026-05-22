@@ -40,7 +40,7 @@ namespace GameClient.PacketManagers
 
         public static void AddMessageToChat(PKT_Chat data)
         {
-            if (DLG_Chat.ChatMessages.Count() > 100) DLG_Chat.ChatMessages.RemoveAt(0);
+            if (DLG_Chat.ChatMessages.Count > 100) DLG_Chat.ChatMessages.RemoveAt(0);
 
             if (PM_Chat.CheckIfHasBeenTagged(data.Message))
             {

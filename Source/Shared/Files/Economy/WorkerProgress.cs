@@ -29,7 +29,7 @@ namespace Shared.Files.Economy
         public double Xp { get; set; }
 
         /// <summary>
-        /// KMH 26.5.20.1: Base skill level the worker brought to the site,
+        /// Base skill level the worker brought to the site,
         /// derived from their assigned pawn's RimWorld skill matching the
         /// site's RelevantSkillDef. Server-clamped to 0..20. A pawn with
         /// Crafting 15 starts contributing at level 15 immediately — they
@@ -54,7 +54,7 @@ namespace Shared.Files.Economy
         {
             get
             {
-                // KMH 26.5.20.1: Combine the worker's pre-existing pawn
+                // Combine the worker's pre-existing pawn
                 // skill with anything they've earned through on-site cycles.
                 // The maximum keeps a fresh experienced pawn from being
                 // "dragged down" to L0 while still rewarding long-term

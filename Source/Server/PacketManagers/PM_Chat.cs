@@ -3,7 +3,6 @@ using GameServer.Hooks.TCPNetwork;
 using GameServer.Misc;
 using Shared;
 using Shared.Misc;
-using System.Text;
 using TCPNetwork.Files.Client;
 using TCPNetwork.PacketManagers;
 using TCPNetwork.Packets;
@@ -31,12 +30,8 @@ namespace GameServer.PacketManager
             "Use '/help' to check all the available commands."
         };
 
-        // KMH 26.5.20.1 security: per-user chat rate limit. Without this, a
-        // logged-in client could flood the broadcast (N-client amplification)
-        // and the chat-log disk writer (one File.AppendAllText per message)
-        // at the rate the TCP connection allows — trivially DoS-ing both
-        // every connected player's UI and the server's disk. 200ms gap =
-        // max 5 msg/sec which is well above any human typing speed.
+        // Rate limit chat — flood would DoS the broadcast + per-message disk writes.
+        // 200ms = 5 msg/sec, above human typing.
         private const int ChatRateGapMs = 200;
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> LastChatTicks =
             new System.Collections.Concurrent.ConcurrentDictionary<string, long>(System.StringComparer.OrdinalIgnoreCase);
@@ -50,9 +45,7 @@ namespace GameServer.PacketManager
             if (data == null || string.IsNullOrWhiteSpace(data.Message)) return;
             if (data.Message.Length > 512) data.Message = data.Message.Substring(0, 512);
 
-            // KMH 26.5.20.1: Rate-limit non-command chat. Commands stay
-            // unthrottled because they're already gated by CommandSemaphore
-            // and are useful in rapid sequences (admin / debug).
+            // Commands stay unthrottled — CommandSemaphore + admin use cases need rapid sequences.
             if (!data.IsCommand)
             {
                 string u = client?.UserFile?.Username;
@@ -62,8 +55,7 @@ namespace GameServer.PacketManager
                     if (LastChatTicks.TryGetValue(u, out long last)
                         && (now - last) / System.TimeSpan.TicksPerMillisecond < ChatRateGapMs)
                     {
-                        // Silently drop — telling the spammer would just
-                        // give them more bytes to spam back.
+                        // Silent drop — feedback would just amplify the spam.
                         return;
                     }
                     LastChatTicks[u] = now;
@@ -152,12 +144,6 @@ namespace GameServer.PacketManager
                     toFind.Action();
                 }
 
-                // KMH 26.5.20.1: Was `chatCommand += command[i] + ""` —
-                // O(n²) string concat in a loop, plus the `+ ""` produced
-                // no separator so adjacent tokens were jammed together
-                // ("hello", "world" → "helloworld"). string.Join is O(n)
-                // and uses a space separator so the rendered log line
-                // reads naturally.
                 string chatCommand = string.Join(" ", command);
 
                 PM_Chat.WriteChatInConsole(client.UserFile.Username, chatCommand);
@@ -173,16 +159,10 @@ namespace GameServer.PacketManager
 
             try
             {
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.Append($"[{DateTime.Now:HH:mm:ss}] | [" + username + "]: " + message);
-                stringBuilder.Append(Environment.NewLine);
-
-                DateTime dateTime = DateTime.Now.Date;
-                string nowFileName = (dateTime.Year + "-" + dateTime.Month.ToString("D2") + "-" + dateTime.Day.ToString("D2")).ToString();
-                string nowFullPath = Master.ChatLogsPath + Path.DirectorySeparatorChar + nowFileName + ".txt";
-
-                File.AppendAllText(nowFullPath, stringBuilder.ToString());
-                stringBuilder.Clear();
+                DateTime now = DateTime.Now;
+                string line = $"[{now:HH:mm:ss}] | [{username}]: {message}{Environment.NewLine}";
+                string path = Path.Combine(Master.ChatLogsPath, $"{now:yyyy-MM-dd}.txt");
+                File.AppendAllText(path, line);
             }
             catch (Exception ex) { Printer.Error(ex); }
 

@@ -148,7 +148,7 @@ namespace GameServer.PacketManager
 
             ConfirmNewSite(client, siteFile);
 
-            // KMH 2.7: Lifetime stats — every standard site built counts.
+            // Lifetime stats — every standard site built counts.
             try { PlayerStatsManager.RecordSiteBuilt(client.UserFile.Username); } catch { }
         }
 
@@ -196,7 +196,7 @@ namespace GameServer.PacketManager
             site.SaveSite();
             SiteManagerHelper.InvalidateCache();
 
-            // KMH 26.5.20.1: If this site has custom-site data, ALSO sync
+            // If this site has custom-site data, ALSO sync
             // the cd.Workers list and per-worker progress. Previously the
             // standard ManageWorker path only touched WorkerString, leaving
             // the custom site's reward-distribution loop unable to recognise

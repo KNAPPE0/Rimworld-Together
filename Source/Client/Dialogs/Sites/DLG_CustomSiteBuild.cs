@@ -84,7 +84,7 @@ namespace GameClient.Dialogs.Sites
 
         public override void DoWindowContents(Rect rect)
         {
-            // KMH 26.5.20.1: Shared title via DialogLayout, then the
+            // Shared title via DialogLayout, then the
             // dialog-specific KMH version badge on top of it.
             DialogLayout.DrawTitle(rect, "Build Custom Production Site");
             Text.Font = GameFont.Tiny;

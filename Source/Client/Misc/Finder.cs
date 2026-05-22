@@ -19,12 +19,13 @@ namespace GameClient.Misc
 
         public static MentalStateDef GetMentalStateDefFromByte(byte value)
         {
-            return DefDatabase<MentalStateDef>.AllDefs.ToList()[value];
+            // ElementAt avoids materialising the full list just to index into it.
+            return DefDatabase<MentalStateDef>.AllDefs.ElementAt(value);
         }
 
         public static WeatherDef GetWeatherDefFromByte(byte value)
         {
-            return DefDatabase<WeatherDef>.AllDefs.ToList()[value];
+            return DefDatabase<WeatherDef>.AllDefs.ElementAt(value);
         }
 
         public static WO_Settlement GetRTSettlementFromTile(int tile) 
@@ -39,12 +40,14 @@ namespace GameClient.Misc
 
         public static WorldObject[] GetAllRTSettlements()
         {
-            return (WorldObject[])Find.World.worldObjects.AllWorldObjects.FindAll(fetch => fetch is WO_Settlement).ToArray();
+            // Was: FindAll(...).ToArray() cast to (WorldObject[]) which is a no-op cast on the array.
+            // Where().ToArray() avoids the interim List allocation.
+            return Find.World.worldObjects.AllWorldObjects.Where(w => w is WO_Settlement).ToArray();
         }
 
         public static WorldObject[] GetAllRTSites()
         {
-            return (WorldObject[])Find.World.worldObjects.AllWorldObjects.FindAll(fetch => fetch is WO_Site).ToArray();
+            return Find.World.worldObjects.AllWorldObjects.Where(w => w is WO_Site).ToArray();
         }
 
         public static Hediff GetHediffFromPart(Pawn pawn, BodyPartRecord part, string hediffDefname, bool forceUntended)

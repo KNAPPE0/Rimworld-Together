@@ -11,7 +11,7 @@ using Verse;
 namespace GameClient.Dialogs.Economy
 {
     /// <summary>
-    /// KMH 2.7: Per-player lifetime leaderboard. Sortable by donation,
+    /// Per-player lifetime leaderboard. Sortable by donation,
     /// quests, sales, sites, worker XP, or total economy score.
     ///
     /// Discord-linked names are coloured via <see cref="LinkedAccountsCache"/>
@@ -20,7 +20,7 @@ namespace GameClient.Dialogs.Economy
     /// </summary>
     public class DLG_PlayerLeaderboard : DLG_Base
     {
-        // KMH 26.5.20.1: Standardised to 1200x620 — same dimensions as
+        // Standardised to 1200x620 — same dimensions as
         // DLG_GuildLeaderboard so the two dialogs feel like one family.
         public override Vector2 InitialSize => new Vector2(1200f, 620f);
 
@@ -32,14 +32,14 @@ namespace GameClient.Dialogs.Economy
         private bool _onlyMyGuild;
         private string _filter = "";
 
-        // KMH 2.7: Live-refresh — re-pull every DialogLayout.AutoRefreshSeconds
+        // Live-refresh — re-pull every DialogLayout.AutoRefreshSeconds
         // so stats visibly update as players post quests, build sites, donate,
         // etc. The server's snapshot computation reads UserManagerH directly
         // so numbers are current the instant a stat is recorded.
         private float _refreshTimer = DialogLayout.AutoRefreshSeconds;
         private DateTime _lastRefreshUtc = DateTime.UtcNow;
 
-        // KMH 2.7: Cache the filtered+sorted view so we don't run LINQ
+        // Cache the filtered+sorted view so we don't run LINQ
         // through Where().OrderByDescending().ToList() on every redraw
         // (60fps × N players = a lot of unnecessary allocation). Cache is
         // invalidated by:
@@ -75,7 +75,7 @@ namespace GameClient.Dialogs.Economy
             PM_PlayerStats.RequestLeaderboard();
             _lastRefreshUtc = DateTime.UtcNow;
 
-            // KMH 2.7: React the instant a server-pushed snapshot lands —
+            // React the instant a server-pushed snapshot lands —
             // invalidate the filter/sort cache and flip the live indicator
             // so the user sees fresh data without waiting for the next poll.
             PM_PlayerStats.OnLeaderboardSnapshotUpdated += OnServerPushedSnapshot;
@@ -111,14 +111,14 @@ namespace GameClient.Dialogs.Economy
 
         public override void DoWindowContents(Rect rect)
         {
-            // KMH 26.5.20.1: Standard title + live-badge + section divider
+            // Standard title + live-badge + section divider
             // via DialogLayout. Same look as every other KMH dialog.
             float y = DialogLayout.DrawTitle(rect, "Player Leaderboard");
             int secsSince = Math.Max(0, (int)(DateTime.UtcNow - _lastRefreshUtc).TotalSeconds);
             DialogLayout.DrawLiveBadge(rect, secsSince);
             DialogLayout.DrawSectionDivider(rect, ref y);
 
-            // KMH 26.5.20.1: Compact toolbar matching DLG_GuildLeaderboard.
+            // Compact toolbar matching DLG_GuildLeaderboard.
             //   [filter ........] [Sort: X] [☐ Linked only] [☐ My guild only]   [Refresh]
             // Tight-checkbox helper puts ☐ right beside the label instead
             // of stretching across 130px of dead space.
@@ -132,7 +132,7 @@ namespace GameClient.Dialogs.Economy
                 GUI.color = old;
             }
 
-            // KMH 26.5.20.1: Friendly enum labels.
+            // Friendly enum labels.
             if (Widgets.ButtonText(new Rect(228f, y, 200f, 28f), $"Sort: {DialogLayout.FriendlyEnumName(_sort)}"))
             {
                 List<FloatMenuOption> opts = new List<FloatMenuOption>();
@@ -165,7 +165,7 @@ namespace GameClient.Dialogs.Economy
 
         private void DrawHeader(Rect r)
         {
-            // KMH 26.5.20.1: Player + Guild columns stay left-aligned (text).
+            // Player + Guild columns stay left-aligned (text).
             // All numeric columns center-align both header and cells.
             float[] cols = ColumnXs(r.width);
             Widgets.Label(new Rect(cols[0], r.y, cols[1] - cols[0], r.height), "<b>Player</b>");
@@ -192,7 +192,7 @@ namespace GameClient.Dialogs.Economy
 
             string filterLower = (_filter ?? "").Trim().ToLower();
 
-            // KMH 2.7: Only rebuild the filtered/sorted list when one of the
+            // Only rebuild the filtered/sorted list when one of the
             // inputs actually changes — otherwise reuse the cached list. This
             // avoids a Where()/OrderBy()/ToList() per frame at 60fps.
             bool inputsChanged =
@@ -256,7 +256,7 @@ namespace GameClient.Dialogs.Economy
                 Widgets.Label(new Rect(cols[0], ly + 2f, cols[1] - cols[0], rowH - 4f), $"{rank}  <b>{nameRender}</b>");
                 Widgets.Label(new Rect(cols[1], ly + 2f, cols[2] - cols[1], rowH - 4f),
                     string.IsNullOrEmpty(r.GuildName) ? "<color=grey>—</color>" : r.GuildName);
-                // KMH 26.5.20.1: Numeric cells center-aligned to match headers.
+                // Numeric cells center-aligned to match headers.
                 DialogLayout.DrawCenteredLabel(new Rect(cols[2], ly + 2f, cols[3] - cols[2], rowH - 4f), r.EconomyScore.ToString());
                 DialogLayout.DrawCenteredLabel(new Rect(cols[3], ly + 2f, cols[4] - cols[3], rowH - 4f), $"{r.SilverDonated}s");
                 DialogLayout.DrawCenteredLabel(new Rect(cols[4], ly + 2f, cols[5] - cols[4], rowH - 4f), $"{r.SalesEarned}s");

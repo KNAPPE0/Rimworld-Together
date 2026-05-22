@@ -16,7 +16,7 @@ namespace GameServer.Commands.Chat
         {
             if (PM_Chat.TargetClient == null) return;
 
-            // KMH 26.5.20.1: Always list chat commands available to everyone.
+            // Always list chat commands available to everyone.
             // For admins, ALSO list the server-console admin commands so they
             // can see what's available even though those are run from the
             // server console, not from chat.

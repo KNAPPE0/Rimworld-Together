@@ -20,7 +20,7 @@ namespace GameClient.Dialogs.Economy
         private string _userFilter = "";
         private TreasuryTransaction.TxKind? _kindFilter = null;
 
-        // KMH 26.5.20.1: Cache the filtered + ordered transaction list so we
+        // Cache the filtered + ordered transaction list so we
         // don't re-run Where/OrderBy/ToList per frame. Treasury logs can
         // legitimately have 100+ rows; sorting them every frame at 60fps
         // is needless allocation churn. Invalidates when filter / kind /
@@ -39,7 +39,7 @@ namespace GameClient.Dialogs.Economy
 
         public override void DoWindowContents(Rect rect)
         {
-            // KMH 26.5.20.1: Shared layout primitives so this dialog looks
+            // Shared layout primitives so this dialog looks
             // identical to every other KMH dialog.
             string title = TreasuryClientCache.IsGuildOwned
                 ? $"Logs — {TreasuryClientCache.OwnerKey}"
@@ -100,7 +100,7 @@ namespace GameClient.Dialogs.Economy
             string filter = (_userFilter ?? "").Trim();
             object curSource = TreasuryClientCache.RecentTransactions;
 
-            // KMH 26.5.20.1: Filter/sort cache — only rebuild when inputs
+            // Filter/sort cache — only rebuild when inputs
             // change. Saves the per-frame LINQ on a list that can hit 100+
             // entries in active guilds.
             bool inputsChanged =
@@ -136,7 +136,7 @@ namespace GameClient.Dialogs.Economy
                 if (i % 2 == 0) Widgets.DrawAltRect(row);
 
                 string when = new DateTime(tx.UtcTicks, DateTimeKind.Utc).ToLocalTime().ToString("MM-dd HH:mm");
-                // KMH 2.7: Show the friendly item label, not the raw defName.
+                // Show the friendly item label, not the raw defName.
                 string what = string.IsNullOrEmpty(tx.ItemDefName)
                     ? $"<color=yellow>{tx.Amount}s</color>"
                     : $"<color=#bcd>{tx.Amount}× {EconomyDialogUtil.ResolveLabel(tx.ItemDefName)}</color>";

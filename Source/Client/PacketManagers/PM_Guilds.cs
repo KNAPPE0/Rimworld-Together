@@ -99,7 +99,7 @@ namespace GameClient.PacketManagers
 
             DLG_YesNo d2 = new DLG_YesNo("Are you sure you want to DELETE your guild?", r1, null);
 
-            // KMH 2.7: Surface the new Guild Hall + leaderboards from the
+            // Surface the new Guild Hall + leaderboards from the
             // legacy Guild Menu so players don't have to hunt for the
             // separate gizmos. Order: most-used first (Hall, then ranks),
             // then the original three management actions.

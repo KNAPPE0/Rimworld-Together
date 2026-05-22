@@ -1,0 +1,113 @@
+using GameClient.Dialogs.Default;
+using Shared;
+using System;
+using System.Diagnostics;
+using UnityEngine;
+using Verse;
+
+namespace GameClient.Dialogs
+{
+    // One-time welcome flow: KMH credits → upstream RWT credits.
+    public class DLG_Welcome : DLG_Base
+    {
+        public enum Step { Kmh, UpstreamRwt }
+
+        public override Vector2 InitialSize => new Vector2(560f, 380f);
+
+        private readonly Step _step;
+
+        public DLG_Welcome(Step step)
+        {
+            _step = step;
+            if (step == Step.Kmh)
+            {
+                Title = "Welcome to RimWorld Together — KMH Edition";
+                Description = "This is a customized fork of the upstream RimWorld Together mod with extra economy, Discord, leaderboard, and self-host features.";
+            }
+            else
+            {
+                Title = "Built on RimWorld Together (upstream)";
+                Description = "KMH wouldn't exist without the original RimWorld Together mod by Nova and Company. If you enjoy KMH, please show the upstream team some love.";
+            }
+        }
+
+        public override void DoWindowContents(Rect rect)
+        {
+            float y = 0f;
+
+            Text.Font = GameFont.Medium;
+            Text.Anchor = TextAnchor.UpperCenter;
+            Widgets.Label(new Rect(0f, y, rect.width, 40f), Title);
+            y += 44f;
+            Widgets.DrawLineHorizontal(0f, y, rect.width);
+            y += 12f;
+
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.UpperLeft;
+            Rect descRect = new Rect(8f, y, rect.width - 16f, 70f);
+            Widgets.Label(descRect, Description);
+            y += 80f;
+
+            float btnY = y;
+            const float btnW = 200f;
+            const float btnH = 38f;
+            const float gap = 10f;
+
+            if (_step == Step.Kmh)
+            {
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "KMH Discord",     KmhProject.DiscordUrl);
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "KMH GitHub",      KmhProject.GitHubUrl);
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "KMH Steam Workshop", KmhProject.SteamWorkshopUrl);
+            }
+            else
+            {
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Upstream RWT Discord", KmhProject.Upstream.DiscordUrl);
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Upstream RWT GitHub",  KmhProject.Upstream.GitHubUrl);
+            }
+
+            // Step 1 chains to Step 2; Step 2 stamps HasSeenKMHWelcome.
+            Rect okRect = new Rect((rect.width - 150f) / 2f, rect.height - 44f, 150f, 38f);
+            string okLabel = (_step == Step.Kmh) ? "OK — next" : "OK";
+            if (Widgets.ButtonText(okRect, okLabel))
+            {
+                Close();
+                if (_step == Step.Kmh)
+                {
+                    PushNewDialog(new DLG_Welcome(Step.UpstreamRwt));
+                }
+                else
+                {
+                    Core.Configs.ModConfigGetter.HasSeenKMHWelcome = true;
+                    Verse.LoadedModManager.GetMod<Core.Configs.ModConfigSetter>()?.WriteSettings();
+                }
+            }
+
+            Text.Anchor = TextAnchor.UpperLeft;
+        }
+
+        private static void DrawLinkButton(Rect rect, ref float y, float w, float h, float gap, string label, string url)
+        {
+            Rect btn = new Rect((rect.width - w) / 2f, y, w, h);
+            if (Widgets.ButtonText(btn, label)) OpenUrl(url);
+            y += h + gap;
+        }
+
+        private static void OpenUrl(string url)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true,
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"[KMH] Could not open URL '{url}': {ex.Message}");
+                PushNewDialog(new DLG_Message("Error",
+                    new[] { "Could not open the URL in your browser.", url }));
+            }
+        }
+    }
+}

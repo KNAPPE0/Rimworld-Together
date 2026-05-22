@@ -101,9 +101,7 @@ namespace GameServer.PacketManager
 
             if (data.ItemBundle != null)
             {
-                // KMH 26.5.20.1 security: cap entry count + per-entry sizes
-                // so a forged packet can't trigger 100k disk writes via
-                // 100k separate deposit calls.
+                // Cap entry count + sizes — blocks forged-packet disk-write floods.
                 int processed = 0;
                 const int MaxDepositEntries = 64;
                 foreach (var kv in data.ItemBundle)
@@ -157,7 +155,7 @@ namespace GameServer.PacketManager
 
             if (data.ItemBundle != null)
             {
-                // KMH 26.5.20.1 security: same caps as deposit path.
+                // Same caps as deposit path.
                 int processed = 0;
                 const int MaxWithdrawEntries = 64;
                 foreach (var kv in data.ItemBundle)

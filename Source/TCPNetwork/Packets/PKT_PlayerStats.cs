@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace TCPNetwork.Packets
 {
     /// <summary>
-    /// KMH 2.7: Player-leaderboard packet. The client requests a snapshot
+    /// Player-leaderboard packet. The client requests a snapshot
     /// and the server responds with the per-player lifetime stats summary.
     /// </summary>
     public class PKT_PlayerStats : PKT_Base

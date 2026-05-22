@@ -29,13 +29,7 @@ namespace TCPNetwork
 
         public static int BrowserClientPort { get; set; } = 7778;
 
-        // KMH 26.5.22.1: Ported from upstream (May 2026). Cap doubled from
-        // 8 MB → 16 MB so very large autosaves / map snapshots no longer
-        // tripping the size check and force-disconnecting. KMH ships much
-        // bigger map files than vanilla RWT (treasury inventories, quest
-        // boards, marketplace listings, lifetime stats), and the 8 MB
-        // ceiling had been forcing some long-running guilds to fall under
-        // it. The cap is still enforced — it's just generous now.
+        // 16 MB cap fits KMH's larger autosaves (treasury + leaderboards).
         public static readonly int MaxPacketSize = 16777216;
 
         public static ConcurrentDictionary<ServerClient, int> ServerClients { get; private set; } = new ConcurrentDictionary<ServerClient, int>();

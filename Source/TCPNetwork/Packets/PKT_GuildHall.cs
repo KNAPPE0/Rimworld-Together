@@ -71,7 +71,7 @@ namespace TCPNetwork.Packets
         public long QuestsCompletedByMembers { get; set; }
         public long SilverContributedByMembers { get; set; }
 
-        // KMH 2.7: deeper guild metrics — sites, alliances, hostilities,
+        // deeper guild metrics — sites, alliances, hostilities,
         // tenure, total worker XP. Populated server-side in
         // GuildManager.ComputeLeaderboard.
         public int TotalSites { get; set; }

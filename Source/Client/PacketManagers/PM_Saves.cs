@@ -143,7 +143,7 @@ namespace GameClient.PacketManagers
 
         public static void OnSave()
         {
-            // KMH 26.5.20.1: ALWAYS push map data on save. Previously this
+            // ALWAYS push map data on save. Previously this
             // was gated to Complete sync mode or exit only, so the
             // community/wealth leaderboard never refreshed during regular
             // gameplay — players only saw updated rankings after a full

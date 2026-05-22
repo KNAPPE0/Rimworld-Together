@@ -16,19 +16,10 @@
 
         public bool EnablePollutionSpread { get; set; } = true;
 
-        // KMH 26.5.22.1: Optional per-player pollution-spread cooldown
-        // (seconds). Ported from upstream's "Security checks for sites,
-        // settlements, roads and pollution" (May 2026). Defaults to -1
-        // = no cooldown (preserves old behaviour); set to a positive
-        // value in ActionConfig.json to rate-limit pollution-spread
-        // packet spam from any single client. Read by PM_Pollution via
-        // PlayerCooldown.CheckIfCanPollute.
+        // Seconds between pollution-spread packets per client; -1 disables.
         public double PollutionCooldown { get; set; } = -1;
 
-        // KMH 26.5.22.1: Optional per-player NPC-action cooldown (seconds)
-        // for the NPC destruction toggle. Same semantics as
-        // PollutionCooldown — -1 disables. Read by NPC packet handlers
-        // when KMH adds them; harmless to set even if unused.
+        // Seconds between NPC packets per client; -1 disables.
         public double NPCCooldown { get; set; } = -1;
 
         public ActivityAction ActivityAction { get; set; } = new ActivityAction();

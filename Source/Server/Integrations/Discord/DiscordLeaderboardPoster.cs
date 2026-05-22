@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace GameServer.Integrations.Discord
 {
     /// <summary>
-    /// KMH 2.7: Live leaderboard poster.
+    /// Live leaderboard poster.
     ///
     /// Behaviour:
     ///   * Posts a single combined embed (Top Guilds + Top Players) to the

@@ -282,7 +282,7 @@ namespace GameClient.PacketManagers
                 siteData._file.Tile = SessionHandler.ChosenSite.Tile;
                 siteData._file.WorkerString = ScribeManager.SerializeToString(toSend, ScribeManager.SerializableType.Thing);
 
-                // KMH 26.5.20.1: Read the pawn's best production skill and
+                // Read the pawn's best production skill and
                 // send it alongside the assign packet. The server stamps
                 // it as WorkerProgress.BaseSkillLevel so a freshly-assigned
                 // Crafting-15 pawn starts contributing at level 15 instead
@@ -326,7 +326,7 @@ namespace GameClient.PacketManagers
         }
 
         /// <summary>
-        /// KMH 26.5.20.1: Return the maximum skill level across a pawn's
+        /// Return the maximum skill level across a pawn's
         /// "production-flavoured" skills — Crafting, Mining, Cooking,
         /// Construction, Plants, Animals. This is what we pass to the
         /// server when assigning a pawn to a custom site, so the server

@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using GameClient.Misc;
 using GameClient.PacketManagers;
 using GameClient.WorldObjects;
@@ -29,7 +29,7 @@ namespace GameClient.Tabs
 
         protected override void FillTab()
         {
-            tabTitle = $"Player Bases [{PM_Settlements.PlayerSettlements.Count()}]";
+            tabTitle = $"Player Bases [{PM_Settlements.PlayerSettlements.Count}]";
 
             float horizontalLineDif = Text.CalcSize(tabTitle).y + 3f + 10f;
 
@@ -44,9 +44,10 @@ namespace GameClient.Tabs
 
         private void GenerateList(Rect mainRect)
         {
-            var orderedDictionary = PM_Settlements.PlayerSettlements.OrderBy(x => x.Name);
+            // Materialise once — OrderBy was previously enumerated for .Count() AND the foreach.
+            var ordered = PM_Settlements.PlayerSettlements.OrderBy(x => x.Name).ToList();
 
-            float height = 6f + orderedDictionary.Count() * 30f;
+            float height = 6f + ordered.Count * 30f;
             Rect viewRect = new Rect(mainRect.x, mainRect.y, mainRect.width - 16f, height);
 
             Widgets.BeginScrollView(mainRect, ref scrollPosition, viewRect);
@@ -56,7 +57,7 @@ namespace GameClient.Tabs
             float num3 = scrollPosition.y + mainRect.height;
             int num4 = 0;
 
-            foreach (WO_Settlement playerSettlement in orderedDictionary)
+            foreach (WO_Settlement playerSettlement in ordered)
             {
                 if (num > num2 && num < num3)
                 {
@@ -78,68 +79,35 @@ namespace GameClient.Tabs
             if (index % 2 == 0) Widgets.DrawLightHighlight(rect);
             Rect fixedRect = new Rect(new Vector2(rect.x + 10f, rect.y + 5f), new Vector2(rect.width - 52f, rect.height));
 
-            float buttonX = 47f;
-            float buttonY = 30f;
+            const float buttonW = 47f;
+            const float buttonH = 30f;
+            const float smallW = 30f;
+
             Widgets.Label(fixedRect, $"{playerSettlement.Name} - {playerSettlement.Tile}");
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonX, rect.y), new Vector2(buttonX, buttonY)), "Focus"))
+
+            // Each button used to re-scan PlayerSettlements to "find" the same reference;
+            // since playerSettlement IS the entry in that list, we can act on it directly.
+            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonW, rect.y), new Vector2(buttonW, buttonH)), "Focus"))
             {
-                foreach (WO_Settlement settlement in PM_Settlements.PlayerSettlements)
-                {
-                    if (settlement.Tile == playerSettlement.Tile)
-                    {
-                        CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(settlement));
-                        break;
-                    }
-                }
+                CameraJumper.TryJumpAndSelect(new GlobalTargetInfo(playerSettlement));
             }
 
-            buttonX = 30f;
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonX * 3, rect.y), new Vector2(buttonX, buttonY)), "-"))
+            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - smallW * 3, rect.y), new Vector2(smallW, buttonH)), "-"))
             {
-                foreach (WO_Settlement settlement in PM_Settlements.PlayerSettlements)
-                {
-                    if (settlement.Tile == playerSettlement.Tile)
-                    {
-                        SessionHandler.ChosenSettlement = settlement;
-
-                        PM_Goodwills.TryRequestGoodwill(Goodwill.Enemy,
-                            GoodwillTarget.Settlement);
-
-                        break;
-                    }
-                }
+                SessionHandler.ChosenSettlement = playerSettlement;
+                PM_Goodwills.TryRequestGoodwill(Goodwill.Enemy, GoodwillTarget.Settlement);
             }
 
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonX * 4, rect.y), new Vector2(buttonX, buttonY)), "="))
+            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - smallW * 4, rect.y), new Vector2(smallW, buttonH)), "="))
             {
-                foreach (WO_Settlement settlement in PM_Settlements.PlayerSettlements)
-                {
-                    if (settlement.Tile == playerSettlement.Tile)
-                    {
-                        SessionHandler.ChosenSettlement = settlement;
-
-                        PM_Goodwills.TryRequestGoodwill(Goodwill.Neutral,
-                            GoodwillTarget.Settlement);
-
-                        break;
-                    }
-                }
+                SessionHandler.ChosenSettlement = playerSettlement;
+                PM_Goodwills.TryRequestGoodwill(Goodwill.Neutral, GoodwillTarget.Settlement);
             }
 
-            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - buttonX * 5, rect.y), new Vector2(buttonX, buttonY)), "+"))
+            if (Widgets.ButtonText(new Rect(new Vector2(rect.xMax - smallW * 5, rect.y), new Vector2(smallW, buttonH)), "+"))
             {
-                foreach (WO_Settlement settlement in PM_Settlements.PlayerSettlements)
-                {
-                    if (settlement.Tile == playerSettlement.Tile)
-                    {
-                        SessionHandler.ChosenSettlement = settlement;
-
-                        PM_Goodwills.TryRequestGoodwill(Goodwill.Ally,
-                            GoodwillTarget.Settlement);
-
-                        break;
-                    }
-                }
+                SessionHandler.ChosenSettlement = playerSettlement;
+                PM_Goodwills.TryRequestGoodwill(Goodwill.Ally, GoodwillTarget.Settlement);
             }
         }
 

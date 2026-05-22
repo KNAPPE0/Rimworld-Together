@@ -21,26 +21,12 @@ namespace GameServer.PacketManager
             SaveUserMap(client, data);
         }
 
-        // KMH 26.5.20.1 ANTI-CHEAT: previously, this handler trusted whatever
-        // MapFile the client sent — tile id, username, wealth, colonist
-        // count, everything. A modded client could:
-        //   1. Overwrite another player's tile (grief).
-        //   2. Claim arbitrary wealth → dominate the leaderboard from a
-        //      brand-new colony.
-        //   3. Spoof colonist counts / play time.
-        // We now (a) ignore unauthenticated requests, (b) force the
-        // username to the calling client's verified identity, (c) verify
-        // the tile actually belongs to one of their settlements, and (d)
-        // clamp the leaderboard-feeding numeric fields to sane bounds.
-        //
-        // RimWorld's max realistic late-game wealth is around 500k–1M; cap
-        // at 5M to leave headroom for crazy modded playthroughs without
-        // letting a cheater pin the leaderboard at int.MaxValue.
+        // Server-authoritative caps — block forged MapFiles from pinning the leaderboard.
+        // 5M wealth leaves headroom for modded late-game without int.MaxValue exploits.
         private const int MaxAllowedWealth = 5_000_000;
         private const int MaxAllowedColonists = 100;
-        // MapFile.GameTicks is int — cap at int.MaxValue (effectively 68 in-game years).
         private const int MaxAllowedGameTicks = int.MaxValue;
-        // MapFile.RealPlayTimeSeconds is double — 5 years is well above any realistic play time.
+        // 5 in-game years — well above any realistic play time.
         private const double MaxAllowedRealPlaySeconds = 60.0 * 60.0 * 24.0 * 365.0 * 5.0;
 
         public static void SaveUserMap(ServerClient client, PKT_Map data)
@@ -54,10 +40,7 @@ namespace GameServer.PacketManager
             int tile = data.File.Tile;
             if (tile < 0) return;
 
-            // KMH 26.5.20.1 ANTI-CHEAT: server-authoritative ownership check.
-            // The tile must resolve to a settlement (or site) owned by the
-            // calling client. This blocks the "send map for a tile you
-            // don't own" overwrite attack.
+            // Tile must resolve to a settlement/site owned by caller — blocks overwrite griefing.
             SettlementFile settlement = PM_Settlements.GetSettlementFileFromTile(tile);
             Shared.Files.Sites.SiteFile site = SiteManagerHelper.GetSiteFileFromTile(tile);
             string ownerOnServer = settlement?.Username ?? site?.Username;
@@ -73,12 +56,9 @@ namespace GameServer.PacketManager
                 return;
             }
 
-            // KMH 26.5.20.1 ANTI-CHEAT: override the username field with the
-            // authenticated identity, regardless of what the client sent.
+            // Override client-supplied username + clamp leaderboard fields against forgery.
             data.File.Username = callerUsername;
 
-            // KMH 26.5.20.1 ANTI-CHEAT: clamp leaderboard-feeding fields
-            // against forged values. Negative is also obviously bogus.
             if (data.File.Wealth < 0) data.File.Wealth = 0;
             if (data.File.Wealth > MaxAllowedWealth) data.File.Wealth = MaxAllowedWealth;
             if (data.File.WealthExact < 0) data.File.WealthExact = 0;
@@ -104,9 +84,7 @@ namespace GameServer.PacketManager
 
         public static bool CheckIfMapExists(int mapTileToCheck)
         {
-            // KMH 26.5.20.1: One stat() syscall instead of a full directory
-            // listing + per-path string-allocation + LINQ scan. Maps are
-            // stored by tile-id filename, so File.Exists is the right test.
+            // Filename = tile id; one stat() beats listing + LINQ scan.
             return File.Exists(Path.Combine(Master.MapsPath, mapTileToCheck + CommonValues.DefaultSaveFormat));
         }
 

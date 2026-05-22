@@ -10,16 +10,7 @@ using System.Linq;
 
 namespace GameServer.Commands
 {
-    /// <summary>
-    /// KMH: Site listing command with filters + paging.
-    ///
-    /// Usage:
-    ///   sites                       — all sites, page 1
-    ///   sites &lt;page&gt;                — all sites, page N
-    ///   sites custom [page]         — only custom sites
-    ///   sites guild &lt;name&gt; [page]   — sites belonging to a guild
-    ///   sites player &lt;name&gt; [page]  — sites owned by a player
-    /// </summary>
+    // Paginated site listing: sites [page] | custom [page] | guild <name> [page] | player <name> [page]
     public class CMD_Sites : CMD_Base
     {
         private const int PageSize = 25;

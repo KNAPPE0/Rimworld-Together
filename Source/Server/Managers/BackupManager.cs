@@ -20,8 +20,10 @@ namespace GameServer.Managers
 
             try
             {
-                string backupName = $"Server_{DateTime.Now.Year}-{DateTime.Now.Month}-{DateTime.Now.Day}_{DateTime.Now.Hour}-{DateTime.Now.Minute}-{DateTime.Now.Second}";
-                string backupPath = $"{Master.BackupServerPath + Path.DirectorySeparatorChar}{backupName}{CommonValues.CompressedSaveFormat}";
+                // Single DateTime.Now read — was sampling 6 times in the original format string.
+                DateTime now = DateTime.Now;
+                string backupName = $"Server_{now:yyyy-M-d_H-m-s}";
+                string backupPath = Path.Combine(Master.BackupServerPath, backupName + CommonValues.CompressedSaveFormat);
 
                 List<string> toArchive = new List<string>();
                 toArchive.AddRange(Directory.GetFiles(Master.AssetsPath, "*.*", SearchOption.AllDirectories));
@@ -30,7 +32,7 @@ namespace GameServer.Managers
 
                 CreateArchive(toArchive, backupPath);
 
-                if (Directory.GetFiles(Master.BackupServerPath).Count() > Master.BackupConfig.Amount && Master.BackupConfig.AutomaticDeletion == true)
+                if (Master.BackupConfig.AutomaticDeletion && Directory.GetFiles(Master.BackupServerPath).Length > Master.BackupConfig.Amount)
                 {
                     DeleteOldestArchive();
                 }
@@ -54,18 +56,15 @@ namespace GameServer.Managers
 
                 if (File.Exists(playerArchivedSavePath))
                 {
-                    if (persistent == true)
+                    if (persistent)
                     {
                         Printer.Error($"Could not backup user {username} because the file {playerArchivedSavePath} already exist. Consider running a non-persistent backup if you want to overwrite it.");
                         savingSemaphore.Release();
                         return;
                     }
 
-                    else
-                    {
-                        File.Delete(playerArchivedSavePath);
-                        Printer.Warning($"Deleting backup of {username} because he already had one.", LogImportanceMode.Verbose);
-                    }
+                    File.Delete(playerArchivedSavePath);
+                    Printer.Warning($"Deleting backup of {username} because he already had one.", LogImportanceMode.Verbose);
                 }
 
                 List<string> toArchive = new List<string>();
@@ -108,9 +107,11 @@ namespace GameServer.Managers
 
         private static void DeleteOldestArchive()
         {
+            DirectoryInfo dir = new DirectoryInfo(Master.BackupServerPath);
             while (Directory.GetFiles(Master.BackupServerPath).Length > Master.BackupConfig.Amount)
             {
-                FileSystemInfo fileInfo = new DirectoryInfo(Master.BackupServerPath).GetFileSystemInfos().OrderBy(file => file.CreationTime).FirstOrDefault();
+                FileSystemInfo fileInfo = dir.GetFileSystemInfos().OrderBy(f => f.CreationTime).FirstOrDefault();
+                if (fileInfo == null) break;
                 Printer.Warning($"Deleting backup {fileInfo.Name} because we've reached the limit of {Master.BackupConfig.Amount}", LogImportanceMode.Verbose);
                 fileInfo.Delete();
             }
@@ -119,13 +120,10 @@ namespace GameServer.Managers
         public static void StartFeature()
         {
             if (!Master.BackupConfig.AutomaticBackups) return;
-            else
+            while (true)
             {
-                while (true)
-                {
-                    Thread.Sleep(TimeSpan.FromHours(Master.BackupConfig.IntervalHours));
-                    BackupServer();
-                }
+                Thread.Sleep(TimeSpan.FromHours(Master.BackupConfig.IntervalHours));
+                BackupServer();
             }
         }
     }

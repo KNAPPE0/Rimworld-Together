@@ -4,7 +4,7 @@ using System.Text;
 namespace Shared.Misc
 {
     /// <summary>
-    /// KMH 2.7: Server-safe defName → human label fallback. Used wherever
+    /// Server-safe defName → human label fallback. Used wherever
     /// the real RimWorld <c>ThingDef.label</c> isn't available (server, Discord
     /// bot output) and the in-game label cache hasn't yet seen the def.
     ///

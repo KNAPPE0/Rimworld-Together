@@ -22,13 +22,10 @@ namespace TCPNetwork.Files.Client
         public ServerClient(TcpClient tcp, NetworkRuleset ruleset, bool createListener = true)
         {
             if (tcp == null) return;
-            else
-            {
-                Tcp = tcp;
-                Ruleset = ruleset;
-                CurrentIP = ((IPEndPoint)tcp.Client.RemoteEndPoint).Address.ToString();
-                if (createListener) CreateListener();
-            }
+            Tcp = tcp;
+            Ruleset = ruleset;
+            CurrentIP = ((IPEndPoint)tcp.Client.RemoteEndPoint).Address.ToString();
+            if (createListener) CreateListener();
         }
 
         public void CreateListener() { Listener = new Listener(this, Tcp, Ruleset); }
@@ -37,19 +34,25 @@ namespace TCPNetwork.Files.Client
 
         public void VerifyUser() { IsVerified = true; }
 
-        public void LoadUserFromFile(ServerClient client) 
-        { 
-            string[] userFiles = Directory.GetFiles(CommonValues.ServerUsersPath);
+        public void LoadUserFromFile(ServerClient client)
+        {
+            // Case-insensitive match + per-file try/catch — a single corrupt file used to break login
+            // for everyone (the deserialize throws and the loop dies before reaching the real user).
+            string targetUsername = client.UserFile.Username;
+            if (string.IsNullOrEmpty(targetUsername)) return;
 
-            foreach (string userFile in userFiles)
+            foreach (string userFile in Directory.GetFiles(CommonValues.ServerUsersPath))
             {
-                UserFile file = Serializer.SerializeFromFile<UserFile>(userFile);
-                if (file.Username == client.UserFile.Username)
-                {
-                    UserFile = file;
-                    UserFile.UpdateIP(CurrentIP);
-                    break;
-                }
+                UserFile file;
+                try { file = Serializer.SerializeFromFile<UserFile>(userFile); }
+                catch { continue; }
+
+                if (file == null) continue;
+                if (!string.Equals(file.Username, targetUsername, System.StringComparison.OrdinalIgnoreCase)) continue;
+
+                UserFile = file;
+                UserFile.UpdateIP(CurrentIP);
+                return;
             }
         }
     }

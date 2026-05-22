@@ -14,7 +14,7 @@ using static Shared.Misc.Printer;
 namespace GameClient.PacketManagers
 {
     /// <summary>
-    /// KMH 2.7: Pushes a snapshot of (defName → label) for every loaded
+    /// Pushes a snapshot of (defName → label) for every loaded
     /// <c>ThingDef</c> to the server right after the session starts. Mods
     /// the server doesn't have local data for (Vanilla Expanded, etc.) get
     /// their friendly names so Discord output and the leaderboard render

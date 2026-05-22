@@ -86,7 +86,7 @@ namespace GameClient.Dialogs.Economy
             _description = Widgets.TextArea(new Rect(120f, y, rect.width - 120f, 80f), _description ?? "");
             y += 88f;
 
-            // KMH 2.7: Item picker — replaces the old "type the raw defName"
+            // Item picker — replaces the old "type the raw defName"
             // text input with a clickable button that opens the searchable
             // catalog picker. Players never need to know "Apparel_Tribalwear"
             // again — they search "tribalwear" in the picker and click.
@@ -163,13 +163,13 @@ namespace GameClient.Dialogs.Economy
             Close();
         }
 
-        // KMH 2.7: Lightweight wrapper around DLG_MarketItemPicker that ignores
+        // Lightweight wrapper around DLG_MarketItemPicker that ignores
         // the source/qty/price fields and just snaps the chosen defName into
         // the quest draft. Reuses the same catalog-search UX so the quest
         // post flow matches the marketplace listing flow.
         private void OpenItemPicker()
         {
-            // KMH 26.5.20.1: catalogOnly = true → poster doesn't need to OWN
+            // catalogOnly = true → poster doesn't need to OWN
             // the item, they're just naming what someone else should deliver.
             // Previously the confirm button was gated on the poster having
             // the requested item in their own caravan/treasury, which made

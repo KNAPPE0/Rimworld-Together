@@ -8,16 +8,10 @@ using TCPNetwork.Files.Client;
 
 namespace GameServer.Managers
 {
-    /// <summary>
-    /// Server-side guild policy + perk + tax + contribution surface.
-    /// All gameplay-side guild logic lives here. The legacy
-    /// <c>GuildManagerH</c> in <c>PM_Guilds</c> stays as a thin lookup helper.
-    /// </summary>
+    // Guild policy + perks + tax + contribution counters. GuildManagerH (in PM_Guilds) is the lookup helper.
     public static partial class GuildManager
     {
-        // Hook: when a deposit lands in a guild treasury, increment the
-        // depositing member's contribution counter. Also fires the live
-        // broadcast so all online watchers see the new balance.
+        // Deposits → contribution counter + broadcast to watchers.
         static GuildManager()
         {
             TreasuryManager.OnDepositLanded += OnTreasuryDeposit;
@@ -48,10 +42,7 @@ namespace GameServer.Managers
                 if (itemDelta > 0) m.ItemsContributed += itemDelta;
                 g.Persist();
 
-                // KMH 2.7: Push the updated guild file to every connected
-                // member so anyone with the Guild Hall open sees fresh
-                // contribution counters live. Cheap — same packet shape we
-                // already send on perk/settings changes.
+                // Live-update any member with the Guild Hall open.
                 try { PM_GuildHall.BroadcastSnapshotToGuild(ownerKey); } catch { }
             }
             catch (Exception e)
@@ -62,10 +53,7 @@ namespace GameServer.Managers
 
         // -- tax APIs (called from PM_Sites.Rewards / MarketplaceManager) --
 
-        /// <summary>
-        /// Skim guild silver tax off a site reward. Returns the player's net amount.
-        /// The skimmed silver lands in the guild treasury (no-op if no guild).
-        /// </summary>
+        // Skim guild tax from a site silver reward. Returns net amount. No-op if no guild.
         public static int ApplyGuildSiteRewardTax(string username, int silverGross)
         {
             if (silverGross <= 0 || string.IsNullOrEmpty(username)) return silverGross;
@@ -85,9 +73,7 @@ namespace GameServer.Managers
             return silverGross - tax;
         }
 
-        /// <summary>
-        /// Skim guild silver tax off a marketplace sale. Returns the seller's net amount.
-        /// </summary>
+        // Skim guild tax from a marketplace sale. Returns seller's net amount.
         public static int ApplyGuildMarketplaceSaleTax(string sellerUsername, int sellerSilverGross)
         {
             if (sellerSilverGross <= 0 || string.IsNullOrEmpty(sellerUsername)) return sellerSilverGross;

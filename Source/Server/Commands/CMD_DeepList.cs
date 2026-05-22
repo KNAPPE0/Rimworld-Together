@@ -17,7 +17,7 @@ namespace GameServer.Commands
         {
             UserFile[] userFiles = UserManagerH.GetAllUserFiles();
 
-            Printer.Title($"Server players: [{userFiles.Count()}]");
+            Printer.Title($"Server players: [{userFiles.Length}]");
             Printer.Title("----------------------------------------");
             foreach (UserFile user in userFiles) Printer.Warning($"{user.Username}");
             Printer.Title("----------------------------------------");

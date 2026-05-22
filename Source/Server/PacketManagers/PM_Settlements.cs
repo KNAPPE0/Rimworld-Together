@@ -1,4 +1,4 @@
-﻿using GameServer.Core;
+using GameServer.Core;
 using GameServer.Hooks.TCPNetwork;
 using GameServer.Managers;
 using GameServer.Misc;
@@ -15,20 +15,9 @@ namespace GameServer.PacketManager
 {
     public class PM_Settlements : PM_Base
     {
-        // KMH 26.5.20.1: In-memory cache for settlement files.
-        // Pre-cache, every lookup helper (CheckIfTileIsInUse,
-        // GetSettlementFileFromTile, GetAllSettlements, etc.) did a full
-        // Directory.GetFiles + deserialize-every-file scan. These get called
-        // on EVERY settlement add (to validate the tile isn't in use), on
-        // EVERY goodwill broadcast, on EVERY world refresh — and several
-        // dialogs poll them. On a server with 50 settlements that's 50
-        // disk reads + 50 JSON parses per call.
-        //
-        // The cache is invalidated on AddSettlement / RemoveSettlement
-        // (the only paths that write a settlement file). All other helpers
-        // are pure reads through the cache.
+        // Settlement cache — invalidated on Add/Remove. Avoids per-call Directory.GetFiles + deserialize.
         private static readonly object SettlementCacheLock = new object();
-        private static Dictionary<int, SettlementFile> _byTile; // tile → file
+        private static Dictionary<int, SettlementFile> _byTile;
         private static SettlementFile[] _allCached;
 
         public static void InvalidateSettlementCache()
@@ -50,8 +39,7 @@ namespace GameServer.PacketManager
                 List<SettlementFile> list = new List<SettlementFile>();
                 try
                 {
-                    string[] settlements = Directory.GetFiles(Master.SettlementsPath);
-                    foreach (string path in settlements)
+                    foreach (string path in Directory.GetFiles(Master.SettlementsPath))
                     {
                         try
                         {
@@ -90,80 +78,57 @@ namespace GameServer.PacketManager
 
         public static void AddSettlement(ServerClient client, PKT_PlayerSettlement settlementData)
         {
-            if (CheckIfTileIsInUse(settlementData._settlementFile.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to add a settlement at tile {settlementData._settlementFile.Tile}, but that tile already has a settlement");
-            else
+            if (CheckIfTileIsInUse(settlementData._settlementFile.Tile))
             {
-                SettlementFile settlementFile = new SettlementFile();
-                settlementFile.Tile = settlementData._settlementFile.Tile;
-                settlementFile.Username = client.UserFile.Username;
-                settlementFile.Username = client.UserFile.Username;
-                settlementData._settlementFile = settlementFile;
-
-                Serializer.SerializeToFile(Path.Combine(Master.SettlementsPath, settlementFile.Tile + CommonValues.DefaultSaveFormat), settlementFile);
-                InvalidateSettlementCache();
-
-                settlementData._stepMode = SettlementStepMode.Add;
-                foreach (ServerClient cClient in ServerNetwork.GetConnectedClients())
-                {
-                    if (cClient == client) continue;
-                    else
-                    {
-                        settlementData._settlementFile.Goodwill = PM_Goodwills.GetSettlementGoodwill(cClient, settlementFile);
-
-                        cClient.Listener.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
-                    }
-                }
-
-                InformationDisplayer.DisplayAddSettlement(settlementFile.Tile.ToString());
+                ResponseShortcutManager.SendIllegalPacket(client, $"Player {client.UserFile.Username} attempted to add a settlement at tile {settlementData._settlementFile.Tile}, but that tile already has a settlement");
+                return;
             }
+
+            SettlementFile settlementFile = new SettlementFile();
+            settlementFile.Tile = settlementData._settlementFile.Tile;
+            settlementFile.Username = client.UserFile.Username;
+            settlementData._settlementFile = settlementFile;
+
+            Serializer.SerializeToFile(Path.Combine(Master.SettlementsPath, settlementFile.Tile + CommonValues.DefaultSaveFormat), settlementFile);
+            InvalidateSettlementCache();
+
+            settlementData._stepMode = SettlementStepMode.Add;
+            foreach (ServerClient cClient in ServerNetwork.GetConnectedClients())
+            {
+                if (cClient == client) continue;
+                settlementData._settlementFile.Goodwill = PM_Goodwills.GetSettlementGoodwill(cClient, settlementFile);
+                cClient.Listener.EnqueuePacket(PacketHeader.SettlementManager, settlementData);
+            }
+
+            InformationDisplayer.DisplayAddSettlement(settlementFile.Tile.ToString());
         }
 
         public static void RemoveSettlement(ServerClient client, PKT_PlayerSettlement settlementData)
         {
-            if (!CheckIfTileIsInUse(settlementData._settlementFile.Tile)) ResponseShortcutManager.SendIllegalPacket(client, $"Settlement at tile {settlementData._settlementFile.Tile} was attempted to be removed, but the tile doesn't contain a settlement");
+            // Was missing the early-return — control fell through and NREs on settlementFile.Username below.
+            if (!CheckIfTileIsInUse(settlementData._settlementFile.Tile))
+            {
+                ResponseShortcutManager.SendIllegalPacket(client, $"Settlement at tile {settlementData._settlementFile.Tile} was attempted to be removed, but the tile doesn't contain a settlement");
+                return;
+            }
 
             SettlementFile settlementFile = GetSettlementFileFromTile(settlementData._settlementFile.Tile);
+            if (settlementFile == null) return;
 
-            if (client != null)
+            if (client != null && settlementFile.Username != client.UserFile.Username)
             {
-                if (settlementFile.Username != client.UserFile.Username)
-                {
-                    ResponseShortcutManager.SendIllegalPacket(client, $"Settlement at tile {settlementData._settlementFile.Tile} attempted to be removed by " +
-                        $"{client.UserFile.Username}, but {settlementFile.Username} owns the settlement");
-                }
-
-                else
-                {
-                    Delete();
-                    SendRemovalSignal();
-                }
+                ResponseShortcutManager.SendIllegalPacket(client, $"Settlement at tile {settlementData._settlementFile.Tile} attempted to be removed by " +
+                    $"{client.UserFile.Username}, but {settlementFile.Username} owns the settlement");
+                return;
             }
 
-            else
-            {
-                Delete();
-                SendRemovalSignal();
-            }
+            File.Delete(Path.Combine(Master.SettlementsPath, settlementFile.Tile + CommonValues.DefaultSaveFormat));
+            InvalidateSettlementCache();
+            InformationDisplayer.DisplayRemoveSettlement(settlementFile.Tile.ToString());
 
-            void Delete()
-            {
-                File.Delete(Path.Combine(Master.SettlementsPath, settlementFile.Tile + CommonValues.DefaultSaveFormat));
-                InvalidateSettlementCache();
-
-                InformationDisplayer.DisplayRemoveSettlement(settlementFile.Tile.ToString());
-            }
-
-            void SendRemovalSignal()
-            {
-                settlementData._stepMode = SettlementStepMode.Remove;
-
-                ServerNetwork.SendPacketToAllClients(PacketHeader.SettlementManager, settlementData, client);
-            }
+            settlementData._stepMode = SettlementStepMode.Remove;
+            ServerNetwork.SendPacketToAllClients(PacketHeader.SettlementManager, settlementData, client);
         }
-
-        // KMH 26.5.20.1: All helpers now read through the cache instead of
-        // re-scanning disk. The cache lives until AddSettlement /
-        // RemoveSettlement / explicit InvalidateSettlementCache call.
 
         public static bool CheckIfTileIsInUse(int tileToCheck)
         {
@@ -185,7 +150,7 @@ namespace GameServer.PacketManager
             if (string.IsNullOrEmpty(usernameToGet)) return null;
             SettlementFile[] all = EnsureCache();
             foreach (SettlementFile sf in all)
-                if (sf != null && sf.Username == usernameToGet) return sf;
+                if (sf != null && string.Equals(sf.Username, usernameToGet, StringComparison.OrdinalIgnoreCase)) return sf;
             return null;
         }
 
@@ -200,27 +165,27 @@ namespace GameServer.PacketManager
             SettlementFile[] all = EnsureCache();
             List<SettlementFile> match = new List<SettlementFile>();
             foreach (SettlementFile sf in all)
-                if (sf != null && sf.Username == usernameToCheck) match.Add(sf);
+                if (sf != null && string.Equals(sf.Username, usernameToCheck, StringComparison.OrdinalIgnoreCase)) match.Add(sf);
             return match.ToArray();
         }
 
         public static List<SettlementFile> GetSettlementsFromGoodwill(ServerClient client)
         {
             List<SettlementFile> tempList = new List<SettlementFile>();
+            string caller = client?.UserFile?.Username;
             foreach (SettlementFile settlement in PM_Settlements.GetAllSettlements())
             {
-                SettlementFile file = new SettlementFile();
+                if (settlement == null) continue;
+                if (string.Equals(settlement.Username, caller, StringComparison.OrdinalIgnoreCase)) continue;
 
-                if (settlement.Username == client.UserFile.Username) continue;
-                else
+                // Was: `file.Username = settlement.Username` written twice. Harmless typo.
+                SettlementFile file = new SettlementFile
                 {
-                    file.Tile = settlement.Tile;
-                    file.Username = settlement.Username;
-                    file.Username = settlement.Username;
-                    file.Goodwill = PM_Goodwills.GetSettlementGoodwill(client, settlement);
-
-                    tempList.Add(file);
-                }
+                    Tile = settlement.Tile,
+                    Username = settlement.Username,
+                    Goodwill = PM_Goodwills.GetSettlementGoodwill(client, settlement)
+                };
+                tempList.Add(file);
             }
 
             return tempList;

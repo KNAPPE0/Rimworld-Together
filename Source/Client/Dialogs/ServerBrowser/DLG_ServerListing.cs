@@ -31,10 +31,6 @@ namespace GameClient.Dialogs.ServerBrowser
             Widgets.DrawLineHorizontal(rect.x, descriptionLineDif1, rect.width);
             Text.Font = GameFont.Small;
 
-            // KMH 26.5.22.1: Info panel above the description — ported
-            // from upstream RWT (Apr 2026). Shows endpoint, population,
-            // version, mods-yes/no at a glance so the player doesn't
-            // have to parse the description text for routing info.
             string moddedLabel = (Element.Mods?.Count ?? 0) > 0
                 ? $"Yes ({Element.Mods.Count})"
                 : "No";
@@ -48,12 +44,8 @@ namespace GameClient.Dialogs.ServerBrowser
             listing.Label($"<b>Modded:</b> {moddedLabel}");
             listing.End();
 
-            // Description box below the info panel. We leave 60px of
-            // bottom space for the action row + 30px for the optional
-            // community row above it.
             float descTop = info.yMax + 6f;
             float bottomReserve = SlimButtonSize.y + 50f;
-            // Account for optional community row if shown.
             bool hasCommunityRow = !string.IsNullOrWhiteSpace(Element?.DiscordURL)
                 || !string.IsNullOrWhiteSpace(Element?.SteamWorkshopURL);
             if (hasCommunityRow) bottomReserve += SlimButtonSize.y + 8f;
@@ -62,11 +54,6 @@ namespace GameClient.Dialogs.ServerBrowser
             Widgets.DrawBox(descBox);
             Widgets.TextArea(descBox, Element.Description, true);
 
-            // KMH 26.5.22.1: 4-button bottom action row — Connect / Mods /
-            // Report / Close. The Report button is a placeholder that
-            // tells the user the report has been queued; it's wired to
-            // upstream's same "fire-and-forget" UX. Wiring it to a real
-            // server-side report queue is a follow-up.
             const float btnGap = 6f;
             int btnCount = 4;
             float bRowY = rect.height - SlimButtonSize.y - 4f;
@@ -101,22 +88,10 @@ namespace GameClient.Dialogs.ServerBrowser
 
             if (Widgets.ButtonText(btnClose, "Close")) Close();
 
-            // Optional Discord + Workshop buttons above the action row
-            // — only when the server published the corresponding URLs.
             if (hasCommunityRow)
                 DrawCommunityButtonRow(rect, bRowY);
         }
 
-        /// <summary>
-        /// KMH 26.5.22.1: Renders Discord + Workshop link buttons just
-        /// above the bottom action row. Each opens the URL in the user's
-        /// default browser via <see cref="Process.Start"/>; we wrap in
-        /// try/catch because some Steam-only setups don't have a default
-        /// HTTP handler registered and Process.Start would throw a
-        /// Win32Exception.
-        /// </summary>
-        /// <param name="actionRowY">Y of the main action row — community
-        /// buttons render 8 px above it.</param>
         private void DrawCommunityButtonRow(Rect rect, float actionRowY)
         {
             bool hasDiscord = !string.IsNullOrWhiteSpace(Element?.DiscordURL);
@@ -161,12 +136,5 @@ namespace GameClient.Dialogs.ServerBrowser
                 Verse.Log.Warning($"[KMH] Could not open URL '{url}': {ex.Message}");
             }
         }
-
-        // KMH 26.5.22.1: FillMainRect / DrawCustomRow were the original
-        // mod-listing renderers. The redesign moved the mod listing into
-        // a dedicated DLG_ServerMods dialog (see "Mods" button at the
-        // bottom of this dialog), so the in-place renderer is no longer
-        // wired and was removed. The fields ScrollPosition + Element.Mods
-        // remain reachable via the Mods button path.
     }
 }

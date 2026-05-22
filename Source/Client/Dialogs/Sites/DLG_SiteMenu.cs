@@ -12,7 +12,7 @@ namespace GameClient.Dialogs.Sites
 {
     public class DLG_SiteMenu : DLG_Base
     {
-        // KMH 26.5.20.1: Bumped 720x480 → 760x540 to accommodate the new
+        // Bumped 720x480 → 760x540 to accommodate the new
         // 80 px bottom strip (KMH Feature tag + Build Custom Site button)
         // without the site list feeling cramped.
         public override Vector2 InitialSize => new Vector2(760f, 540f);
@@ -33,7 +33,7 @@ namespace GameClient.Dialogs.Sites
             float y = DrawStandardHeader(inRect, drawTopBorder: true, drawBottomBorder: true, closeX: true);
             if (y < 0f) return;
 
-            // KMH 26.5.20.1: Reserve space at the bottom for the
+            // Reserve space at the bottom for the
             // "Build Custom Site" button so it doesn't render OVER the
             // scroll list. Bumped from 56 → 80 px so the "KMH Feature"
             // tag above the button has clean vertical breathing room
@@ -76,7 +76,7 @@ namespace GameClient.Dialogs.Sites
             }
 
             // KMH: Custom Site button (only in build mode, not config mode).
-            // KMH 26.5.20.1: Centered "KMH Feature" tag + button at the
+            // Centered "KMH Feature" tag + button at the
             // reserved 80 px bottom strip of the dialog. The tag is rendered
             // 28 px above the button (was 16) with a 20 px tall rect (was
             // 14) and 280 px wide rect (was 200) so the text never clips

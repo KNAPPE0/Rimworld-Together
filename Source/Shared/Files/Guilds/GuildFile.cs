@@ -26,7 +26,7 @@ namespace Shared.Files.Guilds
 
         private Semaphore SavingSemaphore = new Semaphore(1, 1);
 
-        // KMH 26.5.20.1: Fires after Save() persists this guild to disk and
+        // Fires after Save() persists this guild to disk and
         // after Delete() removes it. GuildManagerH subscribes so its
         // in-memory cache invalidates automatically — no per-call-site
         // invalidation required.

@@ -7,35 +7,12 @@ using Verse;
 
 namespace GameClient.Dialogs
 {
-    /// <summary>
-    /// KMH 26.5.22.1: Mod-compatibility report dialog.
-    ///
-    /// <para>Listed when KMH's Harmony patches collide with another mod's
-    /// patches at the same target methods. Two buttons:</para>
-    /// <list type="bullet">
-    ///   <item><b>Continue anyway</b> — flips
-    ///   <see cref="ModConfigGetter.BypassModCheckThisSession"/> and
-    ///   closes. Future <see cref="Misc.HarmonyHandler.CheckForModCollision"/>
-    ///   calls in this RimWorld session will skip the scan. Resets on
-    ///   restart.</item>
-    ///   <item><b>Cancel</b> — just closes. The user is expected to
-    ///   disable the offending mods or set the persistent bypass in mod
-    ///   settings.</item>
-    /// </list>
-    ///
-    /// <para>Ported from upstream RWT's "Continue/Cancel" UX (Apr 2026)
-    /// with KMH styling — kept the two-line title+description header
-    /// and the scrollable mod list KMH already had.</para>
-    /// </summary>
     public class DLG_Compatibility : DLG_Base
     {
         private List<string> Elements { get; set; } = new List<string>();
 
         public DLG_Compatibility(List<string> elements)
         {
-            // KMH 26.5.22.1: Softer phrasing — these aren't necessarily
-            // "problematic", they're just touching the same Harmony
-            // patch targets. False positives are common with QOL mods.
             Title = "Potentially incompatible mods found";
             Description = "Continue anyway, or cancel and disable these mods?";
             Elements = elements;
@@ -62,22 +39,24 @@ namespace GameClient.Dialogs
 
             FillMainRect(new Rect(0f, descriptionLineDif2 + 10f, rect.width, rect.height - SlimButtonSize.y - 85f));
 
-            // KMH 26.5.22.1: Two side-by-side buttons replacing the old
-            // single "Close". GetRectForLocation positions to the bottom
-            // half — we compute left/right halves manually so KMH doesn't
-            // depend on upstream's FillLocation enum (which KMH doesn't
-            // have).
-            float btnW = Mathf.Min(SlimButtonSize.x, (rect.width - 24f) / 2f);
+            // Buttons size to their label so "Continue anyway" never gets clipped.
+            // 100px (SlimButtonSize.x) was too narrow for the medium-font label.
+            Text.Font = GameFont.Small;
+            const string continueLabel = "Continue anyway";
+            const string cancelLabel = "Cancel";
+            float pad = 28f;
+            float continueW = Mathf.Max(SlimButtonSize.x, Text.CalcSize(continueLabel).x + pad);
+            float cancelW = Mathf.Max(SlimButtonSize.x, Text.CalcSize(cancelLabel).x + pad);
             float btnH = SlimButtonSize.y;
             float btnY = rect.height - btnH - 4f;
             float gap = 8f;
-            float groupW = (btnW * 2f) + gap;
+            float groupW = continueW + cancelW + gap;
             float groupX = (rect.width - groupW) / 2f;
 
-            Rect continueRect = new Rect(groupX, btnY, btnW, btnH);
-            Rect cancelRect = new Rect(groupX + btnW + gap, btnY, btnW, btnH);
+            Rect continueRect = new Rect(groupX, btnY, continueW, btnH);
+            Rect cancelRect = new Rect(groupX + continueW + gap, btnY, cancelW, btnH);
 
-            if (Widgets.ButtonText(continueRect, "Continue anyway"))
+            if (Widgets.ButtonText(continueRect, continueLabel))
             {
                 ModConfigGetter.BypassModCheckThisSession = true;
                 DLG_Base.PushNewDialog(new DLG_Message("Mod check",
@@ -85,7 +64,7 @@ namespace GameClient.Dialogs
                 Close();
             }
 
-            if (Widgets.ButtonText(cancelRect, "Cancel"))
+            if (Widgets.ButtonText(cancelRect, cancelLabel))
             {
                 if (OnAccept != null) OnAccept.Invoke();
                 Close();
@@ -94,7 +73,8 @@ namespace GameClient.Dialogs
 
         private void FillMainRect(Rect mainRect)
         {
-            float height = 6f + Elements.Count() * 30f;
+            int count = Elements.Count;
+            float height = 6f + count * 30f;
             Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
             float num = 0;
@@ -102,7 +82,7 @@ namespace GameClient.Dialogs
             float num3 = ScrollPosition.y + mainRect.height;
             int num4 = 0;
 
-            for (int i = 0; i < Elements.Count(); i++)
+            for (int i = 0; i < count; i++)
             {
                 if (num > num2 && num < num3)
                 {

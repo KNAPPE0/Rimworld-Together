@@ -60,7 +60,7 @@ namespace GameClient.Dialogs
             y += 40f;
 
             // === GAMEPLAY ===
-            // KMH 26.5.20.1: Gameplay toggles via DialogLayout.DrawTightCheckbox
+            // Gameplay toggles via DialogLayout.DrawTightCheckbox
             // so the ☐ marker sits flush against the label instead of floating
             // ~400 px to the right of "Reject all transfers" (previous behaviour
             // stretched the checkbox across the full content width).

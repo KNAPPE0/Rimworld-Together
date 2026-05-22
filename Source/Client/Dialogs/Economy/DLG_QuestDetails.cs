@@ -39,7 +39,7 @@ namespace GameClient.Dialogs.Economy
             QuestFile q = _quest;
             string mine = PersistentSettings.Load().UserSettings.Username ?? string.Empty;
 
-            // KMH 26.5.20.1: Shared title + divider so this dialog matches
+            // Shared title + divider so this dialog matches
             // the rest of the KMH family. Previously used `30f` for the
             // title height — a 2px drift from every other dialog.
             string kindEmoji = q.Kind == QuestKind.DeliverItem ? "📦" : "⚔";
@@ -73,14 +73,14 @@ namespace GameClient.Dialogs.Economy
 
             if (q.Kind == QuestKind.DeliverItem)
             {
-                // KMH 2.7: Friendly item label instead of a raw defName.
+                // Friendly item label instead of a raw defName.
                 Widgets.Label(new Rect(0f, y, rect.width, 22f),
                     $"Deliver: <b>{q.TargetItemQty}× {EconomyDialogUtil.ResolveLabel(q.TargetItemDefName)}</b>  →  <b>{q.TargetTreasuryKey}</b>");
                 y += 26f;
             }
 
             // Description block (scrollable in case it's long).
-            // KMH 26.5.20.1: Was `y += 6f` here — drift from the 8f shared divider.
+            // Was `y += 6f` here — drift from the 8f shared divider.
             DialogLayout.DrawSectionDivider(rect, ref y);
             Widgets.Label(new Rect(0f, y, rect.width, 22f), "<b>Description</b>");
             y += 24f;
@@ -96,7 +96,7 @@ namespace GameClient.Dialogs.Economy
             Widgets.Label(new Rect(4f, 4f, viewRect.width - 8f, textH - 8f), desc);
             Widgets.EndScrollView();
 
-            // KMH 2.7: Action buttons — auto-wrap to a second row when the
+            // Action buttons — auto-wrap to a second row when the
             // accumulated width would collide with the right-pinned Close
             // button. Previously, a poster on a Submitted Bounty quest would
             // render 4× 140px action buttons on a 700px-wide dialog and the

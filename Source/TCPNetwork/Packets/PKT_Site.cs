@@ -30,7 +30,7 @@ namespace TCPNetwork.Packets
         public string _statusMessage { get; set; } = string.Empty;
 
         /// <summary>
-        /// KMH 26.5.20.1: Re-enabled. Best relevant skill level of the
+        /// Re-enabled. Best relevant skill level of the
         /// joining worker (0-20). Sent by the client when assigning a pawn
         /// to a custom site so the server can stamp WorkerProgress.BaseSkillLevel.
         /// Server-clamped — anti-cheat impact is bounded (max +60% production

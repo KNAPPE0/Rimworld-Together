@@ -16,14 +16,7 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.PollutionManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            // KMH 26.5.22.1: Two-layer guard. Global toggle first (fast
-            // path), then optional per-player cooldown if the admin
-            // configured one. The cooldown defaults to -1 ("not used")
-            // so existing installs see no behavioural change — only
-            // operators who set ActionConfig.PollutionCooldown > 0 opt
-            // into the rate limit. Ported from upstream's pollution
-            // security check, adapted to KMH's existing IsEnabled +
-            // optional-cooldown idiom.
+            // Global toggle first (fast path), then optional per-player cooldown.
             if (!Master.ActionConfigs.EnablePollutionSpread)
             {
                 ResponseShortcutManager.SendIllegalPacket(client, "Tried to use disabled feature!");
@@ -42,9 +35,7 @@ namespace GameServer.PacketManager
             if (data == null) return;
             AddPollutionToTile(data, client, true);
 
-            // KMH 26.5.22.1: Stamp the cooldown after a successful
-            // spread (matches the road-cooldown order — never lock the
-            // user out for a rejected request).
+            // Stamp cooldown only after success — rejected requests don't lock the user out.
             if (cooldownSeconds > 0)
             {
                 client.UserFile.Cooldowns.SetPollutionTimer(

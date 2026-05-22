@@ -41,7 +41,7 @@ namespace TCPNetwork.Files.Client
         public string DiscordLinkToken { get; set; } = null;
         public long DiscordLinkTokenExpiry { get; set; } = 0;
 
-        // KMH 2.7: Per-user marketplace showcase tracking. When a linked
+        // Per-user marketplace showcase tracking. When a linked
         // player runs `!showcase`, the bot posts a formatted embed of
         // their current listings to the configured marketplace channel /
         // forum and stores the message ID here so subsequent `!showcase
@@ -54,24 +54,17 @@ namespace TCPNetwork.Files.Client
         // `!showcase tagline <text>` — e.g. "DM me on Discord to haggle".
         // Renders at the bottom of the embed. Capped server-side.
         public string DiscordShowcaseTagline { get; set; } = null;
-        // KMH 26.5.20: Last time the user refreshed (or first posted) their
-        // showcase. The marketplace sweep deletes showcases stale beyond
-        // ShowcaseStaleHours so the channel/forum doesn't accumulate dead
-        // posts from inactive players.
+        // Sweep deletes showcases stale beyond ShowcaseStaleHours.
         public long DiscordShowcaseLastUpdatedUtcTicks { get; set; } = 0;
 
-        // KMH 26.5.20: Want-To-Buy board. Each linked player keeps a personal
-        // list of items they're shopping for, with a max unit price they'll
-        // pay. `!wtb add/remove/list/post` operate on this list. `!wtb post`
-        // publishes (or refreshes) an embed in the configured WTB channel/
-        // forum, mirroring how `!showcase` publishes sell listings.
+        // Want-To-Buy board — `!wtb add/remove/list/post`.
         public List<WantToBuyEntry> WantToBuyEntries { get; set; } = new List<WantToBuyEntry>();
         public string DiscordWtbMessageId { get; set; } = null;
         public string DiscordWtbChannelId { get; set; } = null;
         public string DiscordWtbTagline { get; set; } = null;
         public long DiscordWtbLastUpdatedUtcTicks { get; set; } = 0;
 
-        // KMH 2.7: Per-player lifetime stats for the player leaderboard.
+        // Per-player lifetime stats for the player leaderboard.
         // These accumulate forever and are mirrored from the gameplay
         // managers (TreasuryManager, MarketplaceManager, QuestManager,
         // SiteManager) on the relevant action paths.

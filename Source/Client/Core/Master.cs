@@ -10,11 +10,7 @@ namespace GameClient.Core
 
         public static string AppdataVersionPath { get; set; }
 
-        // KMH 26.5.22.1: Ported from upstream — local-server install
-        // directory under %AppData%, used by LocalServerHandler to host
-        // the user's own KMH server with one click. Kept separate from
-        // AppdataTempPath so casual cache clears don't nuke the server
-        // install.
+        // Separate from TempPath so cache clears don't nuke the install.
         public static string AppdataLocalServerPath { get; set; }
 
         public static string ModMainPath { get; set; }

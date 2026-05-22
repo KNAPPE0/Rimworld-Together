@@ -29,10 +29,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- KMH 26.5.20.2: Ported from upstream RWT. Discord Rich Presence
-		     (separate from KMH's server-side Discord bot bridge — this is
-		     client-side presence on the player's profile while they're in
-		     a multiplayer session). -->
+		<!-- Client-side Discord Rich Presence (distinct from the server-side bot bridge). -->
 		<PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
 		<PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.4633" />
 		<PackageReference Include="Lib.Harmony" Version="2.4.2">

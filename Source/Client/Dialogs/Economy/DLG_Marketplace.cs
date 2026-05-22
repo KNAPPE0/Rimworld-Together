@@ -19,7 +19,7 @@ namespace GameClient.Dialogs.Economy
     /// </summary>
     public class DLG_Marketplace : DLG_Base
     {
-        // KMH 26.5.20.1: 820 → 1040 wide so the per-listing row can fit
+        // 820 → 1040 wide so the per-listing row can fit
         // "Excellent plasteel knife (Excellent, Plasteel)" plus seller +
         // price + Buy button without colliding. Height bumped 580 → 620
         // for symmetric breathing room with the treasury and leaderboard
@@ -32,7 +32,7 @@ namespace GameClient.Dialogs.Economy
         private bool _showOnlyMyGuild;
         private string _categoryFilter = "All";
 
-        // KMH 2.7: Cache for the filtered/sorted listings view so we don't
+        // Cache for the filtered/sorted listings view so we don't
         // re-run LINQ Where/OrderBy/ToList on every redraw (60fps). Refreshes
         // when any of the inputs change OR when the snapshot reference flips.
         private List<MarketplaceListing> _visibleCache;
@@ -68,7 +68,7 @@ namespace GameClient.Dialogs.Economy
 
         public override void DoWindowContents(Rect rect)
         {
-            // KMH 26.5.20.1: Shared title + section divider for visual parity
+            // Shared title + section divider for visual parity
             // with every other KMH dialog.
             float y = DialogLayout.DrawTitle(rect, "Player Marketplace");
             DialogLayout.DrawSectionDivider(rect, ref y);
@@ -81,7 +81,7 @@ namespace GameClient.Dialogs.Economy
             GUI.color = Color.white;
             y += 24f;
 
-            // KMH 2.7: Reflowed toolbar — was overflowing on 820 px wide
+            // Reflowed toolbar — was overflowing on 820 px wide
             // dialogs because filter/category/checkboxes/refresh/sell were
             // packed into one row. Now: filter+category on row 1, filter
             // toggles on row 2 (with Refresh/Sell pinned to the right of
@@ -123,7 +123,7 @@ namespace GameClient.Dialogs.Economy
 
             y += 32f;
 
-            // KMH 26.5.20.1: Row 2 filter toggles via DialogLayout.DrawTightCheckbox.
+            // Row 2 filter toggles via DialogLayout.DrawTightCheckbox.
             // The ☐ now sits flush against each label instead of floating ~40 px
             // away (previous behaviour was Widgets.CheckboxLabeled pinning the
             // box to the right edge of a 160 px rect).
@@ -144,7 +144,7 @@ namespace GameClient.Dialogs.Economy
         private void DrawListings(Rect box)
         {
             Rect inner = box.ContractedBy(4f);
-            // KMH 2.7: Two-line layout — label+quality on top, count+price+seller
+            // Two-line layout — label+quality on top, count+price+seller
             // on bottom. Stops long item names colliding with the Buy/Cancel
             // button on narrow dialog widths.
             const float rowH = 44f;
@@ -158,7 +158,7 @@ namespace GameClient.Dialogs.Economy
                 ? TreasuryClientCache.OwnerKey
                 : null;
 
-            // KMH 2.7: Only rebuild the filtered/sorted listing view when an
+            // Only rebuild the filtered/sorted listing view when an
             // input changes — otherwise reuse the cached one. Previously this
             // ran Where/OrderBy/ToList every frame at 60fps.
             object curSource = MarketplaceClientCache.Listings;
@@ -197,7 +197,7 @@ namespace GameClient.Dialogs.Economy
             Widgets.BeginScrollView(inner, ref _scroll, viewRect);
             float ly = 0f;
             int i = 0;
-            // KMH 26.5.20.1: Reserved column strip widths. Computed once
+            // Reserved column strip widths. Computed once
             // outside the loop so every row uses the same offsets — no
             // visual drift between rows, no overlap between qty/price/
             // seller/button.
@@ -213,7 +213,7 @@ namespace GameClient.Dialogs.Economy
                 if (i % 2 == 0) Widgets.DrawAltRect(row);
                 Widgets.DrawHighlightIfMouseover(row);
 
-                // KMH 26.5.20.1: Two-line row layout with HARD column
+                // Two-line row layout with HARD column
                 // boundaries. Previously the bottom line was one giant
                 // concatenated string ("×3/10  @ 50s  by Player") that
                 // overflowed when the seller name was long or the price
@@ -333,7 +333,7 @@ namespace GameClient.Dialogs.Economy
                 delegate { PM_Marketplace.CancelListing(l.Id); }));
         }
 
-        // KMH 2.7: defName → display label, RimWorld DefDatabase first.
+        // defName → display label, RimWorld DefDatabase first.
         private static string ResolveLabel(string defName)
         {
             if (string.IsNullOrEmpty(defName)) return string.Empty;
@@ -344,7 +344,7 @@ namespace GameClient.Dialogs.Economy
         }
 
         /// <summary>
-        /// KMH 2.7: Renders "Steel knife (Excellent, Plasteel)" style labels
+        /// Renders "Steel knife (Excellent, Plasteel)" style labels
         /// when the listing has quality/stuff metadata, else falls back to
         /// the plain item label.
         /// </summary>
@@ -373,7 +373,7 @@ namespace GameClient.Dialogs.Economy
 
         private void PromptCreateListing()
         {
-            // KMH 2.7: Single combined catalog picker with variant support.
+            // Single combined catalog picker with variant support.
             // Caravan-sourced listings carry quality + stuff metadata so a
             // "Masterwork plasteel knife" stays distinct from "Normal steel
             // knife" on the board.

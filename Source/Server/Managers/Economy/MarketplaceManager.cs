@@ -10,13 +10,7 @@ using TCPNetwork.Files.Client;
 
 namespace GameServer.Managers
 {
-    /// <summary>
-    /// Server-side marketplace — open listings, buy/sell, automatic site listings,
-    /// expiry sweeps, and the configurable "house" silver tax pool.
-    ///
-    /// All listings live in a single JSON file for atomicity, fronted by a
-    /// process-wide lock + cache. Listings are small so this scales fine.
-    /// </summary>
+    // Marketplace state — single JSON file fronted by a lock + cache, with an O(1) id index.
     public static class MarketplaceManager
     {
         private static readonly object Lock = new object();
@@ -24,23 +18,13 @@ namespace GameServer.Managers
         private static long _lastExpirySweepTicks;
         private static long _nextListingId = 1;
 
-        // KMH 2.7: O(1) listing-ID → listing index. Previously every Buy and
-        // CancelListing did `m.Listings.FirstOrDefault(x => x.Id == id)`,
-        // which is O(n). On a server with hundreds of open listings, every
-        // purchase scanned the full list. Kept in sync with _cached.Listings
-        // under the same Lock — write paths must touch both.
+        // O(1) listing-ID index. Write paths must touch both this and _cached.Listings.
         private static Dictionary<long, MarketplaceListing> _byId;
 
-        // KMH 2.7: Hard cap on purchase quantity per Buy call. Prevents
-        // overflow in `int totalCost = unitPrice * units` (worst case
-        // 100_000 silver/unit × 21_474 units would overflow). 10_000 is
-        // well above any realistic legit buy and still safe with the cap.
+        // Caps `unitPrice * units` overflow risk; 10_000 is well above any legit buy.
         private const int MaxBuyQty = 10_000;
 
-        /// <summary>
-        /// KMH: Fired whenever the marketplace state mutates (create/buy/cancel/expire).
-        /// PM_Marketplace subscribes to this and broadcasts a fresh snapshot to all clients.
-        /// </summary>
+        // Fires on any state mutation; PM_Marketplace broadcasts snapshot.
         public static event System.Action OnMarketplaceChanged;
 
         // -- internal index helpers (caller must hold Lock) --
@@ -93,8 +77,7 @@ namespace GameServer.Managers
 
                 // Recompute monotonic id counter on first load — cheap with bounded list size.
                 _nextListingId = _cached.Listings.Count == 0 ? 1 : _cached.Listings.Max(l => l.Id) + 1;
-                // KMH 2.7: Drop any stale index so the next ByIdLocked rebuilds
-                // from the freshly-loaded listings list.
+                // Force rebuild from fresh listings.
                 _byId = null;
                 return _cached;
             }
@@ -115,34 +98,32 @@ namespace GameServer.Managers
             if (nowTicks - _lastExpirySweepTicks < TimeSpan.FromSeconds(60).Ticks) return;
             _lastExpirySweepTicks = nowTicks;
 
-            List<MarketplaceListing> expired = null;
+            // Single pass: refund + index-remove inline, then RemoveAll on the listing list.
+            // Previous impl did `_cached.Listings.Remove(l)` in a foreach — O(n) per remove → O(n²).
+            HashSet<long> expiredIds = null;
             for (int i = 0; i < _cached.Listings.Count; i++)
             {
-                if (_cached.Listings[i].IsExpired(nowTicks))
-                {
-                    expired ??= new List<MarketplaceListing>();
-                    expired.Add(_cached.Listings[i]);
-                }
-            }
+                MarketplaceListing l = _cached.Listings[i];
+                if (!l.IsExpired(nowTicks)) continue;
 
-            if (expired == null) return;
-
-            foreach (MarketplaceListing l in expired)
-            {
-                _cached.Listings.Remove(l);
+                expiredIds ??= new HashSet<long>();
+                expiredIds.Add(l.Id);
                 IndexRemoveLocked(l);
+
                 if (l.RemainingQty > 0)
                 {
-                    // Return unsold stock to seller's treasury.
                     TreasuryManager.DepositItemForUser(
                         l.SellerUsername, l.ItemDefName, l.RemainingQty,
                         TreasuryTransaction.TxKind.MarketplaceRefund,
                         $"expired-listing#{l.Id}");
 
-                    // KMH 2.7: Friendly label in the console announcement.
                     Printer.Warning($"[Marketplace] Expired listing #{l.Id}: returned {l.RemainingQty} {ItemLabelCache.LabelFor(l.ItemDefName)} to {l.SellerUsername}.");
                 }
             }
+
+            if (expiredIds == null) return;
+
+            _cached.Listings.RemoveAll(l => expiredIds.Contains(l.Id));
             SaveLocked();
         }
 
@@ -156,7 +137,8 @@ namespace GameServer.Managers
                 SweepExpiriesLocked();
                 return new MarketplaceFile
                 {
-                    Listings = m.Listings.Select(l => l).ToList(), // shallow copy
+                    // Shallow copy of the list — entries are immutable from the client's view.
+                    Listings = new List<MarketplaceListing>(m.Listings),
                     HouseSilverPool = m.HouseSilverPool,
                     LifetimeTradesCompleted = m.LifetimeTradesCompleted,
                     LifetimeSilverTraded = m.LifetimeSilverTraded
@@ -174,17 +156,11 @@ namespace GameServer.Managers
             if (string.IsNullOrEmpty(itemDefName)) return (false, "No item.", null);
             if (qty <= 0) return (false, "Quantity must be > 0.", null);
 
-            // KMH 26.5.20.1 security: cap client-supplied string lengths
-            // before they hit cached storage. Real RimWorld defNames don't
-            // exceed 64 chars; allow some slack for modded items. Caps
-            // protect against a hostile client persisting a 5000-char
-            // "defName" into Marketplace.json which then makes every
-            // listing render expensive forever.
+            // Cap defNames — blocks persisted Marketplace.json bloat.
             if (itemDefName.Length > 96) itemDefName = itemDefName.Substring(0, 96);
             if (!string.IsNullOrEmpty(stuffDefName) && stuffDefName.Length > 96)
                 stuffDefName = stuffDefName.Substring(0, 96);
-            // Quality is a RimWorld enum value 0..6 — anything outside
-            // that range is a forged packet.
+            // RimWorld quality enum is 0..6.
             if (qualityIndex < 0 || qualityIndex > 6) qualityIndex = 0;
 
             var cfg = Master.ActionConfigs?.SiteAction;
@@ -196,10 +172,7 @@ namespace GameServer.Managers
             if (unitPrice < minPrice) return (false, $"Min unit price is {minPrice}.", null);
             if (unitPrice > maxPrice) return (false, $"Max unit price is {maxPrice}.", null);
 
-            // KMH 26.5.20.1 security: hard cap qty so the per-listing
-            // OriginalQty * UnitPrice display arithmetic stays inside int.
-            // With MaxBuyQty enforced on purchase, listing a million units
-            // of anything is also unrealistic.
+            // Cap qty — OriginalQty * UnitPrice arithmetic must fit in int.
             if (qty > 1_000_000) qty = 1_000_000;
 
             lock (Lock)
@@ -263,7 +236,7 @@ namespace GameServer.Managers
         {
             if (string.IsNullOrEmpty(buyerUsername)) return (false, "No buyer.", 0, 0, null);
             if (qty <= 0) return (false, "Quantity must be > 0.", 0, 0, null);
-            // KMH 2.7: Clamp client-supplied qty to a sane upper bound BEFORE
+            // Clamp client-supplied qty to a sane upper bound BEFORE
             // doing arithmetic. Without this, an int×int totalCost can
             // overflow into negative silver — a real economy exploit. The
             // cap is well above any legit purchase.
@@ -274,7 +247,7 @@ namespace GameServer.Managers
                 MarketplaceFile m = Get();
                 SweepExpiriesLocked();
 
-                // KMH 2.7: O(1) lookup via the index. Falls back to a list
+                // O(1) lookup via the index. Falls back to a list
                 // scan if the index ever got out of sync (defensive).
                 ByIdLocked().TryGetValue(listingId, out MarketplaceListing l);
                 if (l == null) l = m.Listings.FirstOrDefault(x => x.Id == listingId);
@@ -285,7 +258,7 @@ namespace GameServer.Managers
                 int units = Math.Min(qty, l.RemainingQty);
                 if (units <= 0) return (false, "Listing is sold out.", 0, 0, null);
 
-                // KMH 2.7: Compute totalCost in long to detect overflow safely,
+                // Compute totalCost in long to detect overflow safely,
                 // then bail out cleanly if the result would not fit in int.
                 long totalCostLong = (long)l.UnitPriceSilver * units;
                 if (totalCostLong > int.MaxValue || totalCostLong < 0)
@@ -305,7 +278,7 @@ namespace GameServer.Managers
                 // KMH: Guild sale tax — skim a configurable cut into the seller's guild treasury.
                 sellerNet = GuildManager.ApplyGuildMarketplaceSaleTax(l.SellerUsername, sellerNet);
 
-                // KMH 2.7: Resolve once and reuse for both the treasury
+                // Resolve once and reuse for both the treasury
                 // transaction note (shown to seller in their activity log)
                 // and the chat reply (shown to the buyer).
                 string itemLabel = ItemLabelCache.LabelFor(l.ItemDefName);
@@ -334,7 +307,7 @@ namespace GameServer.Managers
                 try { GameServer.Integrations.Discord.DiscordAnnouncer.NotableSale(l.SellerUsername, buyerUsername, l.ItemDefName, units, totalCost); }
                 catch { }
 
-                // KMH 2.7: Lifetime stats for the player leaderboard.
+                // Lifetime stats for the player leaderboard.
                 try
                 {
                     PlayerStatsManager.RecordMarketplaceSale(l.SellerUsername, sellerNet, units);
@@ -354,7 +327,7 @@ namespace GameServer.Managers
             lock (Lock)
             {
                 MarketplaceFile m = Get();
-                // KMH 2.7: O(1) listing lookup via the index.
+                // O(1) listing lookup via the index.
                 ByIdLocked().TryGetValue(listingId, out MarketplaceListing l);
                 if (l == null) l = m.Listings.FirstOrDefault(x => x.Id == listingId);
                 if (l == null) return (false, "Listing not found.");
@@ -375,7 +348,7 @@ namespace GameServer.Managers
                 }
 
                 NotifyChanged();
-                // KMH 2.7: Friendly label in the chat confirmation.
+                // Friendly label in the chat confirmation.
                 return (true, $"Cancelled listing #{l.Id} (returned {returned}x {ItemLabelCache.LabelFor(l.ItemDefName)} to treasury).");
             }
         }

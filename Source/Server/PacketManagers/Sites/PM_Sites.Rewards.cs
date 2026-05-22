@@ -55,7 +55,7 @@ namespace GameServer.PacketManager
                     if (!isOwnedOrGuild) continue;
                     if (string.IsNullOrEmpty(site.WorkerString)) continue;
 
-                    // KMH 26.5.20.1: Was a LINQ FirstOrDefault scan per site
+                    // Was a LINQ FirstOrDefault scan per site
                     // per reward poll. Plain foreach saves the LINQ delegate
                     // allocation and is marginally faster.
                     PlayerSiteConfig config = null;
@@ -104,7 +104,7 @@ namespace GameServer.PacketManager
             // not just the requesting user. Avoids one player "claiming" the cycle
             // and forcing the rest to wait another full one.
             //
-            // KMH 26.5.20.1: De-dupe via HashSet instead of List.Contains —
+            // De-dupe via HashSet instead of List.Contains —
             // List.Contains is O(n), so building the recipient list of N
             // workers was O(n²). HashSet.Add is O(1) average.
             HashSet<string> recipientsSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -122,7 +122,7 @@ namespace GameServer.PacketManager
             double totalMult = cd.GetTotalProductionMultiplier();
             double xpMult = Master.ActionConfigs?.SiteAction?.WorkerXpMultiplier ?? 1.0;
 
-            // KMH 26.5.20.1: Was redundantly calling GetSiteFileFromTile(site.Tile)
+            // Was redundantly calling GetSiteFileFromTile(site.Tile)
             // to re-fetch the same `site` object we already have in scope.
             // Read GuildName directly off the parameter.
             string ownerGuildName = site.GuildName;
@@ -133,7 +133,7 @@ namespace GameServer.PacketManager
                 cd.WorkerProgress = new Dictionary<string, WorkerProgress>(StringComparer.OrdinalIgnoreCase);
 
             // Award XP to every worker present this cycle.
-            // KMH 26.5.20.1: Avoid allocating an empty List<string> when
+            // Avoid allocating an empty List<string> when
             // there are no workers (was `cd.Workers ?? new List<string>()`).
             if (cd.Workers != null)
             foreach (string worker in cd.Workers)
@@ -146,7 +146,7 @@ namespace GameServer.PacketManager
                 double beforeXp = wp.Xp;
                 wp.AwardCycleXp(xpMult);
                 double xpDelta = wp.Xp - beforeXp;
-                // KMH 2.7: Lifetime worker XP for the player leaderboard.
+                // Lifetime worker XP for the player leaderboard.
                 if (xpDelta > 0)
                     try { GameServer.Managers.PlayerStatsManager.RecordWorkerXp(worker, (long)Math.Round(xpDelta)); }
                     catch { }

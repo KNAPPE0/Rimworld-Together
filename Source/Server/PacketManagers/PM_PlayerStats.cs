@@ -11,7 +11,7 @@ using TCPNetwork.Packets;
 namespace GameServer.PacketManager
 {
     /// <summary>
-    /// KMH 2.7: Server-side handler for the per-player leaderboard.
+    /// Server-side handler for the per-player leaderboard.
     /// Reads <see cref="PlayerStatsManager.ComputeLeaderboard"/> and packs
     /// the results into a <see cref="PKT_PlayerStats"/> for the requester.
     ///
@@ -24,7 +24,7 @@ namespace GameServer.PacketManager
     /// </summary>
     public class PM_PlayerStats : PM_Base
     {
-        // KMH 2.7: Min gap between broadcasts. Sites that record XP every few
+        // Min gap between broadcasts. Sites that record XP every few
         // seconds shouldn't spam every connected client every few seconds.
         private const int MinBroadcastIntervalMs = 3000;
 

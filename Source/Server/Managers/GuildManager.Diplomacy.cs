@@ -199,7 +199,7 @@ namespace GameServer.Managers
             public int TotalPerkLevels { get; set; }
             public long QuestsCompletedByMembers { get; set; }
             public long SilverContributedByMembers { get; set; }
-            // KMH 2.7: deeper metrics
+            // deeper metrics
             public int TotalSites { get; set; }
             public int AlliesCount { get; set; }
             public int HostilesCount { get; set; }
@@ -214,9 +214,9 @@ namespace GameServer.Managers
             List<GuildSummary> result = new List<GuildSummary>();
             try
             {
-                // KMH 2.7: Pre-count sites per guild once so we don't re-scan
+                // Pre-count sites per guild once so we don't re-scan
                 // the sites directory inside the per-guild loop.
-                // KMH 26.5.20.1: Read through GuildManagerH cache instead of
+                // Read through GuildManagerH cache instead of
                 // re-scanning the guilds directory + re-deserialising every
                 // file on every leaderboard refresh.
                 Dictionary<string, int> sitesPerGuild = CountSitesPerGuild();
@@ -306,7 +306,7 @@ namespace GameServer.Managers
 
         private static Dictionary<string, int> CountSitesPerGuild()
         {
-            // KMH 26.5.20.1: Use the SiteManagerHelper cache instead of
+            // Use the SiteManagerHelper cache instead of
             // re-scanning + re-deserialising every site file on every
             // leaderboard rebuild. The leaderboard refreshes frequently;
             // every tick saved here multiplies across all the connected

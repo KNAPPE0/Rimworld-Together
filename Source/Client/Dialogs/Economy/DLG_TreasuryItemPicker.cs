@@ -37,7 +37,7 @@ namespace GameClient.Dialogs.Economy
         private int _qty = 1;
         private int _unitPrice = 1;
 
-        // KMH 26.5.20.1: Filter cache so DrawList doesn't run a fresh
+        // Filter cache so DrawList doesn't run a fresh
         // Where().ToList() every frame. Invalidates on search-text change
         // or when _entries is rebuilt.
         private List<PickerEntry> _filteredCache;
@@ -71,7 +71,7 @@ namespace GameClient.Dialogs.Economy
 
         public override void DoWindowContents(Rect rect)
         {
-            // KMH 26.5.20.1: Shared title + divider via DialogLayout.
+            // Shared title + divider via DialogLayout.
             float y = DialogLayout.DrawTitle(rect, _title);
             DialogLayout.DrawSectionDivider(rect, ref y);
 
@@ -117,7 +117,7 @@ namespace GameClient.Dialogs.Economy
             const float rowH = 26f;
             string filter = (_searchText ?? string.Empty).Trim().ToLowerInvariant();
 
-            // KMH 26.5.20.1: Filter cache — only rebuild when the search
+            // Filter cache — only rebuild when the search
             // text or the underlying entries list changes. Previously did
             // a Where().ToList() every frame.
             if (_filteredCache == null

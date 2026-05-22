@@ -11,7 +11,7 @@ using Verse;
 namespace GameClient.Dialogs.Economy
 {
     /// <summary>
-    /// KMH 2.7: Search-the-whole-catalog item picker for marketplace listings.
+    /// Search-the-whole-catalog item picker for marketplace listings.
     ///
     /// Replaces the older two-step "caravan picker → source picker" flow with
     /// a single dialog that:
@@ -53,7 +53,7 @@ namespace GameClient.Dialogs.Economy
             public float MarketValue => Def?.BaseMarketValue ?? 0f;
 
             /// <summary>
-            /// KMH 2.7: Per-variant breakdown of caravan stock so the dialog
+            /// Per-variant breakdown of caravan stock so the dialog
             /// can show "Normal steel knife (3)" / "Excellent plasteel knife (1)"
             /// and let the user list a specific variant. Empty for items with
             /// no quality and no stuff (e.g. raw resources).
@@ -70,7 +70,7 @@ namespace GameClient.Dialogs.Economy
         }
 
         private readonly Caravan _caravan;
-        // KMH 2.7: When no specific caravan is passed (e.g. dialog opened
+        // When no specific caravan is passed (e.g. dialog opened
         // from a settlement gizmo), the picker enumerates every player
         // caravan currently on the world map and pools their inventories
         // for display. The first matching caravan is used as the deduction
@@ -79,7 +79,7 @@ namespace GameClient.Dialogs.Economy
         private readonly bool _askForPrice;
         private readonly string _confirmLabel;
         private readonly Action<StockEntry, int, int, SourceMode> _onConfirm;
-        // KMH 2.7: Optional richer callback that includes the chosen variant.
+        // Optional richer callback that includes the chosen variant.
         // If both are set, the variant-aware one fires.
         private readonly Action<StockEntry, CaravanVariant, int, int, SourceMode> _onConfirmWithVariant;
 
@@ -98,7 +98,7 @@ namespace GameClient.Dialogs.Economy
         // over the entire catalog while typing in the search box.
         private Dictionary<string, (int caravan, int treasury, int home)> _stockMap;
 
-        // KMH 2.7: Per-variant caravan breakdown — keyed by defName, each
+        // Per-variant caravan breakdown — keyed by defName, each
         // entry lists every quality+stuff combination present in the caravan.
         private Dictionary<string, List<CaravanVariant>> _caravanVariants;
 
@@ -145,7 +145,7 @@ namespace GameClient.Dialogs.Economy
             _stockMap = new Dictionary<string, (int, int, int)>(StringComparer.OrdinalIgnoreCase);
             _caravanVariants = new Dictionary<string, List<CaravanVariant>>(StringComparer.OrdinalIgnoreCase);
 
-            // KMH 2.7: Build the list of caravans to pool. If a specific
+            // Build the list of caravans to pool. If a specific
             // caravan was passed in (caller had ChosenCaravan), use just
             // that one; otherwise scan every caravan owned by the player.
             // This makes the dialog usable from settlement / site contexts
@@ -297,13 +297,13 @@ namespace GameClient.Dialogs.Economy
 
         public override void DoWindowContents(Rect rect)
         {
-            // KMH 26.5.20.1: Shared title + divider via DialogLayout. Was
+            // Shared title + divider via DialogLayout. Was
             // using `28f` title height — a 4px drift from the 32f used by
             // every other KMH dialog.
             float y = DialogLayout.DrawTitle(rect, Title ?? "Pick item");
             DialogLayout.DrawSectionDivider(rect, ref y);
 
-            // KMH 26.5.20.1: Right-pinned "Only items I own" checkbox via
+            // Right-pinned "Only items I own" checkbox via
             // DialogLayout.DrawTightCheckbox. The label width is measured at
             // render time so the ☐ marker sits flush against the text instead
             // of floating ~80 px to the right (previous behaviour with the
@@ -354,7 +354,7 @@ namespace GameClient.Dialogs.Economy
             int effectiveMax = (_selectedVariant != null && _source == SourceMode.Caravan)
                 ? _selectedVariant.Count
                 : sourceStock;
-            // KMH 26.5.20.1: In catalog-only mode (e.g. post quest), the
+            // In catalog-only mode (e.g. post quest), the
             // user is naming an item, not transacting one — skip the
             // "do you actually own enough?" gate.
             bool canConfirm = _selected != null
@@ -378,7 +378,7 @@ namespace GameClient.Dialogs.Economy
 
         private bool _showOnlyOwned = false;
 
-        // KMH 26.5.20.1: When true, the picker is being used to choose
+        // When true, the picker is being used to choose
         // an item REFERENCE (e.g. for posting a quest where you're asking
         // someone ELSE to deliver). Skip the "do I own enough?" gate that
         // normally blocks the confirm button.
@@ -521,7 +521,7 @@ namespace GameClient.Dialogs.Economy
                 $"From treasury ({_selected.InTreasury})", _selected.InTreasury > 0);
             y += 30f;
 
-            // KMH 2.7: Variant picker — only meaningful for caravan source
+            // Variant picker — only meaningful for caravan source
             // (treasury currently doesn't track quality/stuff). If the
             // selected def has multiple variants in the caravan, the user
             // must pick one before confirming so the listing carries the

@@ -28,7 +28,7 @@ namespace GameClient.Dialogs.Default
             CalculateWindowSize();
         }
 
-        // KMH 26.5.20.1: Layout constants — single source of truth so the
+        // Layout constants — single source of truth so the
         // size calculation in CalculateWindowSize and the renderer here never
         // drift apart. Earlier the size calc assumed 38px per button but the
         // renderer added 6px spacing on top, so a 6-button stack overflowed
@@ -56,7 +56,7 @@ namespace GameClient.Dialogs.Default
             Rect descRect = new Rect(content.x, content.y, content.width, Mathf.Min(descH, content.height));
             Widgets.Label(descRect, Description ?? string.Empty);
 
-            // KMH 26.5.20.1: cap raised from 3 → 6 so menus that need more
+            // cap raised from 3 → 6 so menus that need more
             // options (e.g. Guild Management → Hall/Leaderboards/Members/
             // Delete/Leave) can use this same dialog. We also reserve the
             // scrollbar gutter unconditionally, so when 6+ buttons would
@@ -76,7 +76,7 @@ namespace GameClient.Dialogs.Default
             bool needScroll = needed > stackH + 1f;
             if (needScroll)
             {
-                // KMH 26.5.20.1: Edge-case safety net — if the window was
+                // Edge-case safety net — if the window was
                 // sized to fit the buttons but desktop scale clipped it
                 // (UI.screenHeight × 0.92 cap), the stack scrolls instead
                 // of clipping behind the Cancel footer.
@@ -125,7 +125,7 @@ namespace GameClient.Dialogs.Default
 
         private void CalculateWindowSize()
         {
-            // KMH 26.5.20.1: Permanent fix for the Guild Management overlap
+            // Permanent fix for the Guild Management overlap
             // (Leave button hidden under Cancel). The previous formula used
             // perButton = 38 with no spacing budget — for 6 buttons that
             // under-counted by 6 × 8 = 48 px AND chrome (180) didn't include

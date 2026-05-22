@@ -55,7 +55,7 @@ namespace TCPNetwork.Packets
         public string Note { get; set; } = string.Empty;
 
         /// <summary>
-        /// KMH 2.7: Discriminates what kind of action a Result packet refers
+        /// Discriminates what kind of action a Result packet refers
         /// to. Without this, the client mis-treated CreateListing replies as
         /// Buy replies and spawned the listed items at the seller's home — i.e.
         /// the "I listed items but they came back" bug.
@@ -70,7 +70,7 @@ namespace TCPNetwork.Packets
 
         public ResultKindCode ResultKind { get; set; } = ResultKindCode.Unspecified;
 
-        // KMH 2.7: Quality + stuff so the marketplace honours RimWorld's
+        // Quality + stuff so the marketplace honours RimWorld's
         // crafting variants. Optional — vanilla resources leave both blank.
 
         /// <summary>QualityCategory cast to int (1=Awful…6=Legendary). 0 = "no quality".</summary>

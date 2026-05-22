@@ -45,7 +45,7 @@ namespace GameClient.Patches.Pages
             if (optList == null || optList.Count == 0) return true;
             if (optList.FirstOrDefault()?.GetType() != typeof(ListableOption)) return true;
 
-            // KMH 26.5.22.1: "Host Local Server" entry — visible when
+            // "Host Local Server" entry — visible when
             // EITHER (a) a bundled server is found in the mod folder
             // (<ModRoot>/LocalServer/GameServer.exe), OR (b) a fallback
             // URL is configured in mod settings. Both sources must be

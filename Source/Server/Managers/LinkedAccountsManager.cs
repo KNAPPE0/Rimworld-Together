@@ -9,15 +9,7 @@ using static Shared.Misc.Printer;
 
 namespace GameServer.Managers
 {
-    /// <summary>
-    /// KMH: Server-wide cache of (in-game username → Discord display name) for
-    /// every linked player. The map is pushed to clients on login and
-    /// re-broadcast whenever a UserFile saves with a Discord-related change.
-    ///
-    /// Client dialogs use this so a linked username renders as
-    /// "Knappe <color=#7289DA>(@knappe)</color>" everywhere — treasury logs,
-    /// marketplace listings, quest postings, guild members, etc.
-    /// </summary>
+    // Server-wide username → Discord-display-name map. Pushed on login + on UserFile change.
     public static class LinkedAccountsManager
     {
         private static readonly object Lock = new object();
@@ -30,7 +22,6 @@ namespace GameServer.Managers
             UserFile.OnUserFileSaved += OnUserFileSaved;
         }
 
-        /// <summary>Read-only snapshot of the current map. Caller may copy into a packet.</summary>
         public static Dictionary<string, string> Snapshot()
         {
             lock (Lock)
@@ -39,11 +30,6 @@ namespace GameServer.Managers
             }
         }
 
-        /// <summary>
-        /// Rebuilds the cache from disk. Cheap because UserManagerH already
-        /// caches user files; this just walks them and extracts the linked
-        /// Discord names.
-        /// </summary>
         public static void RebuildCache()
         {
             lock (Lock)

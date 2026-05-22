@@ -49,11 +49,11 @@ namespace GameServer.Core
             // KMH: Build the linked-accounts cache so login pushes are immediate.
             LinkedAccountsManager.Initialize();
 
-            // KMH 2.7: Player lifetime stats — subscribes to treasury deposits
+            // Player lifetime stats — subscribes to treasury deposits
             // so guild donations get counted automatically.
             PlayerStatsManager.Initialize();
 
-            // KMH 2.7: Item label cache — load disk snapshot so Discord
+            // Item label cache — load disk snapshot so Discord
             // output is human-readable from the moment the bot starts up,
             // before any client has reconnected to refresh it.
             ItemLabelCache.Initialize();
@@ -63,7 +63,6 @@ namespace GameServer.Core
             {
                 GameServer.Integrations.Discord.DiscordBridge.TryStart();
                 Task.Run(GameServer.Integrations.Discord.DiscordLeaderboardPoster.StartFeature);
-                // KMH 26.5.20: Auto-prune stale `!showcase` posts.
                 GameServer.Integrations.Discord.DiscordShowcaseSweep.StartFeature();
             }
 
@@ -112,52 +111,53 @@ namespace GameServer.Core
 
         private static void LoadFiles()
         {
+            // Load + re-save backfills new fields into existing JSON after
+            // a server upgrade. WorldValues is intentionally load-only —
+            // clients mutate it during play.
             Master.ServerConfig = (ServerConfigFile)ServerConfigFile.Load<ServerConfigFile>(ServerConfigFile.SavePath);
             ValidateServerConfigUrls(Master.ServerConfig);
+            ServerConfigFile.Save(ServerConfigFile.SavePath, Master.ServerConfig);
+
             Master.ActionConfigs = (ActionsConfigFile)ActionsConfigFile.Load<ActionsConfigFile>(ActionsConfigFile.SavePath);
+            ActionsConfigFile.Save(ActionsConfigFile.SavePath, Master.ActionConfigs);
+
             Master.Whitelist = (WhitelistConfigFile)WhitelistConfigFile.Load<WhitelistConfigFile>(WhitelistConfigFile.SavePath);
+            WhitelistConfigFile.Save(WhitelistConfigFile.SavePath, Master.Whitelist);
+
             Master.DifficultyValues = (DifficultyConfigFile)DifficultyConfigFile.Load<DifficultyConfigFile>(DifficultyConfigFile.SavePath);
+            DifficultyConfigFile.Save(DifficultyConfigFile.SavePath, Master.DifficultyValues);
+
             Master.ScenarioValues = (ScenarioConfigFile)ScenarioConfigFile.Load<ScenarioConfigFile>(ScenarioConfigFile.SavePath);
+            ScenarioConfigFile.Save(ScenarioConfigFile.SavePath, Master.ScenarioValues);
+
             Master.StorytellerValues = (StorytellerConfigFile)StorytellerConfigFile.Load<StorytellerConfigFile>(StorytellerConfigFile.SavePath);
+            StorytellerConfigFile.Save(StorytellerConfigFile.SavePath, Master.StorytellerValues);
+
             Master.BackupConfig = (BackupsConfigFile)BackupsConfigFile.Load<BackupsConfigFile>(BackupsConfigFile.SavePath);
+            BackupsConfigFile.Save(BackupsConfigFile.SavePath, Master.BackupConfig);
+
             Master.ModConfig = (ModConfigFile)ModConfigFile.Load<ModConfigFile>(ModConfigFile.SavePath);
+            ModConfigFile.Save(ModConfigFile.SavePath, Master.ModConfig);
+
             Master.ChatConfig = (ChatConfigFile)ChatConfigFile.Load<ChatConfigFile>(ChatConfigFile.SavePath);
-            Master.WorldValues = (PlanetConfigFile)PlanetConfigFile.Load<PlanetConfigFile>(PlanetConfigFile.SavePath, false);
+            ChatConfigFile.Save(ChatConfigFile.SavePath, Master.ChatConfig);
+
             Master.LeaderboardFile = (LeaderboardFile)LeaderboardFile.Load<LeaderboardFile>(LeaderboardFile.SavePath);
+            LeaderboardFile.Save(LeaderboardFile.SavePath, Master.LeaderboardFile);
+
+            Master.WorldValues = (PlanetConfigFile)PlanetConfigFile.Load<PlanetConfigFile>(PlanetConfigFile.SavePath, false);
         }
 
-        /// <summary>
-        /// KMH 26.5.22.1: Validate the public-facing URLs the server
-        /// publishes to the browser. Malformed or non-HTTPS URLs get
-        /// scrubbed to empty so DLG_ServerListing hides the button
-        /// instead of opening something nonsensical. We warn the operator
-        /// so they can fix their config; we DON'T crash the server over
-        /// a typo.
-        /// </summary>
+        // Public-facing URLs get scrubbed to empty if malformed / non-HTTPS
+        // / off-domain so DLG_ServerListing hides the button instead of
+        // opening junk. Empty inputs (default state) pass through silently.
         private static void ValidateServerConfigUrls(ServerConfigFile config)
         {
             if (config == null) return;
-
-            config.DiscordURL = SanitizeUrl(
-                config.DiscordURL,
-                requireHttps: true,
-                allowedHostHints: new[] { "discord.gg", "discord.com" },
-                fieldName: "DiscordURL");
-
-            config.SteamWorkshopURL = SanitizeUrl(
-                config.SteamWorkshopURL,
-                requireHttps: true,
-                allowedHostHints: new[] { "steamcommunity.com" },
-                fieldName: "SteamWorkshopURL");
+            config.DiscordURL = SanitizeUrl(config.DiscordURL, true, new[] { "discord.gg", "discord.com" }, "DiscordURL");
+            config.SteamWorkshopURL = SanitizeUrl(config.SteamWorkshopURL, true, new[] { "steamcommunity.com" }, "SteamWorkshopURL");
         }
 
-        /// <summary>
-        /// KMH 26.5.22.1: Best-effort URL validator. Returns the URL if
-        /// it parses as an absolute HTTPS URI whose host contains at least
-        /// one of the expected hints; otherwise warns and returns empty.
-        /// Empty inputs pass through silently (operator just hasn't set
-        /// the field — that's the default state).
-        /// </summary>
         private static string SanitizeUrl(string url, bool requireHttps, string[] allowedHostHints, string fieldName)
         {
             if (string.IsNullOrWhiteSpace(url)) return string.Empty;

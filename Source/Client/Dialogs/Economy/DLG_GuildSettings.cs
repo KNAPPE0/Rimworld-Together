@@ -16,7 +16,7 @@ namespace GameClient.Dialogs.Economy
 
         private GuildSettings _editing;
 
-        // KMH 26.5.20.1: Per-field text buffers so the user can fully clear
+        // Per-field text buffers so the user can fully clear
         // a field and retype it without the displayed integer constantly
         // re-echoing into the input. Initialised from the source values
         // on first DoWindowContents.
@@ -50,7 +50,7 @@ namespace GameClient.Dialogs.Economy
 
         public override void DoWindowContents(Rect rect)
         {
-            // KMH 26.5.20.1: Initialise the text buffers on first draw with
+            // Initialise the text buffers on first draw with
             // the current values. Subsequent draws preserve whatever the
             // user typed, so they can clear the field and retype freely.
             if (!_buffersInit)
@@ -111,7 +111,7 @@ namespace GameClient.Dialogs.Economy
             }
         }
 
-        // KMH 26.5.20.1: Wraps DialogLayout.DrawNumericField with a label.
+        // Wraps DialogLayout.DrawNumericField with a label.
         // The buffer pattern means clearing the field doesn't snap-back to
         // the old value mid-edit, so typing "5" while the field shows "1"
         // doesn't produce "15" or "51" — it just produces "5".

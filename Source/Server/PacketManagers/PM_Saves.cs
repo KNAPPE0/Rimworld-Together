@@ -35,7 +35,7 @@ namespace GameServer.PacketManager
        
         public static bool CheckIfUserHasSave(ServerClient client)
         {
-            // KMH 26.5.20.1: Was Directory.GetFiles + foreach (scans the
+            // Was Directory.GetFiles + foreach (scans the
             // entire saves directory) to test for a single known filename.
             // File.Exists is a single stat() call — orders of magnitude
             // cheaper on a server with hundreds of saved players.
@@ -103,7 +103,7 @@ namespace GameServer.PacketManager
 
             InformationDisplayer.DisplaySaveGame(client);
 
-            // KMH 2.7: Every save/autosave is a natural cue that some
+            // Every save/autosave is a natural cue that some
             // gameplay action may have completed (sites finished a cycle,
             // worker XP banked, etc.) — push fresh leaderboard snapshots to
             // every connected client so any open dialogs reflect the latest

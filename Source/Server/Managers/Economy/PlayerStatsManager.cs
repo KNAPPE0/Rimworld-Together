@@ -8,7 +8,7 @@ using static Shared.Misc.Printer;
 namespace GameServer.Managers
 {
     /// <summary>
-    /// KMH 2.7: Server-side surface for tracking and reading per-player
+    /// Server-side surface for tracking and reading per-player
     /// lifetime statistics (donations, sales, quests, sites, worker XP).
     ///
     /// All counters live on the player's <see cref="UserFile"/> so they
@@ -18,7 +18,7 @@ namespace GameServer.Managers
     /// </summary>
     public static class PlayerStatsManager
     {
-        // KMH 2.7: Fired whenever any tracked stat is recorded. PM_PlayerStats
+        // Fired whenever any tracked stat is recorded. PM_PlayerStats
         // subscribes to this and broadcasts a fresh leaderboard snapshot to all
         // connected clients (throttled), so dialogs update live without needing
         // a save+quit cycle.
@@ -30,7 +30,7 @@ namespace GameServer.Managers
             catch { }
         }
 
-        // KMH 2.7: Per-username lock to protect read-modify-write on UserFile
+        // Per-username lock to protect read-modify-write on UserFile
         // lifetime counters. Two events for the SAME user (e.g. a marketplace
         // sale + a treasury deposit landing within the same tick) would
         // otherwise race on `uf.LifetimeXxx += amount` and lose one increment.

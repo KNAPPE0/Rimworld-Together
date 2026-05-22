@@ -8,14 +8,14 @@ using TCPNetwork.Packets;
 namespace GameClient.PacketManagers
 {
     /// <summary>
-    /// KMH 2.7: Client-side player-leaderboard packet handler. Caches the
+    /// Client-side player-leaderboard packet handler. Caches the
     /// snapshot into <c>DLG_PlayerLeaderboard.CachedRows</c> for the dialog
     /// to render.
     /// </summary>
     public class PM_PlayerStats : PM_Base
     {
         /// <summary>
-        /// KMH 2.7: Fires the moment a fresh leaderboard snapshot has been
+        /// Fires the moment a fresh leaderboard snapshot has been
         /// applied to <c>DLG_PlayerLeaderboard.CachedRows</c>. The dialog
         /// subscribes to this so it can invalidate its filter/sort cache and
         /// flip the "● live · just now" indicator immediately, instead of
@@ -35,7 +35,7 @@ namespace GameClient.PacketManagers
                 case PKT_PlayerStats.StepMode.LeaderboardSnapshot:
                     GameClient.Dialogs.Economy.DLG_PlayerLeaderboard.CachedRows = data.Players
                         ?? new System.Collections.Generic.List<PlayerLeaderboardEntry>();
-                    // KMH 2.7: Notify any open dialogs that a fresh snapshot
+                    // Notify any open dialogs that a fresh snapshot
                     // landed — wrapped in try/catch so a misbehaving listener
                     // can't poison the packet-receive thread.
                     try { OnLeaderboardSnapshotUpdated?.Invoke(); } catch { }

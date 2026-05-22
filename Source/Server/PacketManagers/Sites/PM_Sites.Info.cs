@@ -57,7 +57,7 @@ namespace GameServer.PacketManager
                 double effectiveCycleMin = cd.GetEffectiveCycleTimeMs() / 60000.0;
                 double baseCycleMin = cd.BaseCycleTimeMs / 60000.0;
 
-                // KMH 2.7: Use ItemLabelCache so the report shows "Power armor"
+                // Use ItemLabelCache so the report shows "Power armor"
                 // not "Apparel_PowerArmor". Falls back to humanized defName for
                 // anything the cache hasn't seen.
                 string itemLabel = GameServer.Managers.ItemLabelCache.LabelFor(cd.ItemDefName);

@@ -70,7 +70,7 @@ namespace GameClient.Misc
 
         public static bool CheckForModCollision()
         {
-            // KMH 26.5.22.1: Honour both the persistent bypass (mod
+            // Honour both the persistent bypass (mod
             // settings menu) and the session-only one ("Continue anyway"
             // button in DLG_Compatibility). Either flag is enough — the
             // user has explicitly opted out of the safety net.
@@ -104,8 +104,13 @@ namespace GameClient.Misc
 
             DisableMainPatches();
 
-            if (collidingMods.Count == 0) return true;
-            else 
+            if (collidingMods.Count == 0)
+            {
+                // Clean scan flips the session bypass — mod set can't change without restart.
+                ModConfigGetter.BypassModCheckThisSession = true;
+                return true;
+            }
+            else
             {
                 DLG_Base.PushNewDialog(new DLG_Compatibility(collidingMods));
                 return false;

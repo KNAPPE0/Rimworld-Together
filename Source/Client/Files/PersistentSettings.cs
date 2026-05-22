@@ -13,7 +13,7 @@ namespace GameClient.Files
 
         public static string FilePath { get; set; } = string.Empty;
 
-        // KMH 26.5.20.1: Per-frame disk I/O bug fix.
+        // Per-frame disk I/O bug fix.
         // Every Load() call did File.Exists + a JSON deserialise from disk.
         // Five dialogs called this *inside* their DoWindowContents() to read
         // the player's username — that's 5 disks reads + 5 JSON parses

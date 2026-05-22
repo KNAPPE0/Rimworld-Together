@@ -66,7 +66,7 @@ namespace GameServer.PacketManager
 
         private static void CreateFaction(ServerClient client, PKT_PlayerGuild factionManifest)
         {
-            // KMH 2.7: Validate the guild name BEFORE we use it as a filename
+            // Validate the guild name BEFORE we use it as a filename
             // or persist it. The previous code took the raw client-supplied
             // string verbatim — a malicious client could send `../admin`,
             // `con`, multi-line whitespace, or an absurdly long name and the
@@ -119,7 +119,7 @@ namespace GameServer.PacketManager
         }
 
         /// <summary>
-        /// KMH 2.7: Strict validation for client-supplied guild names. Because
+        /// Strict validation for client-supplied guild names. Because
         /// the name is used as part of a filename in the guilds directory,
         /// the charset is intentionally restrictive — anything outside the
         /// allow-list is rejected rather than silently rewritten so the
@@ -207,7 +207,7 @@ namespace GameServer.PacketManager
 
         private static void InviteMemberToFaction(ServerClient client, PKT_PlayerGuild guildManifest)
         {
-            // KMH 2.7: Validate inputs before dereferencing. A client can send
+            // Validate inputs before dereferencing. A client can send
             // an arbitrary tile in `_dataInt` — the previous code blindly
             // followed `settlement.Username` and `toAdd.UserFile.GuildName`
             // and crashed the server thread if the tile didn't resolve to a
@@ -258,7 +258,7 @@ namespace GameServer.PacketManager
 
         private static void RemoveMemberFromFaction(ServerClient client, PKT_PlayerGuild guildManifest)
         {
-            // KMH 2.7: Same NPE shield as InviteMemberToFaction — never trust
+            // Same NPE shield as InviteMemberToFaction — never trust
             // the tile to resolve to a real settlement.
             GuildFile guild = GuildManagerH.GetFactionFromName(client.UserFile?.GuildName);
             if (guild == null) return;
@@ -364,7 +364,7 @@ namespace GameServer.PacketManager
 
     public class GuildManagerH
     {
-        // KMH 26.5.20.1: Guild-file cache. The previous GetAllFactions did
+        // Guild-file cache. The previous GetAllFactions did
         // a full Directory.GetFiles + deserialize-every-file scan on EVERY
         // call — and GetFactionFromName called GetAllFactions then did a
         // LINQ FirstOrDefault. Login, PostLogin, every guild-hall action,
@@ -446,7 +446,7 @@ namespace GameServer.PacketManager
 
         public static GuildRanks GetMemberRank(GuildFile factionFile, string usernameToCheck)
         {
-            // KMH 2.7: Don't crash if the user isn't in this guild. The previous
+            // Don't crash if the user isn't in this guild. The previous
             // implementation crashed the server thread on FirstOrDefault().Rank
             // when called with a username that didn't belong to the guild —
             // trivially triggerable by a client sending a foreign settlement
@@ -475,7 +475,7 @@ namespace GameServer.PacketManager
 
         public static bool CheckIfFactionExistsByName(string nameToCheck)
         {
-            // KMH 26.5.20.1: O(1) lookup via the cache dictionary; was an
+            // O(1) lookup via the cache dictionary; was an
             // O(n) LINQ scan that allocated a new array of all factions.
             return GetFactionFromName(nameToCheck) != null;
         }

@@ -17,7 +17,7 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.RoadManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            // KMH 26.5.22.1: Two-layer guard. First the global feature
+            // Two-layer guard. First the global feature
             // toggle (disabled features should be cheap to deny — no
             // packet deserialisation cost). Second the per-player
             // cooldown so a connected client can't spam Add/Remove
@@ -66,7 +66,7 @@ namespace GameServer.PacketManager
 
             ServerNetwork.SendPacketToAllClients(PacketHeader.RoadManager, data);
 
-            // KMH 26.5.22.1: Stamp the cooldown only AFTER a successful
+            // Stamp the cooldown only AFTER a successful
             // Save+broadcast. If save throws or validation rejects, the
             // user shouldn't be locked out — the action didn't happen.
             client.UserFile.Cooldowns.SetRoadTimer(

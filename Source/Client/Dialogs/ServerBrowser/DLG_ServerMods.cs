@@ -18,7 +18,7 @@ namespace GameClient.Dialogs.ServerBrowser
         public DLG_ServerMods(PKT_ServerTelemetry element)
         {
             this.Element = element;
-            // KMH 26.5.22.1: Show the mod count in the title — ported
+            // Show the mod count in the title — ported
             // from upstream RWT (Apr 2026 — "Server mod list now
             // displays mod count"). Saves the user from scrolling to
             // count rows.
@@ -46,7 +46,8 @@ namespace GameClient.Dialogs.ServerBrowser
 
         private void FillMainRect(Rect mainRect)
         {
-            float height = 6f + Element.Mods.Count() * 30f;
+            int count = Element.Mods.Count;
+            float height = 6f + count * 30f;
             Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
             float num = 0;
@@ -54,7 +55,7 @@ namespace GameClient.Dialogs.ServerBrowser
             float num3 = ScrollPosition.y + mainRect.height;
             int num4 = 0;
 
-            for (int i = 0; i < Element.Mods.Count(); i++)
+            for (int i = 0; i < count; i++)
             {
                 if (num > num2 && num < num3)
                 {

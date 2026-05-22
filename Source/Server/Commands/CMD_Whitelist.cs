@@ -15,7 +15,7 @@ namespace GameServer.Commands
 
         public override void Action()
         {
-            Printer.Title($"Whitelisted usernames: [{Master.Whitelist.WhitelistedUsers.Count()}]");
+            Printer.Title($"Whitelisted usernames: [{Master.Whitelist.WhitelistedUsers.Count}]");
             Printer.Title("----------------------------------------");
             foreach (string str in Master.Whitelist.WhitelistedUsers) Printer.Warning($"{str}");
             Printer.Title("----------------------------------------");

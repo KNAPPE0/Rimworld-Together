@@ -131,18 +131,13 @@ namespace GameServer.Managers
             {
                 if (string.IsNullOrEmpty(draft.TargetItemDefName)) return (false, "Pick an item to deliver.", null);
                 if (draft.TargetItemQty <= 0) return (false, "Quantity must be > 0.", null);
-                // KMH 26.5.20.1 security: cap client-supplied fields so a
-                // hostile poster can't push 5000-char defNames (slow label
-                // lookups on every render) or absurd quantities into the
-                // persisted QuestBoard.json. Real defNames < 64 chars; real
-                // qty rarely > 10k.
+                // Cap defName + qty — guards QuestBoard.json against forged-packet bloat.
                 if (draft.TargetItemDefName.Length > 64)
                     draft.TargetItemDefName = draft.TargetItemDefName.Substring(0, 64);
                 if (draft.TargetItemQty > 100_000) draft.TargetItemQty = 100_000;
             }
 
-            // KMH 26.5.20.1 security: cap bounty silver so multiplication
-            // downstream can't overflow.
+            // Cap bounty silver — downstream multiplication would overflow int.
             if (draft.BountySilver > 10_000_000) draft.BountySilver = 10_000_000;
 
             lock (Lock)
@@ -170,11 +165,7 @@ namespace GameServer.Managers
                 Dictionary<string, int> escrowedItems = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 if (draft.BountyItems != null)
                 {
-                    // KMH 26.5.20.1 security: cap the BountyItems collection
-                    // size and individual entry sizes. A forged packet
-                    // could otherwise pass a 100k-entry dictionary or
-                    // 5000-char defName keys and burn server time / disk
-                    // for the resulting persisted QuestFile.
+                    // Cap collection + per-entry sizes — blocks forged-packet QuestFile bloat.
                     int processed = 0;
                     const int MaxBountyItems = 20;
                     foreach (var kv in draft.BountyItems)
@@ -235,7 +226,7 @@ namespace GameServer.Managers
                 board.LifetimeQuestsPosted += 1;
                 SaveLocked();
 
-                // KMH 2.7: Lifetime stats for the player leaderboard.
+                // Lifetime stats for the player leaderboard.
                 try { PlayerStatsManager.RecordQuestPosted(posterUsername); } catch { }
 
                 return (true, $"Posted quest #{quest.Id}: {quest.Title}.", quest);
@@ -325,7 +316,7 @@ namespace GameServer.Managers
                     if (taken > 0)
                         TreasuryManager.DepositItemForUser(username, q.TargetItemDefName, taken,
                             TreasuryTransaction.TxKind.MarketplaceRefund, $"quest#{q.Id}-shortfall");
-                    // KMH 2.7: Friendly label instead of raw defName.
+                    // Friendly label instead of raw defName.
                     string itemLabel = ItemLabelCache.LabelFor(q.TargetItemDefName);
                     return (false, $"Treasury only has {taken}/{q.TargetItemQty} {itemLabel}. Deposit them and try again.");
                 }
@@ -359,7 +350,7 @@ namespace GameServer.Managers
 
                 SaveLocked();
 
-                // KMH 2.7: Lifetime stats — completer gets credit.
+                // Lifetime stats — completer gets credit.
                 try { PlayerStatsManager.RecordQuestCompleted(username); } catch { }
 
                 return (true, $"Delivered. Bounty paid to your treasury.");
@@ -388,7 +379,7 @@ namespace GameServer.Managers
 
                 SaveLocked();
 
-                // KMH 2.7: Lifetime stats — completer (or claimer) gets credit.
+                // Lifetime stats — completer (or claimer) gets credit.
                 try { PlayerStatsManager.RecordQuestCompleted(toPay); } catch { }
 
                 return (true, $"Quest #{q.Id} marked complete; bounty paid to {toPay}.");

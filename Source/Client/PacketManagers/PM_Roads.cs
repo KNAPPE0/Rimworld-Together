@@ -137,8 +137,8 @@ namespace GameClient.PacketManagers
                     tileA.Roads.Remove(roadLink);
                     tileA.potentialRoads.Remove(roadLink);
 
-                    //We need this to let the game know it shouldn't try to draw anything in here if there's no roads
-                    if (tileA.potentialRoads.Count() == 0) tileA.potentialRoads = null;
+                    // Null signals "no roads" so the renderer skips this tile.
+                    if (tileA.potentialRoads.Count == 0) tileA.potentialRoads = null;
                 }
             }
 
@@ -150,7 +150,7 @@ namespace GameClient.PacketManagers
                     tileB.potentialRoads.Remove(roadLink);
 
                     //We need this to let the game know it shouldn't try to draw anything in here if there's no roads
-                    if (tileB.potentialRoads.Count() == 0) tileB.potentialRoads = null;
+                    if (tileB.potentialRoads.Count == 0) tileB.potentialRoads = null;
                 }
             }
 

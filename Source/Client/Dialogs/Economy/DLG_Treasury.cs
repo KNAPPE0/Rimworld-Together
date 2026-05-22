@@ -18,7 +18,7 @@ namespace GameClient.Dialogs.Economy
     /// </summary>
     public class DLG_Treasury : DLG_Base
     {
-        // KMH 26.5.20.1: 720 → 980 wide so the Recent Activity right pane
+        // 720 → 980 wide so the Recent Activity right pane
         // gets ~440 px (was ~316 px) — enough to render the longest
         // transaction strings ("Withdraw  <player>  ×123 Packaged survival
         // meal  · note text") on a single line without truncation.
@@ -48,7 +48,7 @@ namespace GameClient.Dialogs.Economy
 
         public override void DoWindowContents(Rect rect)
         {
-            // KMH 26.5.20.1: Shared title + section divider via DialogLayout.
+            // Shared title + section divider via DialogLayout.
             string title = TreasuryClientCache.IsGuildOwned
                 ? $"Guild Treasury — {TreasuryClientCache.OwnerKey}"
                 : "Personal Vault";
@@ -78,7 +78,7 @@ namespace GameClient.Dialogs.Economy
             GUI.color = Color.white;
             y += 24f;
 
-            // KMH 26.5.20.1: 50/50 split instead of 55/45 — the items list
+            // 50/50 split instead of 55/45 — the items list
             // doesn't need extra width since rows are icon+name+button, but
             // Recent Activity benefits enormously from the extra ~30 px.
             float paneH = rect.height - y - 80f;
@@ -98,7 +98,7 @@ namespace GameClient.Dialogs.Economy
             Widgets.DrawMenuSection(txBox);
             DrawTransactionsList(txBox);
 
-            // KMH 2.7: Consolidated button row. The original row had up to 7
+            // Consolidated button row. The original row had up to 7
             // buttons at 140 px each which overran the dialog and overlapped
             // the close button. Now Deposit/Withdraw open a sub-menu so the
             // bar always fits regardless of permissions.
@@ -204,7 +204,7 @@ namespace GameClient.Dialogs.Economy
         private void DrawTransactionsList(Rect box)
         {
             Rect inner = box.ContractedBy(4f);
-            // KMH 26.5.20.1: 42px two-line rows. Top line is a coloured chip
+            // 42px two-line rows. Top line is a coloured chip
             // (Deposit/Withdraw/Sale/Buy etc) + actor on the left and
             // amount/item on the right. Bottom line carries the note in
             // muted grey, with WordWrap on so longer notes wrap to fit
@@ -227,7 +227,7 @@ namespace GameClient.Dialogs.Economy
                 if (i % 2 == 0) Widgets.DrawAltRect(row);
 
                 string what = tx.Kind.ToString();
-                // KMH 2.7: Friendly item label in the transaction list.
+                // Friendly item label in the transaction list.
                 string detail = !string.IsNullOrEmpty(tx.ItemDefName)
                     ? $"{tx.Amount}× {EconomyDialogUtil.ResolveLabel(tx.ItemDefName)}"
                     : $"{tx.Amount} silver";
@@ -271,7 +271,7 @@ namespace GameClient.Dialogs.Economy
         }
 
         /// <summary>
-        /// KMH 26.5.20.1: Colour-code the kind chip on the left of each
+        /// Colour-code the kind chip on the left of each
         /// transaction so the player can scan deposits vs withdrawals at a
         /// glance without reading the text. Deposit = green, Withdraw = red,
         /// Marketplace (Sale/Buy) = yellow, everything else = neutral grey.
@@ -296,7 +296,7 @@ namespace GameClient.Dialogs.Economy
 
         private void PromptDepositItems()
         {
-            // KMH 26.5.20.1: Smarter caravan resolution. Pre-existing flow
+            // Smarter caravan resolution. Pre-existing flow
             // hard-required `SessionHandler.ChosenCaravan` to be set —
             // which from the treasury dialog often isn't (you opened the
             // treasury from a settlement gizmo, not from a caravan). So
@@ -432,7 +432,7 @@ namespace GameClient.Dialogs.Economy
 
         private void PromptWithdrawItem(string defName, int max)
         {
-            // KMH 2.7: Friendly label in the prompt title so the player sees
+            // Friendly label in the prompt title so the player sees
             // "Withdraw Plasteel" instead of "Withdraw Plasteel" (which was
             // fine for raw items but ugly for `Apparel_FlakVest` etc).
             DLG_Base.PushNewDialog(new DLG_Inputs(

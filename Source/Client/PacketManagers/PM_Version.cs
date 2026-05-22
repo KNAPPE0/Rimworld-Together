@@ -53,13 +53,9 @@ namespace GameClient.PacketManagers
                 new bool[] { false, true }, ChangeVersion));
         }
 
-        // KMH 26.5.22.1: Constrain inputs that get interpolated into the
-        // download URL. Vanilla allows arbitrary text → a malicious
-        // suggestion ("../../etc/passwd") would slip into the URL and
-        // could be turned into a path traversal once the zip lands on
-        // disk. We restrict to: digits, dots, dashes, parentheses, the
-        // literal "(KMH)" suffix string, and spaces. Anything else is
-        // treated as user error and we abort with a friendly message.
+        // Whitelist version strings before interpolating into the GitHub URL
+        // — blocks path-traversal payloads ("../../...") slipping into the
+        // download path.
         private static readonly Regex AllowedVersionChars = new Regex(@"^[0-9.\-\(\)A-Za-z ]+$", RegexOptions.Compiled);
 
         private static void ChangeVersion()
@@ -75,11 +71,6 @@ namespace GameClient.PacketManagers
             string downloadPath = Path.Combine(Master.AppdataVersionPath, "3005289691.zip");
             string uri = $"https://github.com/RimWorld-Together/Rimworld-Together/releases/download/{Uri.EscapeDataString(requested)}/3005289691.zip";
 
-            // KMH 26.5.22.1: Async path so the main UI thread doesn't
-            // freeze for the duration of the download. Mirrors the
-            // LocalServerHandler approach — DLG_Wait shows live stage
-            // labels, and any failure produces a user-visible error
-            // dialog instead of silently leaving the user staring.
             DLG_Wait wait = new DLG_Wait("Downloading version");
             DLG_Base.PushNewDialog(wait);
 
@@ -106,15 +97,8 @@ namespace GameClient.PacketManagers
                                 File.Copy(scriptPath, copyPath);
                                 File.WriteAllText(modPath, Master.ModMainPath);
 
-                                // KMH 26.5.22.1: Properly balanced quotes for paths with
-                                // spaces. cmd.exe's `/c "command"` parses oddly when the
-                                // command itself contains quoted spaces — the standard
-                                // workaround is `/c "" "<path>" ""`, equivalently
-                                // `/c ""<path>""`, where cmd strips the outer empty ""
-                                // and runs the inner quoted path. The previous form
-                                // `/c ""<path>"` (three quotes) worked by accident on
-                                // AppData paths without spaces — would fail silently on
-                                // a user whose Windows profile has a space in it.
+                                // /c ""<path>"" — four quotes are required for cmd.exe
+                                // to handle spaces in the path correctly.
                                 ProcessStartInfo processInfo = new ProcessStartInfo("cmd.exe", $"/c \"\"{copyPath}\"\"");
                                 processInfo.UseShellExecute = false;
                                 Process.Start(processInfo);
@@ -146,11 +130,9 @@ namespace GameClient.PacketManagers
             });
         }
 
+        // net472 defaults to TLS 1.0; GitHub release endpoints require 1.2+.
         private static void SetupTls()
         {
-            // KMH 26.5.22.1: Force TLS 1.2 — same reason as LocalServerHandler;
-            // .NET Framework 4.7.2 default protocol set is rejected by
-            // modern GitHub release endpoints.
             try
             {
                 ServicePointManager.SecurityProtocol |=
@@ -163,12 +145,6 @@ namespace GameClient.PacketManagers
         {
             if (File.Exists(downloadPath)) File.Delete(downloadPath);
 
-            // KMH 26.5.22.1: Wire up DownloadProgressChanged so the
-            // DLG_Wait label cycles between the stage name and a "X% (Y
-            // KB / Z KB)" indicator. Without this, slow downloads (e.g.
-            // 30 MB on a flaky connection) look like the client is
-            // hung. WebClient's event fires on the worker thread, so
-            // we hop back to the main thread to update the dialog.
             using (WebClient webClient = new WebClient())
             {
                 webClient.Headers.Add("User-Agent", $"KMH/{CommonValues.ExecutableVersion}");
@@ -178,9 +154,7 @@ namespace GameClient.PacketManagers
                     long lastShownPercent = -1;
                     webClient.DownloadProgressChanged += (s, e) =>
                     {
-                        // Throttle: only refresh the label on whole-percent
-                        // changes so we don't queue 1000 enqueues for the
-                        // main thread.
+                        // Whole-percent throttle keeps main-thread queue clean.
                         if (e.ProgressPercentage == lastShownPercent) return;
                         lastShownPercent = e.ProgressPercentage;
 
@@ -190,14 +164,10 @@ namespace GameClient.PacketManagers
                             ? $"Downloading {e.ProgressPercentage}% ({kbReceived}/{kbTotal} KB)"
                             : $"Downloading ({kbReceived} KB)";
                         try { MainThreadHandler.Instance.Enqueue(() => wait.UpdateDescription(label)); }
-                        catch { /* dialog may have closed mid-tick */ }
+                        catch { }
                     };
                 }
 
-                // KMH 26.5.22.1: Use the synchronous DownloadFile on the
-                // worker thread (we're already inside Task.Run). Anything
-                // async-aware here would force WaitForExit on the
-                // download completion semaphore — adding zero value.
                 webClient.DownloadFile(new Uri(uri), downloadPath);
             }
         }

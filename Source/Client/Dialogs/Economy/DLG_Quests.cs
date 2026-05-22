@@ -31,7 +31,7 @@ namespace GameClient.Dialogs.Economy
         private bool _onlyGuild;
         private bool _onlyPersonal;
 
-        // KMH 26.5.20.1: Cache the filtered/sorted quest view so we don't
+        // Cache the filtered/sorted quest view so we don't
         // re-run Where/OrderBy/ToList per frame (60fps). Invalidated when
         // any input — filter text, toggles, or the underlying snapshot —
         // changes. Same pattern as DLG_Marketplace / DLG_PlayerLeaderboard.
@@ -60,7 +60,7 @@ namespace GameClient.Dialogs.Economy
 
         public override void DoWindowContents(Rect rect)
         {
-            // KMH 26.5.20.1: Standard title + section divider via DialogLayout.
+            // Standard title + section divider via DialogLayout.
             float y = DialogLayout.DrawTitle(rect, "Quest Board");
             DialogLayout.DrawSectionDivider(rect, ref y);
 
@@ -72,7 +72,7 @@ namespace GameClient.Dialogs.Economy
             GUI.color = Color.white;
             y += 24f;
 
-            // KMH 2.7: Two-row toolbar so the 4 checkboxes don't overlap
+            // Two-row toolbar so the 4 checkboxes don't overlap
             // Refresh / Post Quest at narrower window widths.
             const float btnW = 110f;
             // Row 1: search box + right-pinned action buttons.
@@ -93,7 +93,7 @@ namespace GameClient.Dialogs.Economy
                 Find.WindowStack.Add(new DLG_PostQuest());
             y += 32f;
 
-            // KMH 26.5.20.1: Row 2 filter checkboxes via DialogLayout.DrawTightCheckbox
+            // Row 2 filter checkboxes via DialogLayout.DrawTightCheckbox
             // so the ☐ marker sits flush against each label instead of floating
             // 80–100 px to the right of "My quests" / "Open only" / etc.
             float cbx = 0f;
@@ -118,7 +118,7 @@ namespace GameClient.Dialogs.Economy
             string mine = PersistentSettings.Load().UserSettings.Username ?? string.Empty;
             string filter = (_filter ?? "").Trim().ToLower();
 
-            // KMH 26.5.20.1: Only rebuild the filtered/sorted list when an
+            // Only rebuild the filtered/sorted list when an
             // input changes. The dialog redraws at 60fps; without this we'd
             // be running Where/OrderBy/ToList every frame for every quest.
             object curSource = QuestClientCache.Quests;
@@ -228,7 +228,7 @@ namespace GameClient.Dialogs.Economy
             // dropped Description entirely on DeliverItem quests.
             string detail;
             if (q.Kind == QuestKind.DeliverItem)
-                // KMH 2.7: Friendly item label in the quest row instead of a raw defName.
+                // Friendly item label in the quest row instead of a raw defName.
                 detail = $"Deliver {q.TargetItemQty}× {EconomyDialogUtil.ResolveLabel(q.TargetItemDefName)}  →  {q.TargetTreasuryKey}";
             else
                 detail = "Bounty";

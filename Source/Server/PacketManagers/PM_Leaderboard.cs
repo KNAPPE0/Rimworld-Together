@@ -16,7 +16,7 @@ namespace GameServer.PacketManager
     {
         private static float ScoreMultiplier = 0.001f;
 
-        // KMH 26.5.20.1: Cache for the rich-entries snapshot. Every
+        // Cache for the rich-entries snapshot. Every
         // BuildRichEntries call used to:
         //   1. Directory.GetFiles on the maps directory
         //   2. Deserialize every MapFile from disk
@@ -57,7 +57,7 @@ namespace GameServer.PacketManager
             // KMH: Populate rich entries from all map files for the enhanced UI
             try
             {
-                // KMH 26.5.20.1: Read through the cache (rebuilt only on save).
+                // Read through the cache (rebuilt only on save).
                 data._file.Entries = GetCachedEntries();
             }
             catch (Exception e)
@@ -130,7 +130,7 @@ namespace GameServer.PacketManager
             LeaderboardFile file = (LeaderboardFile)LeaderboardFile.Load<LeaderboardFile>(LeaderboardFile.SavePath);
             double scoreValue = Math.Round(map.Wealth * ScoreMultiplier) + 1;
 
-            // KMH 26.5.20.1: Was iterating the entire Scores dictionary as
+            // Was iterating the entire Scores dictionary as
             // an allocated array just to find the user's existing score and
             // remove+re-add it. Direct dictionary access is O(1).
             string user = client?.UserFile?.Username;
@@ -144,7 +144,7 @@ namespace GameServer.PacketManager
 
             LeaderboardFile.Save(LeaderboardFile.SavePath, file);
 
-            // KMH 26.5.20.1: A map just changed → drop the rich-entries
+            // A map just changed → drop the rich-entries
             // cache so the next leaderboard request rebuilds with the new
             // wealth/colonist data instead of returning stale numbers.
             InvalidateEntriesCache();
@@ -154,7 +154,7 @@ namespace GameServer.PacketManager
         {
             try
             {
-                // KMH 26.5.20.1: Pull from cache. Page changes / sort flips
+                // Pull from cache. Page changes / sort flips
                 // can fire many times per second as a user scrolls — without
                 // the cache that was a full disk-scan per click.
                 LeaderboardEntryFile[] all = GetCachedEntries();

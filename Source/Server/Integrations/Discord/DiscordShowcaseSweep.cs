@@ -9,26 +9,10 @@ using static Shared.Misc.Printer;
 
 namespace GameServer.Integrations.Discord
 {
-    /// <summary>
-    /// KMH 26.5.20: Background sweep that deletes stale `!showcase` posts.
-    /// Without this, a player who set up a showcase and then went inactive
-    /// would leave a frozen embed in the marketplace channel/forum forever,
-    /// cluttering the space and misleading buyers about what's actually
-    /// available right now.
-    ///
-    /// A showcase is considered stale when its last update is older than
-    /// <see cref="StaleHours"/>. The sweep runs once per <see cref="SweepIntervalMinutes"/>.
-    ///
-    /// Edits and refreshes from <c>!showcase</c> reset the timer, so an
-    /// active seller never gets surprise-deleted.
-    /// </summary>
+    // Deletes !showcase posts older than StaleHours. !showcase resets the timer.
     public static class DiscordShowcaseSweep
     {
-        /// <summary>How old a showcase must be (since last refresh) before
-        /// it's deleted.</summary>
-        private const int StaleHours = 7 * 24; // 7 days
-
-        /// <summary>How often the sweep runs.</summary>
+        private const int StaleHours = 7 * 24;
         private const int SweepIntervalMinutes = 60;
 
         private static int _started;
@@ -64,11 +48,7 @@ namespace GameServer.Integrations.Discord
             long cutoffTicks = DateTime.UtcNow.AddHours(-StaleHours).Ticks;
             int deleted = 0;
 
-            // GetAllUserFiles returns a fresh array snapshot (taken under
-            // UserCacheLock as of KMH 26.5.20), so iterating it here is safe
-            // even while OnUserFileSaved is mutating the underlying cache on
-            // another thread. Each UserFile mutation happens through that
-            // same lock, so we read consistent objects.
+            // GetAllUserFiles snapshots under UserCacheLock — safe to iterate freely.
             foreach (UserFile uf in UserManagerH.GetAllUserFiles())
             {
                 if (uf == null) continue;

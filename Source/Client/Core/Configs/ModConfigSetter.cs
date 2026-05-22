@@ -33,31 +33,19 @@ namespace GameClient.Core.Configs
             if (listingStandard.ButtonTextLabeled("Change mod version [Windows only]", "Change")) { PM_Version.PromptChangeVersion(); }
             listingStandard.CheckboxLabeled("Bypass mod compatibility check", ref ModConfigGetter.BypassModCompatibilityCheck, "Bypass");
 
-            // KMH 26.5.22.1: Self-host configuration. Two viable sources
-            // (bundle wins if both are present):
-            //   1. Bundle at <ModRoot>/LocalServer/<RID>/{exe|dll}  → auto-detected
-            //   2. Optional download URL → opt-in fallback
-            //
-            // Either one makes the main-menu "Host Local Server" entry
-            // appear; if both are absent the feature is hidden entirely.
+            // Bundle at <ModRoot>/LocalServer/<RID> wins; URL is fallback.
+            // Both absent hides the main-menu entry.
             listingStandard.GapLine();
             listingStandard.Label("Self-host (Host Local Server)");
 
-            // Platform indicator — players need to know what RID we're
-            // looking for in the bundle (and what they'd need to ship if
-            // they want to support their own platform).
             string platform = Misc.LocalServerHandler.CurrentRid ?? "<unsupported>";
             listingStandard.LabelDouble("Your platform", platform);
 
-            // Bundle status — read-only indicator; users can't toggle this
-            // since it's controlled by the mod packaging.
             string bundleStatus = Misc.LocalServerHandler.HasBundle
                 ? $"<color=#80ff80>found for {platform}</color>"
                 : "<color=grey>not bundled for your platform</color>";
             listingStandard.LabelDouble("Bundled server", bundleStatus);
 
-            // Download URL — editable. Empty hides the feature unless a
-            // bundle was found.
             string urlStatus = string.IsNullOrWhiteSpace(ModConfigGetter.LocalServerDownloadUrl)
                 ? "<not set>"
                 : ModConfigGetter.LocalServerDownloadUrl;
@@ -66,8 +54,6 @@ namespace GameClient.Core.Configs
                 PromptLocalServerUrl();
             }
 
-            // Live feature availability summary so the player knows what
-            // the main-menu state actually is.
             string availability = Misc.LocalServerHandler.IsAvailable
                 ? "<color=#80ff80>Main-menu entry is visible.</color>"
                 : "<color=#ffc080>Main-menu entry is hidden — set a URL or bundle the server with the mod for your platform.</color>";
@@ -109,11 +95,6 @@ namespace GameClient.Core.Configs
             Find.WindowStack.Add(new FloatMenu(list));
         }
 
-        /// <summary>
-        /// KMH 26.5.22.1: Prompt the user for the KMH server zip URL,
-        /// or clear it. Empty input deletes the setting (and hides the
-        /// main-menu entry again).
-        /// </summary>
         private void PromptLocalServerUrl()
         {
             DLG_Base.PushNewDialog(new DLG_Inputs(

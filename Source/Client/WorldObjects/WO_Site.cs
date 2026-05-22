@@ -179,7 +179,7 @@ namespace GameClient.WorldObjects
                 }
             });
 
-            // KMH 2.7: Single "Assign Pawn" gizmo for everyone — owners,
+            // Single "Assign Pawn" gizmo for everyone — owners,
             // guildmates, and outsiders. The same dialog handles assigning a
             // new worker, retrieving one, and viewing site info; the server
             // enforces access checks on the actual join action so non-owners

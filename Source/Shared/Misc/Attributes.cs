@@ -75,12 +75,12 @@ namespace Shared
         QuestManager,
         GuildHallManager,
         LinkedAccountsManager,
-        // KMH 2.7: per-player lifetime stats leaderboard
+        // per-player lifetime stats leaderboard
         PlayerStatsManager,
-        // KMH 2.7: client-pushed defName → human label cache (kills the
+        // client-pushed defName → human label cache (kills the
         // raw-defName look in Discord/server-side messaging)
         ItemLabelManager,
-        // KMH 26.5.22.1: Reserved for the upstream VersionDownloader
+        // Reserved for the upstream VersionDownloader
         // subsystem (server-side hosted mod-version downloads on a
         // dedicated TCP endpoint). Placed at the END of the enum so
         // KMH's existing economy/Discord headers keep their byte

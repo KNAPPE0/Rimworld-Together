@@ -21,14 +21,14 @@ namespace GameClient.Dialogs.Economy
         private Vector2 _membersScroll = Vector2.zero;
         private Vector2 _perksScroll = Vector2.zero;
 
-        // KMH 26.5.20.1: Member list ordering cache — rebuilds only when
+        // Member list ordering cache — rebuilds only when
         // the GuildMembers list reference changes (i.e. a fresh snapshot
         // landed). Stops the per-frame OrderByDescending+ToList in the
         // members panel.
         private List<GuildMember> _orderedMembersCache;
         private object _orderedMembersSource;
 
-        // KMH 26.5.20.1: Pre-rendered diplomacy line. Was allocating three
+        // Pre-rendered diplomacy line. Was allocating three
         // List<string>s + a handful of strings per frame just to render
         // one static line. Refresh only when the Relationships dictionary
         // reference flips (next snapshot push).
@@ -55,7 +55,7 @@ namespace GameClient.Dialogs.Economy
 
         public override void DoWindowContents(Rect rect)
         {
-            // KMH 26.5.20.1: Shared title + divider via DialogLayout. Was
+            // Shared title + divider via DialogLayout. Was
             // using `y += 6f` after the divider while every other dialog
             // used 8f — that 2px drift is exactly what DialogLayout is for.
             string headerName = GuildClientCache.Guild?.Name ?? "(no guild)";
@@ -82,7 +82,7 @@ namespace GameClient.Dialogs.Economy
             Widgets.Label(new Rect(0f, y, rect.width, 22f), $"<b>MOTD:</b> {motd}");
             y += 26f;
 
-            // KMH 26.5.20.1: Shorter labels + tiny font so the stats line
+            // Shorter labels + tiny font so the stats line
             // doesn't truncate to "Site rewa..." on narrower dialog widths.
             GUI.color = new Color(0.7f, 0.7f, 0.7f);
             int totalMembers = g.GuildMembers?.Count ?? 0;
@@ -112,7 +112,7 @@ namespace GameClient.Dialogs.Economy
             // Diplomacy line
             DrawDiplomacyLine(g, rect);
 
-            // KMH 26.5.20.1: Single-row bottom toolbar with menu-style
+            // Single-row bottom toolbar with menu-style
             // sub-groups. Was 6 separate buttons auto-wrapping into messy
             // two rows when the dialog was narrow. Now: 3-4 grouped
             // entry points that open FloatMenus for sub-actions.
@@ -174,7 +174,7 @@ namespace GameClient.Dialogs.Economy
             if (g.Relationships == null || g.Relationships.Count == 0) return;
             float lineY = rect.height - 88f;
 
-            // KMH 26.5.20.1: Cache the rendered string; the diplomacy line
+            // Cache the rendered string; the diplomacy line
             // is static between snapshot pushes. Was allocating 3 Lists +
             // multiple strings every frame.
             if (_diplomacyLineCache == null
@@ -244,7 +244,7 @@ namespace GameClient.Dialogs.Economy
             Rect inner = box.ContractedBy(4f);
             const float rowH = 30f;
 
-            // KMH 26.5.20.1: Cache the ordered member list; rebuild only
+            // Cache the ordered member list; rebuild only
             // when the underlying GuildMembers reference flips (next
             // snapshot push).
             if (_orderedMembersCache == null

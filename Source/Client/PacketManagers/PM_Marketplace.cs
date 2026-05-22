@@ -53,7 +53,7 @@ namespace GameClient.PacketManagers
             catch { }
         }
 
-        // KMH 2.7: Pending listing memo — remembers the variant-aware drain
+        // Pending listing memo — remembers the variant-aware drain
         // request so we can apply it once the server has confirmed the
         // listing succeeded. Without this, the client used to drain caravan
         // stacks BEFORE the server replied; if the server then rejected the
@@ -91,7 +91,7 @@ namespace GameClient.PacketManagers
                 };
                 Network.ServerEndpoint.EnqueuePacket(PacketHeader.MarketplaceManager, req);
 
-                // KMH 2.7: NO LONGER deduct here. We queue a pending memo and
+                // NO LONGER deduct here. We queue a pending memo and
                 // wait for ResultKind=ListResult to confirm before draining
                 // caravan stock. Treasury-source listings continue to be
                 // server-side: the server pulls from treasury inside HandleCreate
@@ -150,7 +150,7 @@ namespace GameClient.PacketManagers
             }
         }
 
-        // KMH 2.7: Pull `qty` from the caravan, matching the caller's chosen
+        // Pull `qty` from the caravan, matching the caller's chosen
         // (qualityIndex, stuffDefName) tuple. Returns the count actually
         // removed so multi-caravan drains can chain.
         private static int RemoveMatchingVariantFromCaravan(Caravan caravan, string itemDefName,
@@ -182,7 +182,7 @@ namespace GameClient.PacketManagers
             return taken;
         }
 
-        // KMH 2.7: Bulk-resource path — non-quality, non-stuff items.
+        // Bulk-resource path — non-quality, non-stuff items.
         // Returns count taken so the caller can chain across caravans.
         private static int RemoveStackFromCaravan(Caravan caravan, string itemDefName, int qty)
         {
@@ -247,7 +247,7 @@ namespace GameClient.PacketManagers
         // -- result handling --
 
         /// <summary>
-        /// KMH 2.7: Spawns/deducts ONLY for explicit BuyResult packets.
+        /// Spawns/deducts ONLY for explicit BuyResult packets.
         /// Previously the same field set (ItemDefName + Quantity) was sent on
         /// both list and buy results, so a CreateListing reply caused the
         /// listed items to spawn back at the seller's home — the "items came
@@ -266,7 +266,7 @@ namespace GameClient.PacketManagers
                 && !string.IsNullOrEmpty(data.ItemDefName))
             {
                 ApplyConfirmedCaravanDrain(data.ItemDefName, data.Quantity);
-                // KMH 26.5.20.1: A successful listing may have come from the
+                // A successful listing may have come from the
                 // player's treasury (UseTreasury=true at create time). Even
                 // for caravan-sourced listings, the server may have moved
                 // overflow items into the treasury — request a fresh snapshot
@@ -284,7 +284,7 @@ namespace GameClient.PacketManagers
                 PendingListings.Dequeue();
             }
 
-            // KMH 26.5.20.1: CancelResult — server returned the unsold stock
+            // CancelResult — server returned the unsold stock
             // to the seller's treasury. Refresh the treasury snapshot so
             // the count updates live.
             if (data.ResultKind == PKT_Marketplace.ResultKindCode.CancelResult)
@@ -321,7 +321,7 @@ namespace GameClient.PacketManagers
                 }
             }
 
-            // KMH 26.5.20.1: BuyResult — the seller's treasury silver went
+            // BuyResult — the seller's treasury silver went
             // up (proceeds of the sale), and if the buyer requested
             // treasury delivery their treasury got items. Either side that
             // owns this client should refresh its snapshot so the open

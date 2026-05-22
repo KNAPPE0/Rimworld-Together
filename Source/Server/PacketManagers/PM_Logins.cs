@@ -15,7 +15,7 @@ namespace GameServer.PacketManager
 {
     public class PM_Logins : PM_Base
     {
-        // KMH: Compiled once instead of constructed per login attempt.
+        // Compile once — was rebuilt per login attempt.
         private static readonly Regex UsernameSanitizer =
             new Regex(@"[^a-zA-Z0-9_\-]", RegexOptions.Compiled);
 
@@ -31,7 +31,7 @@ namespace GameServer.PacketManager
         {
             client.UserFile = new UserFile();
 
-            // KMH: Sanitize username to prevent path traversal and injection
+            // Sanitize username — prevents path-traversal + injection downstream.
             string sanitized = data._username ?? string.Empty;
             sanitized = sanitized.Trim();
             sanitized = UsernameSanitizer.Replace(sanitized, "");
@@ -64,12 +64,10 @@ namespace GameServer.PacketManager
 
             RemoveOldClientSessions(client);
 
-            // KMH 2.7: Register in the O(1) username→client index now that
-            // we've finished authentication + loaded the user file.
+            // Register in the username→client index now that auth is complete.
             GameServer.Hooks.TCPNetwork.ServerNetwork.RegisterAuthenticatedClient(client);
 
             InformationDisplayer.DisplayLogin(client);
-            // KMH: Announce join to Discord
             GameServer.Integrations.Discord.DiscordPlayerAnnouncer.AnnounceFullyJoined(client.UserFile?.Username);
 
             PostLogin(client, data);
@@ -87,8 +85,7 @@ namespace GameServer.PacketManager
 
             LoginUser(client, data);
 
-            // KMH: New user file just created — drop the cache so subsequent
-            // login lookups see it.
+            // Fresh user file → flush cache so subsequent lookups see it.
             UserManagerH.InvalidateUserCache();
         }
 
@@ -97,9 +94,7 @@ namespace GameServer.PacketManager
             client.VerifyUser();
             UserManager.SendPlayerRecount();
 
-            // HARD GATE:
-            // If enforcement is active and this client does not already have the correct profile,
-            // do not continue into save/world sync yet.
+            // Hard gate: hold save/world sync until enforced profile is in sync.
             if (OptionsProfileManager.IsClientMissingRequiredProfile(data))
             {
                 OptionsProfileManager.SendRequiredProfileForJoin(client);
@@ -114,12 +109,10 @@ namespace GameServer.PacketManager
             GlobalDataManager.SendServerGlobalData(client);
             PM_Chat.SendLoginChatMessages(client);
 
-            // KMH: Push the linked-accounts map so dialogs render Discord names
-            // for every player from the first frame.
+            // Linked-accounts map so dialogs render Discord names from frame 1.
             try { LinkedAccountsManager.SendSnapshot(client); }
             catch { }
 
-            // KMH: surface the guild MOTD as a chat message right after login.
             try
             {
                 string motd = GuildManager.GetMotdForUser(client.UserFile?.Username);
@@ -146,18 +139,17 @@ namespace GameServer.PacketManager
         }
         public static void RemoveOldClientSessions(ServerClient client)
         {
-            // KMH: Filter null UserFile/Username to avoid NRE when a sibling
-            // client is mid-handshake during login race.
+            // Null-guard sibling clients mid-handshake.
             string username = client?.UserFile?.Username;
             if (string.IsNullOrEmpty(username)) return;
 
-            ServerClient[] oldClients = ServerNetwork.GetConnectedClients()
-                .Where(fetch => fetch != client
-                    && fetch.UserFile != null
-                    && fetch.UserFile.Username == username)
-                .ToArray();
-
-            foreach (ServerClient sc in oldClients) sc.Listener.MarkForDisconnect();
+            foreach (ServerClient sc in ServerNetwork.GetConnectedClients())
+            {
+                if (sc == client) continue;
+                if (sc.UserFile == null) continue;
+                if (string.Equals(sc.UserFile.Username, username, StringComparison.OrdinalIgnoreCase))
+                    sc.Listener.MarkForDisconnect();
+            }
         }
 
         public static void DenyConnectionWithReason(ServerClient client, LoginResponse response, object extraDetails = null)

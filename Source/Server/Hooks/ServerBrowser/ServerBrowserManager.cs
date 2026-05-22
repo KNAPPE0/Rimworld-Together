@@ -96,20 +96,14 @@ namespace GameServer.Hooks.ServerBrowser
 
         private static async void SetupConnection(BrowserMode mode)
         {
-            // KMH 26.5.22.1: Cache the resolved public IP across reconnects.
-            // GetPublicIP() hits ipify.org — under network flap the call
-            // can take 30+ seconds, and upstream's pattern re-queries on
-            // every reconnect (so a churning connection thrashes ipify).
-            // We only fetch once per process lifetime.
+            // Cache public IP — avoid thrashing ipify on every reconnect.
             if (!WasStartedOnce || string.IsNullOrEmpty(ServerIPV4))
                 ServerIPV4 = await GetPublicIP();
 
             PKT_ServerTelemetry telemetry = new PKT_ServerTelemetry();
             telemetry.Name = Master.ServerConfig.Name;
             telemetry.Description = Master.ServerConfig.Description;
-            // KMH 26.5.22.1: Publish Workshop + Discord URLs so the
-            // browser dialog can render one-click buttons. Empty values
-            // hide the button on the client side.
+            // Empty URLs hide the button client-side.
             telemetry.SteamWorkshopURL = Master.ServerConfig.SteamWorkshopURL ?? string.Empty;
             telemetry.DiscordURL = Master.ServerConfig.DiscordURL ?? string.Empty;
             telemetry.Version = CommonValues.ExecutableVersion;
@@ -126,13 +120,7 @@ namespace GameServer.Hooks.ServerBrowser
 
         public static async Task<string> GetPublicIP()
         {
-            // KMH 26.5.22.1: Wrapped in try/catch — upstream let the
-            // exception propagate, which crashed the SetupConnection task
-            // and silently left the server unlisted forever. Now we log
-            // and return empty so telemetry just publishes with no
-            // resolved endpoint (browser will still show the entry, just
-            // without the joinable IP — server admins can still see it
-            // and fix their networking).
+            // ipify failures used to crash SetupConnection silently — swallow + log.
             try
             {
                 using (HttpClient client = new HttpClient())

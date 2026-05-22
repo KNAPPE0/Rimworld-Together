@@ -47,7 +47,8 @@ namespace GameClient.Dialogs
         {
             Widgets.DrawLineHorizontal(mainRect.x, mainRect.y - 1, mainRect.width);
 
-            float height = 6f + ListedThings.Count() * 30f;
+            int count = ListedThings.Count;
+            float height = 6f + count * 30f;
             Rect viewRect = new Rect(0f, 0f, mainRect.width - 16f, height);
             Widgets.BeginScrollView(mainRect, ref ScrollPosition, viewRect);
             float num = 0;
@@ -55,7 +56,7 @@ namespace GameClient.Dialogs
             float num3 = ScrollPosition.y + mainRect.height;
             int num4 = 0;
 
-            for (int i = 0; i < ListedThings.Count(); i++)
+            for (int i = 0; i < count; i++)
             {
                 if (num > num2 && num < num3)
                 {

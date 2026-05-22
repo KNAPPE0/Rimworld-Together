@@ -11,21 +11,13 @@ using static TCPNetwork.Packets.PKT_Site;
 
 namespace GameServer.PacketManager
 {
-    /// <summary>
-    /// On-disk site file lookup with an in-memory cache.
-    ///
-    /// Hot path SendRewardsToPlayer used to read+deserialize every site file
-    /// from disk per call, per player. The cache eliminates that I/O storm.
-    /// Mutations call <see cref="InvalidateCache"/> so subsequent reads see
-    /// the new on-disk state.
-    /// </summary>
+    // Site file lookup with in-memory cache. Mutations call InvalidateCache.
     public static class SiteManagerHelper
     {
-        // Cache of all SiteFile objects keyed by Tile.
         private static readonly object SiteCacheLock = new object();
         private static Dictionary<int, SiteFile> SiteCache;
 
-        // Cache of CustomSiteData by file path. Updated in place on save.
+        // CustomSiteData by file path; updated in place on save.
         private static readonly object CustomCacheLock = new object();
         private static readonly Dictionary<string, CustomSiteData> CustomDataCache =
             new Dictionary<string, CustomSiteData>(StringComparer.OrdinalIgnoreCase);
@@ -45,8 +37,7 @@ namespace GameServer.PacketManager
                 Dictionary<int, SiteFile> cache = new Dictionary<int, SiteFile>();
                 try
                 {
-                    string[] sites = Directory.GetFiles(Master.SitesPath);
-                    foreach (string site in sites)
+                    foreach (string site in Directory.GetFiles(Master.SitesPath))
                     {
                         if (site.IndexOf("_custom", StringComparison.OrdinalIgnoreCase) >= 0) continue;
                         try
@@ -109,11 +100,6 @@ namespace GameServer.PacketManager
 
         public static SiteFile[] GetAllSitesFromUsername(string username)
         {
-            // KMH 26.5.20.1: Enumerate cache.Values INSIDE the lock — the
-            // OnSaveCustomSiteData hook + InvalidateCache mutate this
-            // dictionary concurrently, and C# Dictionary enumerators throw
-            // on structural modification. Same fix applied to
-            // UserManagerH.GetAllUserFiles earlier.
             if (string.IsNullOrEmpty(username)) return Array.Empty<SiteFile>();
             List<SiteFile> sitesList = new List<SiteFile>();
             lock (SiteCacheLock)
@@ -121,7 +107,8 @@ namespace GameServer.PacketManager
                 Dictionary<int, SiteFile> cache = GetSiteCache();
                 foreach (SiteFile siteFile in cache.Values)
                 {
-                    if (siteFile != null && siteFile.Username == username) sitesList.Add(siteFile);
+                    if (siteFile != null && string.Equals(siteFile.Username, username, StringComparison.OrdinalIgnoreCase))
+                        sitesList.Add(siteFile);
                 }
             }
             return sitesList.ToArray();
@@ -130,9 +117,6 @@ namespace GameServer.PacketManager
         public static SiteFile GetSiteFileFromTile(int tileToGet)
         {
             if (tileToGet < 0) return null;
-            // KMH 26.5.20.1: TryGetValue inside the lock — the dictionary
-            // can be mutated by SaveCustomSiteData on another thread, and
-            // Dictionary.TryGetValue is not thread-safe.
             lock (SiteCacheLock)
             {
                 GetSiteCache().TryGetValue(tileToGet, out SiteFile siteFile);
@@ -151,8 +135,6 @@ namespace GameServer.PacketManager
 
         public static SiteFile[] GetAllSites()
         {
-            // KMH 26.5.20.1: Snapshot inside the lock — see
-            // GetAllSitesFromUsername for rationale.
             lock (SiteCacheLock)
             {
                 Dictionary<int, SiteFile> cache = GetSiteCache();
@@ -166,14 +148,14 @@ namespace GameServer.PacketManager
         public static bool CheckIfTileIsInUse(int tileToCheck)
         {
             if (tileToCheck < 0) return false;
-            return GetSiteCache().ContainsKey(tileToCheck);
+            // Was reading the dict outside the lock — Dictionary.ContainsKey is not concurrent-safe.
+            lock (SiteCacheLock)
+            {
+                return GetSiteCache().ContainsKey(tileToCheck);
+            }
         }
 
-        // KMH 26.5.20.1: SiteTypes is a config list that doesn't change at
-        // runtime — but the previous lookup was a LINQ FirstOrDefault scan
-        // called on every site reward, site creation, and site info request.
-        // Cache as a dictionary keyed by defName, rebuild lazily if the
-        // underlying SiteTypes reference changes (config reload).
+        // SiteTypes is config and stable per process; rebuild the def index only on config swap.
         private static readonly object SiteTypeIndexLock = new object();
         private static Dictionary<string, SiteType> _siteTypeByDef;
         private static object _siteTypeIndexSource;

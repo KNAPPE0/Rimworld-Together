@@ -29,7 +29,7 @@ namespace GameServer.Integrations.Discord
     ///   !quests / !questboard                         — list open quests
     ///   !leaderboard / !lb / !top [sort]              — top guilds
     ///
-    /// KMH 2.7: !sell now accepts a friendly item name like "plasteel" or
+    /// !sell now accepts a friendly item name like "plasteel" or
     /// "melee weapon" — the server resolves to the right defName via
     /// <see cref="ItemLabelCache"/> (populated from connected clients on login).
     /// You no longer need to know the raw RimWorld defName.
@@ -75,13 +75,13 @@ namespace GameServer.Integrations.Discord
                     await HandleMarketAsync(raw, parts);
                     return true;
 
-                case "find":               // KMH 2.7: search listings by item label
+                case "find":               // search listings by item label
                 case "search":
                     LastCommandUtc[raw.Author.Id] = now;
                     await HandleFindAsync(raw, parts);
                     return true;
 
-                case "items":              // KMH 2.7: discover what defNames the server knows
+                case "items":              // discover what defNames the server knows
                 case "catalog":
                     LastCommandUtc[raw.Author.Id] = now;
                     await HandleCatalogAsync(raw, parts);
@@ -123,28 +123,28 @@ namespace GameServer.Integrations.Discord
                     await DiscordLeaderboardCommand.TryDispatchAsync(raw, parts);
                     return true;
 
-                case "showcase":           // KMH 2.7: post/edit your sell showcase
+                case "showcase":           // post/edit your sell showcase
                 case "myshop":             // alias — "my shop"
                 case "shopfront":          // alias — "set up my shopfront"
                     LastCommandUtc[raw.Author.Id] = now;
                     await HandleShowcaseAsync(raw, parts);
                     return true;
 
-                case "history":            // KMH 26.5.20: your last N treasury transactions
+                case "history":            // last N treasury transactions
                 case "txn":
                 case "log":
                     LastCommandUtc[raw.Author.Id] = now;
                     await HandleHistoryAsync(raw, parts);
                     return true;
 
-                case "compare":            // KMH 26.5.20: lowest 5 prices for an item
+                case "compare":            // lowest 5 prices for an item
                 case "price":
                 case "prices":
                     LastCommandUtc[raw.Author.Id] = now;
                     await HandleCompareAsync(raw, parts);
                     return true;
 
-                case "wtb":                // KMH 26.5.20: Want-To-Buy board (mirror of !showcase)
+                case "wtb":                // Want-To-Buy board (mirror of !showcase)
                 case "want":
                 case "wanted":
                     LastCommandUtc[raw.Author.Id] = now;
@@ -159,7 +159,7 @@ namespace GameServer.Integrations.Discord
         // -- !showcase --
 
         /// <summary>
-        /// KMH 2.7: Per-user marketplace showcase. Posts an embed of the
+        /// Per-user marketplace showcase. Posts an embed of the
         /// player's current listings to the configured marketplace channel
         /// (text channel or forum). Subsequent calls EDIT the existing
         /// post so the channel doesn't fill up.
@@ -238,9 +238,7 @@ namespace GameServer.Integrations.Discord
                 return;
             }
 
-            // Persist the IDs so the next !showcase edits the same post.
-            // KMH 26.5.20: Stamp the refresh time so the sweep job knows the
-            // showcase is still active.
+            // Persist IDs + refresh ticks — next !showcase edits same post, sweep keeps it alive.
             uf.DiscordShowcaseChannelId = result.ChannelId.ToString();
             uf.DiscordShowcaseMessageId = result.MessageId.ToString();
             uf.DiscordShowcaseLastUpdatedUtcTicks = DateTime.UtcNow.Ticks;
@@ -325,22 +323,8 @@ namespace GameServer.Integrations.Discord
 
         private const int MaxWtbEntriesPerUser = 25;
 
-        /// <summary>
-        /// KMH 26.5.20: Per-user Want-To-Buy board. Players curate a personal
-        /// list of items they want and publish it to the configured WTB
-        /// channel/forum (falls back to the sells showcase channel if WTB
-        /// has no dedicated channel). Sellers see it and post matching
-        /// listings in the regular marketplace.
-        ///
-        /// Subcommands:
-        ///   !wtb                         — post/refresh your WTB embed
-        ///   !wtb add &lt;item&gt; &lt;qty&gt; &lt;max-price&gt;  — append an entry
-        ///   !wtb remove &lt;item&gt;            — drop an entry by item name
-        ///   !wtb list                     — DM-style list of your entries
-        ///   !wtb clear                    — wipe ALL entries (asks confirm via reaction is overkill; we just confirm via text)
-        ///   !wtb delete                   — remove your published WTB embed
-        ///   !wtb tagline &lt;text&gt;           — set/clear the tagline
-        /// </summary>
+        // !wtb [add|remove|list|clear|delete|tagline] — per-user Want-To-Buy board.
+        // Falls back to sells showcase channel if no WTB channel is configured.
         private static async Task HandleWtbAsync(SocketMessage raw, string[] parts)
         {
             UserFile uf = await RequireLinkedAsync(raw);
@@ -412,11 +396,7 @@ namespace GameServer.Integrations.Discord
                     await raw.Channel.SendMessageAsync(sb.ToString());
                     return;
                 }
-                // KMH 26.5.20.1 security: cap the synthetic defName length
-                // to a realistic RimWorld defName. Without the cap a
-                // hostile user could stuff a 1500-char "defName" into
-                // their WantToBuyEntries list and grow their UserFile.json
-                // unboundedly per add.
+                // Cap synthetic defName — bounds UserFile.json growth per !wtb add.
                 string raw1 = itemRaw.Replace(' ', '_');
                 defName = raw1.Length > 64 ? raw1.Substring(0, 64) : raw1;
             }
@@ -475,7 +455,6 @@ namespace GameServer.Integrations.Discord
                 nameSb.Append(tokens[i]);
             }
             string itemRaw = nameSb.ToString().Replace('_', ' ').Trim();
-            // KMH 26.5.20.1 security: cap synthetic defName length.
             string defName = ItemLabelCache.ResolveDefNameByQuery(itemRaw, out _);
             if (defName == null)
             {
@@ -617,16 +596,7 @@ namespace GameServer.Integrations.Discord
 
         // -- Discord buttons --
 
-        /// <summary>
-        /// KMH 26.5.20: Build a "quick buy" button row for a single
-        /// listing. We attach this directly under the listings embed in
-        /// `!market`, `!find`, and `!compare` so a player can buy without
-        /// typing the listing ID.
-        ///
-        /// Three buttons: buy 1, buy 10, buy the whole remaining stack.
-        /// Custom IDs are namespaced `buy:&lt;id&gt;:&lt;qty-or-all&gt;` so the
-        /// button dispatcher in DiscordBridge can route them safely.
-        /// </summary>
+        // "Buy 1 / Buy 10 / Buy all" buttons. customId = "buy:<id>:<qty|all>".
         public static MessageComponent BuildBuyButtonsForListing(MarketplaceListing l)
         {
             if (l == null || l.RemainingQty <= 0) return null;
@@ -646,32 +616,13 @@ namespace GameServer.Integrations.Discord
             return builder.Build();
         }
 
-        // KMH 26.5.20: Per-user-per-listing button debounce. Discord renders
-        // buttons as instantly-responsive UI; an impatient player can click
-        // [Buy 10] three times before the bot has even started the first buy.
-        // Without a debounce, we'd run three full treasury withdraw / Buy /
-        // refund cycles in parallel — `MarketplaceManager.Buy` would still
-        // get the stock atomically right (no oversell), but the player ends
-        // up with three identical "✅ Bought 10× Plasteel" toast notifications,
-        // three transaction-log entries, and (worst case) two refunds.
-        //
-        // Trade-off: keep the window short (2s) so legitimate "I want to
-        // buy a stack, then buy another stack" interactions still feel
-        // responsive.
+        // 2s debounce per user+listing — Buy is stock-atomic, but parallel clicks
+        // would still produce duplicate toasts + refunds. 2s leaves room for real burst-buys.
         private const int ButtonDebounceWindowMs = 2000;
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> ButtonDebounce =
             new System.Collections.Concurrent.ConcurrentDictionary<string, long>();
 
-        /// <summary>
-        /// KMH 26.5.20: Handler for the [Buy] buttons under listing embeds.
-        /// Mirrors HandleBuyAsync's logic but responds via the component
-        /// API so Discord shows a clean acknowledgement. The reply is
-        /// ephemeral (only the clicker sees it) so we don't spam the
-        /// channel with one receipt per click.
-        ///
-        /// Includes a 2-second per-user-per-listing debounce — see
-        /// <see cref="ButtonDebounceWindowMs"/> for rationale.
-        /// </summary>
+        // [Buy] button handler. Ephemeral reply so channel doesn't get one receipt per click.
         public static async Task HandleBuyButtonAsync(SocketMessageComponent component, string customId)
         {
             // customId format: "buy:<listingId>:<qty-or-all>"
@@ -813,12 +764,7 @@ namespace GameServer.Integrations.Discord
 
         // -- !history --
 
-        /// <summary>
-        /// KMH 26.5.20: Personal transaction log from the player's treasury.
-        /// Shows the most recent N entries (default 10, capped at 25 for
-        /// embed limits). Uses the existing TreasuryFile.RecentTransactions
-        /// data — no new storage.
-        /// </summary>
+        // Last N treasury transactions. Default 10, capped at 25 by embed limits.
         private static async Task HandleHistoryAsync(SocketMessage raw, string[] parts)
         {
             UserFile uf = await RequireLinkedAsync(raw);
@@ -882,11 +828,7 @@ namespace GameServer.Integrations.Discord
 
         // -- !compare --
 
-        /// <summary>
-        /// KMH 26.5.20: Lowest 5 prices for an item across the marketplace.
-        /// Lets buyers see the spread and helps sellers price competitively.
-        /// Same fuzzy-name resolution as !sell.
-        /// </summary>
+        // 5 cheapest active listings for a fuzzy item name (same resolution as !sell).
         private static async Task HandleCompareAsync(SocketMessage raw, string[] parts)
         {
             if (parts.Length < 2)
@@ -970,13 +912,8 @@ namespace GameServer.Integrations.Discord
                     inline: false);
             }
 
-            // KMH 26.5.20: Quick-buy buttons for the cheapest listing.
-            // Discord caps a message at 5 action rows × 5 buttons (25 total),
-            // and putting a row of buttons under every listing would also
-            // make it unclear which listing the buttons act on. We instead
-            // attach buttons ONLY to the cheapest result — that's the one
-            // people are most likely to grab — and the rest stay typeable
-            // via `!buy <id>`.
+            // Buttons only on the cheapest result — Discord's 25-button cap + ambiguous
+            // attribution rules out per-listing rows. `!buy <id>` still covers the rest.
             MessageComponent components = matches.Count > 0
                 ? BuildBuyButtonsForListing(matches[0])
                 : null;
@@ -1099,7 +1036,7 @@ namespace GameServer.Integrations.Discord
             }
             int qty = 1;
             if (parts.Length >= 3 && int.TryParse(parts[2], out int q) && q > 0) qty = q;
-            // KMH 2.7: Same hard cap as the in-game Buy path. Without this,
+            // Same hard cap as the in-game Buy path. Without this,
             // `unitPrice × qty` (both ints) could overflow into negative —
             // exploitable for free silver / unintended treasury debits.
             // Anything legitimate is well under 10k units.
@@ -1120,7 +1057,7 @@ namespace GameServer.Integrations.Discord
             }
 
             int boughtUnits = Math.Min(qty, listing.RemainingQty);
-            // KMH 2.7: Compute in long to detect overflow safely, bail out
+            // Compute in long to detect overflow safely, bail out
             // before any treasury mutation if the result wouldn't fit in int.
             long totalCostLong = (long)listing.UnitPriceSilver * boughtUnits;
             if (totalCostLong > int.MaxValue || totalCostLong < 0)
@@ -1199,7 +1136,7 @@ namespace GameServer.Integrations.Discord
         // -- !sell --
 
         /// <summary>
-        /// KMH 2.7: Friendly !sell. The "item" argument may be:
+        /// Friendly !sell. The "item" argument may be:
         ///   • A defName  (exact, e.g. "Plasteel")
         ///   • A label    (case-insensitive, e.g. "plasteel", "knife", "smokeleaf")
         ///   • A multi-word label  (use quotes: <c>!sell "melee weapon" 1 500</c>
@@ -1214,7 +1151,7 @@ namespace GameServer.Integrations.Discord
             UserFile uf = await RequireLinkedAsync(raw);
             if (uf == null) return;
 
-            // KMH 2.7: rejoin "quoted" multi-word arguments before parsing.
+            // rejoin "quoted" multi-word arguments before parsing.
             string[] tokens = ReparseQuoted(raw.Content?.Substring(1) ?? string.Empty);
             if (tokens.Length < 4)
             {
@@ -1255,7 +1192,6 @@ namespace GameServer.Integrations.Discord
 
                 // Last resort: assume the raw input is already a defName.
                 // The treasury withdraw will fail cleanly if it isn't.
-                // KMH 26.5.20.1 security: cap synthetic defName length.
                 string raw2 = itemRaw.Replace(' ', '_');
                 defName = raw2.Length > 64 ? raw2.Substring(0, 64) : raw2;
             }

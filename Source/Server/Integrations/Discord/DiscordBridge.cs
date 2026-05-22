@@ -57,7 +57,7 @@ namespace GameServer.Integrations.Discord
         private static readonly SemaphoreSlim OutboxSignal = new SemaphoreSlim(0, int.MaxValue);
         private static Task OutboxWorkerTask { get; set; }
 
-        // KMH 2.7: Console-embed coalescing buffer. Each warning/error that
+        // Console-embed coalescing buffer. Each warning/error that
         // arrives within ConsoleEmbedBatchWindowMs of the previous one is
         // appended into the same embed body so admin commands that print
         // many lines (e.g. !help) become a single Discord card instead
@@ -224,7 +224,7 @@ namespace GameServer.Integrations.Discord
         }
 
         /// <summary>
-        /// KMH 2.7: Coalesces console embed lines that arrive close together
+        /// Coalesces console embed lines that arrive close together
         /// into a single embed. The first arrival starts a timer; subsequent
         /// lines join the same embed until the timer fires. If an error
         /// arrives while the buffer is mid-warning, it elevates the whole
@@ -356,7 +356,7 @@ namespace GameServer.Integrations.Discord
         }
 
         /// <summary>
-        /// KMH 2.7: Result of a showcase post — the channel the message lives
+        /// Result of a showcase post — the channel the message lives
         /// in (text channel ID or forum thread ID) and the message ID inside
         /// it. Stored on UserFile so subsequent edits know what to update.
         /// </summary>
@@ -377,7 +377,7 @@ namespace GameServer.Integrations.Discord
         }
 
         /// <summary>
-        /// KMH 2.7: Post or edit a player's `!showcase` embed. Handles both
+        /// Post or edit a player's `!showcase` embed. Handles both
         /// forum channels (one thread per user, edits the OP on update) and
         /// regular text channels (one edit-in-place message per user).
         ///
@@ -496,7 +496,7 @@ namespace GameServer.Integrations.Discord
         }
 
         /// <summary>
-        /// KMH 2.7: Delete a previously-posted showcase. Returns true if the
+        /// Delete a previously-posted showcase. Returns true if the
         /// message was successfully removed (or already gone). Forum threads
         /// are deleted entirely; text-channel messages are removed without
         /// touching anything else.
@@ -654,7 +654,6 @@ namespace GameServer.Integrations.Discord
 
                 Client = new DiscordSocketClient(socketCfg);
                 Client.MessageReceived += OnMessageReceivedAsync;
-                // KMH 26.5.20: Listen for button clicks on listing embeds.
                 Client.ButtonExecuted += OnButtonExecutedAsync;
 
                 await Client.LoginAsync(TokenType.Bot, token);
@@ -759,9 +758,7 @@ namespace GameServer.Integrations.Discord
                     return;
                 }
 
-                // KMH: !profile / !whoami — show your linked status.
-                // KMH 26.5.20: !profile <username> — public profile of any
-                // player (linked-or-not). No leaked admin flags / Discord IDs.
+                // !profile / !whoami — own status, or public profile of <username>. No admin flags leaked.
                 if (content.Equals("!profile", StringComparison.OrdinalIgnoreCase) ||
                     content.Equals("!whoami", StringComparison.OrdinalIgnoreCase))
                 {
@@ -848,11 +845,7 @@ namespace GameServer.Integrations.Discord
             }
         }
 
-        /// <summary>
-        /// KMH 26.5.20: Discord component-button click handler. Dispatches
-        /// known custom-id prefixes to specific subsystems. Today we support:
-        ///   buy:&lt;listingId&gt;:&lt;qty&gt;     — quick-buy a listing from a button
-        /// </summary>
+        // Dispatches "buy:<listingId>:<qty>" buttons to the marketplace handler.
         private static async Task OnButtonExecutedAsync(SocketMessageComponent component)
         {
             try
@@ -1041,7 +1034,7 @@ namespace GameServer.Integrations.Discord
                 string discordId = raw.Author.Id.ToString();
                 string discordName = GetBestName(raw);
 
-                // KMH 2.7: Use the in-memory UserManagerH cache rather than
+                // Use the in-memory UserManagerH cache rather than
                 // re-reading every UserFile from disk and SerializeToFile-ing
                 // them back. Two reasons:
                 //   1. The old path was O(n²) disk reads (every-file scan for
@@ -1127,11 +1120,8 @@ namespace GameServer.Integrations.Discord
         {
             try
             {
-                // KMH 2.7: Cache-only lookup (no disk re-reads), no [ADMIN]
-                // flag leak, no Discord ID leak.
-                // KMH 26.5.20: When `targetUsername` is provided, look up
-                // THAT player's public profile instead of the caller's. Lets
-                // anyone (linked or not) check stats on any player.
+                // Cache-only lookup; no admin-flag or Discord-ID leak.
+                // targetUsername != null = public profile of any player.
                 TCPNetwork.Files.Client.UserFile userFile = null;
 
                 if (!string.IsNullOrWhiteSpace(targetUsername))
@@ -1217,7 +1207,7 @@ namespace GameServer.Integrations.Discord
             }
         }
 
-        // KMH 26.5.20: Helper for embed replies (the existing SafeReply is plain text).
+        // Embed sibling of SafeReply.
         private static async Task SendEmbedReplyAsync(ISocketMessageChannel channel, Embed embed)
         {
             if (channel == null || embed == null) return;

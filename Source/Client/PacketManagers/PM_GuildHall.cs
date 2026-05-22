@@ -17,7 +17,7 @@ namespace GameClient.PacketManagers
     public class PM_GuildHall : PM_Base
     {
         /// <summary>
-        /// KMH 2.7: Mirrors <see cref="PM_PlayerStats.OnLeaderboardSnapshotUpdated"/>
+        /// Mirrors <see cref="PM_PlayerStats.OnLeaderboardSnapshotUpdated"/>
         /// for the guild leaderboard. Fires when a fresh leaderboard snapshot
         /// has been written to <c>DLG_GuildLeaderboard.CachedRows</c>.
         /// </summary>
@@ -38,7 +38,7 @@ namespace GameClient.PacketManagers
                 case PKT_GuildHall.StepMode.LeaderboardSnapshot:
                     GameClient.Dialogs.Economy.DLG_GuildLeaderboard.CachedRows = data.Leaderboard
                         ?? new System.Collections.Generic.List<GuildLeaderboardEntry>();
-                    // KMH 2.7: Push-notify open dialogs so the "● live" badge
+                    // Push-notify open dialogs so the "● live" badge
                     // updates immediately and the filter cache rebuilds with
                     // the fresh data, not on next polled refresh.
                     try { OnLeaderboardSnapshotUpdated?.Invoke(); } catch { }

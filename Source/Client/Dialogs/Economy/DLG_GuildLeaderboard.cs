@@ -9,7 +9,7 @@ namespace GameClient.Dialogs.Economy
 {
     /// <summary>
     /// Cross-guild leaderboard view. Sortable by silver, members, contribution, etc.
-    /// KMH 2.7: Expanded with sites, alliances, tenure, total worker XP.
+    /// Expanded with sites, alliances, tenure, total worker XP.
     /// </summary>
     public class DLG_GuildLeaderboard : DLG_Base
     {
@@ -21,7 +21,7 @@ namespace GameClient.Dialogs.Economy
         private SortMode _sort = SortMode.LifetimeSilverIn;
         private View _view = View.Standard;
 
-        // KMH 2.7: Live re-fetch every AutoRefreshSeconds so guild rankings
+        // Live re-fetch every AutoRefreshSeconds so guild rankings
         // update in near-real-time as members donate / quest / build sites.
         private float _refreshTimer = DialogLayout.AutoRefreshSeconds;
         private System.DateTime _lastRefreshUtc = System.DateTime.UtcNow;
@@ -43,7 +43,7 @@ namespace GameClient.Dialogs.Economy
             PM_GuildHall.RequestLeaderboard();
             _lastRefreshUtc = System.DateTime.UtcNow;
 
-            // KMH 2.7: React the instant a server-pushed snapshot lands so the
+            // React the instant a server-pushed snapshot lands so the
             // "● live · just now" badge updates without waiting for the next
             // poll, and so we never linger on stale data after a save.
             PM_GuildHall.OnLeaderboardSnapshotUpdated += OnServerPushedSnapshot;
@@ -74,14 +74,14 @@ namespace GameClient.Dialogs.Economy
 
         public override void DoWindowContents(Rect rect)
         {
-            // KMH 26.5.20.1: Same title + live-badge + divider pattern as
+            // Same title + live-badge + divider pattern as
             // every other KMH dialog via DialogLayout.
             float y = DialogLayout.DrawTitle(rect, "Guild Leaderboard");
             int secsSince = System.Math.Max(0, (int)(System.DateTime.UtcNow - _lastRefreshUtc).TotalSeconds);
             DialogLayout.DrawLiveBadge(rect, secsSince);
             DialogLayout.DrawSectionDivider(rect, ref y);
 
-            // KMH 26.5.20.1: Friendly enum display names — was showing raw
+            // Friendly enum display names — was showing raw
             // CamelCase identifiers like "LifetimeSilverIn" / "WorkerXp".
             if (Widgets.ButtonText(new Rect(0f, y, 220f, 28f), $"Sort: {DialogLayout.FriendlyEnumName(_sort)}"))
             {
@@ -119,7 +119,7 @@ namespace GameClient.Dialogs.Economy
 
         private void DrawHeader(Rect r)
         {
-            // KMH 26.5.20.1: Guild column stays left-aligned, all numeric
+            // Guild column stays left-aligned, all numeric
             // columns center-aligned for visual consistency with the
             // player leaderboard.
             float[] cols = ColumnXs(r.width);
@@ -177,7 +177,7 @@ namespace GameClient.Dialogs.Economy
             }
             var rows = sorted.ToList();
 
-            // KMH 26.5.20.1: Resolve the local player's own guild so we
+            // Resolve the local player's own guild so we
             // can mark its row with the ★ marker (same affordance as the
             // player leaderboard uses for "this is you").
             string myGuild = string.Empty;
@@ -210,7 +210,7 @@ namespace GameClient.Dialogs.Economy
                 DialogLayout.DrawCenteredLabel(new Rect(cols[1], ly + 2f, cols[2] - cols[1], rowH - 4f), r.MemberCount.ToString());
 
                 string tenure = r.AvgMemberTenureDays > 0 ? $"{r.AvgMemberTenureDays:0.#}d" : "<color=grey>—</color>";
-                // KMH 26.5.20.1: All numeric cells center-aligned via the shared helper.
+                // All numeric cells center-aligned via the shared helper.
                 switch (_view)
                 {
                     case View.Standard:

@@ -147,7 +147,7 @@ namespace GameServer.PacketManager
 
             SiteFile siteFile = new SiteFile();
             siteFile.Tile = req.Tile;
-            // KMH 2.7: Resolve the friendly item label once and reuse it for
+            // Resolve the friendly item label once and reuse it for
             // every user-visible string the site emits (description, status
             // popup, server console log). Falls back to the humanizer if the
             // cache hasn't been populated yet for this defName.
@@ -182,7 +182,7 @@ namespace GameServer.PacketManager
                 OwnerRewardDestination = req.OwnerRewardDestination,
                 MarketplaceUnitPrice = Math.Max(1, req.MarketplaceUnitPrice)
             };
-            // KMH 26.5.20.1: Don't auto-add the owner as a worker at build
+            // Don't auto-add the owner as a worker at build
             // time. The previous behaviour permanently kept the owner in
             // cd.Workers from the moment the site was created — which:
             //   * Made the site UI always show "Workers: 1/5 — [OWNER] L0"
@@ -215,7 +215,7 @@ namespace GameServer.PacketManager
             GameServer.Integrations.Discord.DiscordAnnouncer.CustomSiteBuilt(
                 username, req.ItemDefName, req.AmountPerCycle, cycleMin, cost);
 
-            // KMH 2.7: Lifetime stats for the player leaderboard.
+            // Lifetime stats for the player leaderboard.
             try { GameServer.Managers.PlayerStatsManager.RecordSiteBuilt(username); } catch { }
         }
     }

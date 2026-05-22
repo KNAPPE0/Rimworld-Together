@@ -27,10 +27,7 @@ namespace GameServer.PacketManager
             SettlementFile settlementFile = PM_Settlements.GetSettlementFileFromTile(data._tile);
             SiteFile siteFile = SiteManagerHelper.GetSiteFileFromTile(data._tile);
 
-            // KMH 26.5.20.1 ANTI-CHEAT: if the tile resolves to neither a
-            // settlement nor a site, this is a forged packet — bail rather
-            // than NPE on `siteFile.Username`. Server-authoritative
-            // username (never trust the client's _username field).
+            // Server-authoritative username; orphan tile = forged packet.
             if (settlementFile != null) data._username = settlementFile.Username;
             else if (siteFile != null) data._username = siteFile.Username;
             else
@@ -52,7 +49,7 @@ namespace GameServer.PacketManager
 
         public static void UpdateClientGoodwills(ServerClient client)
         {
-            // KMH 26.5.20.1: Was allocating two intermediate arrays via
+            // Was allocating two intermediate arrays via
             // LINQ Where().ToArray() just to skip the requester's own
             // settlements/sites. Inline the filter into the existing
             // foreach so we walk each cached array exactly once with zero

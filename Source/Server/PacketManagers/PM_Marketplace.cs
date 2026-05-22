@@ -122,7 +122,7 @@ namespace GameServer.PacketManager
                     if (taken > 0)
                         TreasuryManager.DepositItemForUser(username, data.ItemDefName, taken,
                             TreasuryTransaction.TxKind.MarketplaceRefund, "abort-list");
-                    // KMH 2.7: Friendly label so the player doesn't read a raw defName.
+                    // Friendly label so the player doesn't read a raw defName.
                     string itemLabel = GameServer.Managers.ItemLabelCache.LabelFor(data.ItemDefName);
                     Reply(client, Result($"Treasury only has {taken} {itemLabel}, need {data.Quantity}."));
                     return;
@@ -213,7 +213,7 @@ namespace GameServer.PacketManager
             BroadcastListingsToAll();
         }
 
-        // KMH 2.7: Plain status reply with no item payload (e.g. permission
+        // Plain status reply with no item payload (e.g. permission
         // denied, generic error). The discriminator stays Unspecified so the
         // client never spawns items off the back of it.
         private static PKT_Marketplace Result(string note) =>

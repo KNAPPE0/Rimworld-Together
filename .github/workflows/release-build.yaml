@@ -15,10 +15,10 @@
 #                            Workshop upload — download from the
 #                            release, unzip, point your uploader at it.
 #
-# Drop the RID list to match LocalServerHandler.ResolveCurrentRid():
-# win-x64, linux-x64, osx-x64, osx-arm64. Official's old workflow
-# also matrixed linux-arm + win-x86 but KMH doesn't recognise either
-# at runtime.
+# RID list matches LocalServerHandler.ResolveCurrentRid() and covers every
+# desktop, every cloud server form factor, and every common ARM SBC:
+# win-x64, win-x86, win-arm64, linux-x64, linux-arm, linux-arm64,
+# osx-x64, osx-arm64. (win-arm dropped: .NET 8 has no app host for it.)
 
 name: Project Release
 
@@ -36,8 +36,12 @@ jobs:
         version:
           - 8.0.x
         target:
-          - linux-x64
           - win-x64
+          - win-x86
+          - win-arm64
+          - linux-x64
+          - linux-arm
+          - linux-arm64
           - osx-x64
           - osx-arm64
     if: "!github.event.release.prerelease"
@@ -132,11 +136,35 @@ jobs:
           name: localserver-win-x64
           path: bundle-stage/LocalServer/win-x64
 
+      - name: Download win-x86 server
+        uses: actions/download-artifact@v4
+        with:
+          name: localserver-win-x86
+          path: bundle-stage/LocalServer/win-x86
+
+      - name: Download win-arm64 server
+        uses: actions/download-artifact@v4
+        with:
+          name: localserver-win-arm64
+          path: bundle-stage/LocalServer/win-arm64
+
       - name: Download linux-x64 server
         uses: actions/download-artifact@v4
         with:
           name: localserver-linux-x64
           path: bundle-stage/LocalServer/linux-x64
+
+      - name: Download linux-arm server
+        uses: actions/download-artifact@v4
+        with:
+          name: localserver-linux-arm
+          path: bundle-stage/LocalServer/linux-arm
+
+      - name: Download linux-arm64 server
+        uses: actions/download-artifact@v4
+        with:
+          name: localserver-linux-arm64
+          path: bundle-stage/LocalServer/linux-arm64
 
       - name: Download osx-x64 server
         uses: actions/download-artifact@v4

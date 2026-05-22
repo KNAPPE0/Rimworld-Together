@@ -20,11 +20,13 @@
 #     About/  1.6/  Scripts/  LoadFolders.xml  LICENSE  README.md
 #
 #   KMH-Releases/        <- upload each .zip as a GitHub release asset
-#     win-x64.zip          (~36 MB)
-#     linux-x64.zip        (~37 MB)
-#     osx-x64.zip          (~37 MB)
-#     osx-arm64.zip        (~35 MB)
-#     kmh-mod.zip          (~5 MB — same content as KMH-Workshop, zipped)
+#     win-x64.zip          (~36 MB, most Windows PCs)
+#     win-arm64.zip        (~35 MB, Windows on ARM laptops)
+#     linux-x64.zip        (~37 MB, most Linux distros + x86 cloud)
+#     linux-arm64.zip      (~35 MB, Raspberry Pi 4/5, ARM cloud)
+#     osx-x64.zip          (~37 MB, Intel Macs)
+#     osx-arm64.zip        (~35 MB, Apple Silicon Macs M1+)
+#     kmh-mod.zip          (~5 MB, same content as KMH-Workshop, zipped)
 #
 # Usage:
 #   .\Scripts\build-release.ps1
@@ -130,13 +132,20 @@ if (-not $SkipClient) {
     Write-Host "[1/4] Client build SKIPPED (-SkipClient)." -ForegroundColor DarkGray
 }
 
-# ---------------------------------------------------------------- Step 2: Server (all four RIDs)
+# ---------------------------------------------------------------- Step 2: Server (all supported RIDs)
 $LocalServer = Join-Path $ModRoot 'LocalServer'
-$Rids = @('win-x64', 'linux-x64', 'osx-x64', 'osx-arm64')
+# Maximum coverage. linux-arm is for Raspberry Pi 1/2/3/Zero; win-x86 is for
+# older 32-bit Windows installs. win-arm (32-bit ARM Windows) was dropped by
+# .NET 8 so it isn't included.
+$Rids = @(
+    'win-x64', 'win-x86', 'win-arm64',
+    'linux-x64', 'linux-arm', 'linux-arm64',
+    'osx-x64', 'osx-arm64'
+)
 
 if (-not $SkipServer) {
     Write-Host ""
-    Write-Host "[2/4] Publishing server for all four RIDs..." -ForegroundColor Yellow
+    Write-Host "[2/4] Publishing server for $($Rids.Count) RIDs..." -ForegroundColor Yellow
     Write-Host "      (self-contained + single-file -- player needs nothing installed)"
 
     if (Test-Path $LocalServer) { Remove-Item $LocalServer -Recurse -Force }
@@ -162,19 +171,28 @@ if (-not $SkipServer) {
         )
         & dotnet @publishArgs | Out-Host
 
-        if ($LASTEXITCODE -ne 0) { throw "Server publish for $Rid failed." }
+        # Skip and warn on per-RID failure so one missing app host doesn't kill
+        # the whole release. The bad output dir is cleaned up so a stale binary
+        # can't sneak into a later zip step.
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host ("    SKIP {0,-10} -> publish failed (no app host for this RID)" -f $Rid) -ForegroundColor Yellow
+            if (Test-Path $RidOut) { Remove-Item $RidOut -Recurse -Force -ErrorAction SilentlyContinue }
+            continue
+        }
 
         Get-ChildItem $RidOut -Filter *.pdb -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
         Get-ChildItem $RidOut -Filter *.xml -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
 
-        $Expected = if ($Rid -eq 'win-x64') { 'GameServer.exe' } else { 'GameServer' }
+        $Expected = if ($Rid -like 'win-*') { 'GameServer.exe' } else { 'GameServer' }
         $EntryPath = Join-Path $RidOut $Expected
         if (-not (Test-Path $EntryPath)) {
-            throw "Expected $Expected at $EntryPath after publish for $Rid -- single-file publish failed."
+            Write-Host ("    SKIP {0,-10} -> expected entry {1} missing after publish" -f $Rid, $Expected) -ForegroundColor Yellow
+            Remove-Item $RidOut -Recurse -Force -ErrorAction SilentlyContinue
+            continue
         }
 
         $Size = (Get-Item $EntryPath).Length / 1MB
-        Write-Host ("    OK  {0,-10} -> {1} ({2:N1} MB)" -f $Rid, $Expected, $Size) -ForegroundColor Green
+        Write-Host ("    OK  {0,-11} -> {1} ({2:N1} MB)" -f $Rid, $Expected, $Size) -ForegroundColor Green
     }
 } else {
     Write-Host "[2/4] Server publish SKIPPED (-SkipServer)." -ForegroundColor DarkGray
@@ -237,7 +255,7 @@ if ($SkipZip -or $SkipServer) {
 
     foreach ($Rid in $Rids) {
         $RidOut = Join-Path $LocalServer $Rid
-        $Expected = if ($Rid -eq 'win-x64') { 'GameServer.exe' } else { 'GameServer' }
+        $Expected = if ($Rid -like 'win-*') { 'GameServer.exe' } else { 'GameServer' }
         $EntryPath = Join-Path $RidOut $Expected
         if (-not (Test-Path $EntryPath)) {
             Write-Host "      ! Skipping $Rid (binary missing -- did the publish step run?)" -ForegroundColor DarkYellow

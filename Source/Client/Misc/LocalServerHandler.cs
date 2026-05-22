@@ -37,7 +37,11 @@ namespace GameClient.Misc
         public static bool IsAvailable => CurrentRid != null && (HasBundle || HasDownloadUrl);
 
         public const string RidWin64 = "win-x64";
+        public const string RidWinX86 = "win-x86";
+        public const string RidWinArm64 = "win-arm64";
         public const string RidLinux64 = "linux-x64";
+        public const string RidLinuxArm = "linux-arm";
+        public const string RidLinuxArm64 = "linux-arm64";
         public const string RidOsxX64 = "osx-x64";
         public const string RidOsxArm64 = "osx-arm64";
 
@@ -56,9 +60,13 @@ namespace GameClient.Misc
                 bool isOsx     = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
                 var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture;
 
-                if (isWindows && arch == System.Runtime.InteropServices.Architecture.X64) return RidWin64;
-                if (isLinux   && arch == System.Runtime.InteropServices.Architecture.X64) return RidLinux64;
-                if (isOsx     && arch == System.Runtime.InteropServices.Architecture.X64) return RidOsxX64;
+                if (isWindows && arch == System.Runtime.InteropServices.Architecture.X64)   return RidWin64;
+                if (isWindows && arch == System.Runtime.InteropServices.Architecture.X86)   return RidWinX86;
+                if (isWindows && arch == System.Runtime.InteropServices.Architecture.Arm64) return RidWinArm64;
+                if (isLinux   && arch == System.Runtime.InteropServices.Architecture.X64)   return RidLinux64;
+                if (isLinux   && arch == System.Runtime.InteropServices.Architecture.Arm)   return RidLinuxArm;
+                if (isLinux   && arch == System.Runtime.InteropServices.Architecture.Arm64) return RidLinuxArm64;
+                if (isOsx     && arch == System.Runtime.InteropServices.Architecture.X64)   return RidOsxX64;
                 if (isOsx     && arch == System.Runtime.InteropServices.Architecture.Arm64) return RidOsxArm64;
 
                 Printer.Message($"[LocalServer] Unsupported platform: OS={os}, arch={arch}", Printer.LogImportanceMode.Verbose);
@@ -72,7 +80,9 @@ namespace GameClient.Misc
             }
         }
 
-        public static string ServerEntryFileName => (CurrentRid == RidWin64) ? "GameServer.exe" : "GameServer";
+        // Both Windows RIDs ship .exe; everything else is bare.
+        private static bool IsWindowsRid(string rid) => rid == RidWin64 || rid == RidWinArm64;
+        public static string ServerEntryFileName => IsWindowsRid(CurrentRid) ? "GameServer.exe" : "GameServer";
 
         public const string BundleFolderName = "LocalServer";
         public const string ServerExeName = "GameServer.exe"; // legacy alias
@@ -193,7 +203,7 @@ namespace GameClient.Misc
         // to chmod. Windows skips this entirely.
         private static void EnsureExecutableBit(string path)
         {
-            if (CurrentRid == RidWin64) return;
+            if (IsWindowsRid(CurrentRid)) return;
             if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
 
             try

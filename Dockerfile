@@ -28,7 +28,7 @@ COPY Source Source
 #   -p:IncludeNativeLibrariesForSelfExtract=true: bundle native deps
 #   -p:EnableCompressionInSingleFile=true       : shrink the bundle ~30%
 #   -p:DebugType=embedded                       : pdb inside the binary
-#   -p:WarningLevel=0                           : preserved from upstream
+#   -p:WarningLevel=0                           : preserved from Official
 #                                                 to keep CI green on
 #                                                 KMH's pre-existing
 #                                                 third-party warnings.

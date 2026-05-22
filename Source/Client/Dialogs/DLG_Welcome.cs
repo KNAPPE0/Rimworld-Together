@@ -7,10 +7,10 @@ using Verse;
 
 namespace GameClient.Dialogs
 {
-    // One-time welcome flow: KMH credits → upstream RWT credits.
+    // One-time welcome flow: KMH credits → official RWT credits.
     public class DLG_Welcome : DLG_Base
     {
-        public enum Step { Kmh, UpstreamRwt }
+        public enum Step { KMH, OfficialRWT }
 
         public override Vector2 InitialSize => new Vector2(560f, 380f);
 
@@ -19,15 +19,15 @@ namespace GameClient.Dialogs
         public DLG_Welcome(Step step)
         {
             _step = step;
-            if (step == Step.Kmh)
+            if (step == Step.KMH)
             {
-                Title = "Welcome to RimWorld Together — KMH Edition";
-                Description = "This is a customized fork of the upstream RimWorld Together mod with extra economy, Discord, leaderboard, and self-host features.";
+                Title = "Welcome to RimWorld Together (KMH Edition)";
+                Description = "This is a customized fork of the official RimWorld Together mod with extra economy, Discord, leaderboard, and self-host features.";
             }
             else
             {
-                Title = "Built on RimWorld Together (upstream)";
-                Description = "KMH wouldn't exist without the original RimWorld Together mod by Nova and Company. If you enjoy KMH, please show the upstream team some love.";
+                Title = "Built on the official RimWorld Together";
+                Description = "KMH wouldn't exist without the original RimWorld Together mod by Nova and Company. If you enjoy KMH, please show the official team some love.";
             }
         }
 
@@ -53,27 +53,28 @@ namespace GameClient.Dialogs
             const float btnH = 38f;
             const float gap = 10f;
 
-            if (_step == Step.Kmh)
+            if (_step == Step.KMH)
             {
-                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "KMH Discord",     KmhProject.DiscordUrl);
-                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "KMH GitHub",      KmhProject.GitHubUrl);
-                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "KMH Steam Workshop", KmhProject.SteamWorkshopUrl);
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "KMH Discord",              KMHProject.DiscordUrl);
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "KMH GitHub",               KMHProject.GitHubUrl);
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "KMH Steam Workshop",       KMHProject.SteamWorkshopUrl);
             }
             else
             {
-                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Upstream RWT Discord", KmhProject.Upstream.DiscordUrl);
-                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Upstream RWT GitHub",  KmhProject.Upstream.GitHubUrl);
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Official RWT Discord",     KMHProject.Official.DiscordUrl);
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Official RWT GitHub",      KMHProject.Official.GitHubUrl);
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Official Steam Workshop",  KMHProject.SteamWorkshopUrl);
             }
 
             // Step 1 chains to Step 2; Step 2 stamps HasSeenKMHWelcome.
             Rect okRect = new Rect((rect.width - 150f) / 2f, rect.height - 44f, 150f, 38f);
-            string okLabel = (_step == Step.Kmh) ? "OK — next" : "OK";
+            string okLabel = (_step == Step.KMH) ? "OK" : "OK";
             if (Widgets.ButtonText(okRect, okLabel))
             {
                 Close();
-                if (_step == Step.Kmh)
+                if (_step == Step.KMH)
                 {
-                    PushNewDialog(new DLG_Welcome(Step.UpstreamRwt));
+                    PushNewDialog(new DLG_Welcome(Step.OfficialRWT));
                 }
                 else
                 {

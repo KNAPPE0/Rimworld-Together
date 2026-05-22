@@ -16,7 +16,7 @@
 #                            release, unzip, point your uploader at it.
 #
 # Drop the RID list to match LocalServerHandler.ResolveCurrentRid():
-# win-x64, linux-x64, osx-x64, osx-arm64. Upstream's old workflow
+# win-x64, linux-x64, osx-x64, osx-arm64. Official's old workflow
 # also matrixed linux-arm + win-x86 but KMH doesn't recognise either
 # at runtime.
 
@@ -171,7 +171,6 @@ jobs:
           find "$STAGE" -type d \( -name 'bin' -o -name 'obj' -o -name '.vs' \) -exec rm -rf {} + 2>/dev/null || true
           find "$STAGE" -type f \( -name '*.csproj' -o -name '*.sln' -o -name '*.pdb' -o -name '*.xml' \) -delete 2>/dev/null || true
 
-          # Strip the upstream PublishedFileId.txt if it slipped through
           # — release CI shouldn't be carrying that across into a Workshop
           # upload. Maintainers paste their own ID into About/ before
           # publishing locally; CI bundles are for downstream packagers
@@ -179,7 +178,14 @@ jobs:
           if [ -f "$STAGE/About/PublishedFileId.txt" ]; then
             PFID=$(tr -d '[:space:]' < "$STAGE/About/PublishedFileId.txt")
             if [ "$PFID" = "3005289691" ]; then
-              echo "Stripping upstream PublishedFileId.txt (would conflict with KMH Workshop entry)"
+              echo "Stripping 
+              
+              
+              
+              
+              
+              
+              PublishedFileId.txt (would conflict with KMH Workshop entry)"
               rm "$STAGE/About/PublishedFileId.txt"
             fi
           fi

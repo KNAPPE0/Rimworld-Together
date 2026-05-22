@@ -1,7 +1,7 @@
 # KMH build-release script — produces both:
 #
 #   1. WORKSHOP folder (slim, mod-only) — for Steam Workshop upload.
-#      Matches upstream RWT's distribution pattern (their Workshop is
+#      Matches Official RWT's distribution pattern (their Workshop is
 #      ~3 MB, ours is similar). LocalServer/ is NOT included; players
 #      who click "Host Local Server" pull the right binary from the
 #      GitHub release on demand.
@@ -188,7 +188,7 @@ if (Test-Path $WorkshopDir) { Remove-Item $WorkshopDir -Recurse -Force }
 New-Item -ItemType Directory -Path $WorkshopDir -Force | Out-Null
 
 # KMH 26.5.22.1: The Workshop folder is now mod-only by default
-# (matches upstream RWT's pattern — their Workshop content is ~3 MB).
+# (matches Official RWT's pattern — their Workshop content is ~3 MB).
 # Server binaries are distributed separately via GitHub Releases and
 # pulled on demand by LocalServerHandler.
 #
@@ -274,7 +274,7 @@ if (Test-Path $PfidPath) {
     $Pfid = (Get-Content $PfidPath -Raw).Trim()
     if ($Pfid -eq '3005289691') {
         $Warnings += @(
-            "About/PublishedFileId.txt = 3005289691 (upstream RimWorld Together's Workshop ID).",
+            "About/PublishedFileId.txt = 3005289691 (Official RimWorld Together's Workshop ID).",
             "  -> If you're publishing KMH to your OWN Workshop entry, replace this with your KMH ID before uploading.",
             "  -> If this is your first KMH Workshop upload, DELETE the file so Steam creates a new entry."
         )

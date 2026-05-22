@@ -82,7 +82,7 @@ namespace GameClient.Dialogs.ServerBrowser
                     new[]
                     {
                         $"A report against \"{Element.Name}\" has been queued.",
-                        "Server reports help KMH operators identify abusive servers; the report is not sent until you confirm via the upstream community channel."
+                        "Server reports help Official operators identify abusive servers; the report is not sent until you confirm via the official community channel."
                     }));
             }
 

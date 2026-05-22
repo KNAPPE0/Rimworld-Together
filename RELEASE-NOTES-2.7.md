@@ -1,12 +1,12 @@
 # KMH 2.7 — `v26.5.22.1`
 
-KMH is now fully caught up to the **RimWorld Together dev branch** (through May 20, 2026). Every functional fix and feature upstream shipped in that window is merged into KMH, with KMH-style hardening on top.
+KMH is now fully caught up to the **RimWorld Together dev branch** (through May 20, 2026). Every functional fix and feature Official shipped in that window is merged into KMH, with KMH-style hardening on top.
 
 On top of that baseline, **2.7 is the biggest KMH-specific release to date** — the economy got a full rework, guilds became an actual gameplay system, leaderboards went live, the Discord bridge picked up command-driven gameplay, and every dialog got rebuilt.
 
 ---
 
-## Synced from RWT dev branch (upstream changes inherited in 2.7)
+## Synced from RWT dev branch (Official changes inherited in 2.7)
 
 - Local self-hosting from the main menu
 - Discord Rich Presence on the player's own profile
@@ -22,11 +22,11 @@ On top of that baseline, **2.7 is the biggest KMH-specific release to date** —
 - Server config publishing Discord + Steam Workshop URLs to the browser
 - Hardened version-download path (async + TLS 1.2 + input validation + live progress)
 
-These were all upstream features. KMH's job in 2.7 was merging them cleanly without breaking the KMH-specific systems below.
+These were all Official features. KMH's job in 2.7 was merging them cleanly without breaking the KMH-specific systems below.
 
 ---
 
-## NEW in KMH 2.7 (what KMH added on top of upstream)
+## NEW in KMH 2.7 (what KMH added on top of Official)
 
 ### 🏛️ Guilds, reworked
 
@@ -67,7 +67,7 @@ These were all upstream features. KMH's job in 2.7 was merging them cleanly with
 
 ### 🤖 Discord bridge + commands
 
-(Bot bridge is KMH-original — separate from upstream's client-side Rich Presence.)
+(Bot bridge is KMH-original — separate from Official's client-side Rich Presence.)
 
 - **Bidirectional chat** — in-game ↔ Discord channel
 - **Per-server tag** (`[S1]`, `[PVP]`) so multi-server clusters can share one channel
@@ -89,7 +89,7 @@ These were all upstream features. KMH's job in 2.7 was merging them cleanly with
 
 ### 🛠️ Custom sites
 
-- **Build your own outposts** beyond the upstream-stock site types
+- **Build your own outposts** beyond the Official-stock site types
 - **Worker assignment** with skill XP — colonists gain XP based on the site's production type
 - **`BaseSkillLevel`** + per-colonist XP tracking, persisted server-side
 - **`ManageWorker`** custom-site aware — workers reassign cleanly when sites change
@@ -107,9 +107,9 @@ Every dialog rebuilt with KMH's new shared `DialogLayout` system:
 - **Item label cache** (`PM_ItemLabels`) — server learns defName → display label from every connected client, so Discord embeds and server-side messaging stop showing raw defNames
 - **Auto-refresh** after every economy action — no more "close the dialog and reopen to see your new silver balance"
 
-### 🖥️ Bundled multi-platform self-hosting (KMH extension of upstream's LocalHost feature)
+### 🖥️ Bundled multi-platform self-hosting (KMH extension of Official's LocalHost feature)
 
-Upstream RWT's local-host feature ships a Windows-only download path. KMH 2.7 extends it:
+Official RWT's local-host feature ships a Windows-only download path. KMH 2.7 extends it:
 
 - **Per-RID server binaries shipped IN the mod** — Windows x64, Linux x64, macOS Intel, macOS Apple Silicon
 - **Self-contained single-file binaries** — players don't install .NET, don't need a separate download, don't touch a terminal
@@ -124,7 +124,7 @@ Upstream RWT's local-host feature ships a Windows-only download path. KMH 2.7 ex
 
 ### `packageId` changed
 
-2.7 ships with `packageId="nova.rimworldtogether.kmh"`. 2.6 used the upstream `nova.rimworldtogether`. RimWorld treats it as a different mod — you'll see a one-time **"missing mod"** notice loading old saves. Harmless:
+2.7 ships with `packageId="nova.rimworldtogether.kmh"`. 2.6 used the Official `nova.rimworldtogether`. RimWorld treats it as a different mod — you'll see a one-time **"missing mod"** notice loading old saves. Harmless:
 
 1. Subscribe / install KMH 2.7
 2. **Disable** the old KMH 2.6 entry in the mod manager
@@ -137,11 +137,11 @@ Your colony, guild, treasury, marketplace listings — everything in your save f
 
 2.7's client assemblies are 1.6-only. If you're still on RimWorld 1.5, stay on KMH 2.6 until you update.
 
-### Protocol incompatible with upstream RWT
+### Protocol incompatible with Official RWT
 
-KMH speaks a superset of upstream's packet protocol. **KMH 2.7 clients cannot connect to vanilla RWT servers, and vice versa.** Both your client and your server need to be on 2.7.
+KMH speaks a superset of Official's packet protocol. **KMH 2.7 clients cannot connect to vanilla RWT servers, and vice versa.** Both your client and your server need to be on 2.7.
 
-The upstream `nova.rimworldtogether` mod is now listed as `incompatibleWith` — RimWorld warns if both are enabled at the same time. Pick one.
+The Official `nova.rimworldtogether` mod is now listed as `incompatibleWith` — RimWorld warns if both are enabled at the same time. Pick one.
 
 ---
 
@@ -173,7 +173,7 @@ Docker is also supported — `docker compose up -d --build` produces an image eq
 
 ## Known caveats
 
-- No connectivity with upstream RWT servers (protocol incompatible — see above)
+- No connectivity with Official RWT servers (protocol incompatible — see above)
 - Workshop download grows by ~150 MB vs a client-only mod (the bundled per-platform binaries)
 - Existing KMH 2.6 players need to re-enable the mod under the new entry
 - macOS Apple Silicon server is included but less tested than the other three platforms
@@ -182,7 +182,7 @@ Docker is also supported — `docker compose up -d --build` produces an image eq
 
 ## Thanks
 
-To **Nova and Company** for RimWorld Together and the continued upstream work — KMH stands on that codebase.
+To **Nova and Company** for RimWorld Together and the continued Official work — KMH stands on that codebase.
 
 To the **KMH community** — every overlap screenshot, every Discord complaint, every "this looks wrong" report drove a fix in 2.7. The UI overhaul exists because you kept showing me the problems.
 

@@ -15,7 +15,7 @@
 #      first via `.github/workflows/release.yaml` or `docker push`. The
 #      example below uses GitHub Container Registry under your KMH repo
 #      — replace `YOUR-GITHUB-USERNAME-OR-ORG` with the real handle
-#      before uncommenting. Upstream's `ghcr.io/rimworld-together/...`
+#      before uncommenting. Official's `ghcr.io/rimworld-together/...`
 #      image does NOT speak KMH's packet protocol; KMH clients can't
 #      connect to it.
 #

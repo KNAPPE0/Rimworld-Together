@@ -17,14 +17,6 @@ namespace GameServer.PacketManager
         [HandlesPacket(PacketHeader.RoadManager)]
         public override void Receive(ServerClient client, byte[] bytes, PacketHeader header)
         {
-            // Two-layer guard. First the global feature
-            // toggle (disabled features should be cheap to deny — no
-            // packet deserialisation cost). Second the per-player
-            // cooldown so a connected client can't spam Add/Remove
-            // requests faster than the configured interval. Ported from
-            // upstream's "Security checks for sites, settlements, roads
-            // and pollution" (May 2026), adapted to KMH's epoch-based
-            // cooldown convention.
             if (!Master.ActionConfigs.RoadsAction.IsEnabled)
             {
                 ResponseShortcutManager.SendIllegalPacket(client, "Tried to use disabled feature!");

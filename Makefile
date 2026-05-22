@@ -33,7 +33,7 @@ PUBLISH_FLAGS    := -c Release \
                     -p:WarningLevel=0 \
                     --nologo
 
-# -------- Per-project builds (matches upstream's targets) -------
+# -------- Per-project builds (matches Official's targets) -------
 build-network:
 	dotnet build $(SOURCE)/TCPNetwork/TCPNetwork.csproj --configuration Release -p:WarningLevel=0 --nologo
 
@@ -91,10 +91,10 @@ release: build publish-server
 	@echo "==============================================="
 	@echo "Folder: $(RELEASE_DIR)"
 	@du -sh $(RELEASE_DIR) 2>/dev/null || true
-	@# Warn about upstream PublishedFileId.txt staying in About/
+	@# Warn about Official PublishedFileId.txt staying in About/
 	@if [ -f $(RELEASE_DIR)/About/PublishedFileId.txt ] && [ "$$(cat $(RELEASE_DIR)/About/PublishedFileId.txt | tr -d '[:space:]')" = "3005289691" ]; then \
 		echo; \
-		echo "WARNING: About/PublishedFileId.txt still has upstream's Workshop ID (3005289691)."; \
+		echo "WARNING: About/PublishedFileId.txt still has Official's Workshop ID (3005289691)."; \
 		echo "  Replace with your KMH ID, or delete to create a new Workshop entry."; \
 	fi
 

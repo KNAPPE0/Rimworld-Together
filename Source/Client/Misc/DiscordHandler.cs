@@ -10,7 +10,6 @@ namespace GameClient.Misc
     // Discord Rich Presence. Silently no-ops if Discord/SDK is unavailable.
     public static class DiscordHandler
     {
-        // Upstream's RPC app id — re-used so presence assets work without a separate
         // registration. Swap for a KMH-owned id to get branded presence.
         private const string PresenceID = "1505021874868981854";
 
@@ -136,7 +135,7 @@ namespace GameClient.Misc
                 Timestamps = _sessionStartTimestamp ?? Timestamps.Now,
                 Buttons = new[]
                 {
-                    new Button { Label = "Get the mod", Url = KmhProject.SteamWorkshopUrl }
+                    new Button { Label = "Get the mod", Url = KMHProject.SteamWorkshopUrl }
                 }
             };
         }

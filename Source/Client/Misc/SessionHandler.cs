@@ -164,7 +164,7 @@ namespace GameClient.Misc
                 // expansion intro, etc.).
                 MainThreadHandler.Instance.Enqueue(delegate
                 {
-                    Dialogs.DLG_Base.PushNewDialog(new Dialogs.DLG_Welcome(Dialogs.DLG_Welcome.Step.Kmh));
+                    Dialogs.DLG_Base.PushNewDialog(new Dialogs.DLG_Welcome(Dialogs.DLG_Welcome.Step.KMH));
                 });
             }
             catch { /* welcome is cosmetic; never block the session */ }

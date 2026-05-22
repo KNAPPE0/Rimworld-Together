@@ -62,7 +62,6 @@ namespace GameClient.Managers
 
         public static Thing[] GetAllThingsInMap(Map map)
         {
-            // Removed duplicated `category == Item` predicate (upstream typo).
             return map.listerThings.AllThings
                 .Where(t => t.def.category == ThingCategory.Item && t.IsInAnyStorage() && !t.Position.Fogged(map))
                 .ToArray();

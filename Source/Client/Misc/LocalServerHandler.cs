@@ -17,7 +17,7 @@ namespace GameClient.Misc
 {
     public static class LocalServerHandler
     {
-        public static string DefaultDownloadUrlTemplate => Shared.KmhProject.GitHubLatestServerZipTemplate;
+        public static string DefaultDownloadUrlTemplate => Shared.KMHProject.GitHubLatestServerZipTemplate;
 
         public static string DownloadUrl
         {

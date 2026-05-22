@@ -63,7 +63,7 @@ namespace GameClient.Dialogs
             {
                 DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Official RWT Discord",     KMHProject.Official.DiscordUrl);
                 DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Official RWT GitHub",      KMHProject.Official.GitHubUrl);
-                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Official Steam Workshop",  KMHProject.SteamWorkshopUrl);
+                DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Official Steam Workshop",  KMHProject.Official.SteamWorkshopUrl);
             }
 
             // Step 1 chains into Step 2; Step 2 closes the welcome flow.

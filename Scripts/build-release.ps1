@@ -87,9 +87,9 @@ Write-Host "Releases dir:   $ReleasesDir"
 Write-Host "Bundle servers: $($BundleServersInWorkshop.IsPresent)"
 
 # Auto-detect GitHub repo from git remote and cross-check vs the
-# KmhProject constants. Warns if they've drifted — keeps the
+# KMHProject constants. Warns if they've drifted — keeps the
 # LocalServerHandler URL pointed at the right repo without manual edits.
-$KmhProjectFile = Join-Path $ModRoot 'Source\Shared\Misc\KmhProject.cs'
+$KMHProjectFile = Join-Path $ModRoot 'Source\Shared\Misc\KMHProject.cs'
 try {
     $remoteUrl = (& git -C $ModRoot remote get-url origin 2>$null) | Out-String
     $remoteUrl = $remoteUrl.Trim()
@@ -98,16 +98,16 @@ try {
         $detectedRepo  = $matches[2]
         Write-Host "Git remote:     https://github.com/$detectedOwner/$detectedRepo" -ForegroundColor DarkGray
 
-        if (Test-Path $KmhProjectFile) {
-            $kmhSrc = Get-Content $KmhProjectFile -Raw
+        if (Test-Path $KMHProjectFile) {
+            $kmhSrc = Get-Content $KMHProjectFile -Raw
             $ownerMatch = [regex]::Match($kmhSrc, 'GitHubOwner\s*=\s*"([^"]+)"')
             $repoMatch  = [regex]::Match($kmhSrc, 'GitHubRepo\s*=\s*"([^"]+)"')
             if ($ownerMatch.Success -and $repoMatch.Success) {
                 $constOwner = $ownerMatch.Groups[1].Value
                 $constRepo  = $repoMatch.Groups[1].Value
                 if ($constOwner -ne $detectedOwner -or $constRepo -ne $detectedRepo) {
-                    Write-Host "WARN: KmhProject constants ($constOwner/$constRepo) don't match git remote ($detectedOwner/$detectedRepo)." -ForegroundColor Yellow
-                    Write-Host "      Update Source/Shared/Misc/KmhProject.cs so the LocalServerHandler URL points at the right repo." -ForegroundColor Yellow
+                    Write-Host "WARN: KMHProject constants ($constOwner/$constRepo) don't match git remote ($detectedOwner/$detectedRepo)." -ForegroundColor Yellow
+                    Write-Host "Update Source/Shared/Misc/KMHProject.cs so the LocalServerHandler URL points at the right repo." -ForegroundColor Yellow
                 }
             }
         }

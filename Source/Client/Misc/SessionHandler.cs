@@ -158,10 +158,7 @@ namespace GameClient.Misc
         {
             try
             {
-                if (Core.Configs.ModConfigGetter.HasSeenKMHWelcome) return;
-                // Defer to the main thread the next frame so it doesn't
-                // race RimWorld's own boot dialogs (Steam Workshop tutorial,
-                // expansion intro, etc.).
+                // Defer to the main thread the next frame so it doesn't race RimWorld's own boot dialogs (Steam Workshop tutorial, expansion intro, etc.).
                 MainThreadHandler.Instance.Enqueue(delegate
                 {
                     Dialogs.DLG_Base.PushNewDialog(new Dialogs.DLG_Welcome(Dialogs.DLG_Welcome.Step.KMH));

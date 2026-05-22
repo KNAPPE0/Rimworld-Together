@@ -7,7 +7,7 @@ using Verse;
 
 namespace GameClient.Dialogs
 {
-    // One-time welcome flow: KMH credits → official RWT credits.
+    // Two-step welcome flow: KMH credits, then official RWT credits.
     public class DLG_Welcome : DLG_Base
     {
         public enum Step { KMH, OfficialRWT }
@@ -22,7 +22,7 @@ namespace GameClient.Dialogs
             if (step == Step.KMH)
             {
                 Title = "Welcome to RimWorld Together (KMH Edition)";
-                Description = "This is a customized fork of the official RimWorld Together mod with extra economy, Discord, leaderboard, and self-host features.";
+                Description = "This is a customized edition of the official RimWorld Together mod with extra economy, Discord, leaderboard, and self-host features.";
             }
             else
             {
@@ -66,20 +66,14 @@ namespace GameClient.Dialogs
                 DrawLinkButton(rect, ref btnY, btnW, btnH, gap, "Official Steam Workshop",  KMHProject.SteamWorkshopUrl);
             }
 
-            // Step 1 chains to Step 2; Step 2 stamps HasSeenKMHWelcome.
+            // Step 1 chains into Step 2; Step 2 closes the welcome flow.
             Rect okRect = new Rect((rect.width - 150f) / 2f, rect.height - 44f, 150f, 38f);
-            string okLabel = (_step == Step.KMH) ? "OK" : "OK";
-            if (Widgets.ButtonText(okRect, okLabel))
+            if (Widgets.ButtonText(okRect, "OK"))
             {
                 Close();
                 if (_step == Step.KMH)
                 {
                     PushNewDialog(new DLG_Welcome(Step.OfficialRWT));
-                }
-                else
-                {
-                    Core.Configs.ModConfigGetter.HasSeenKMHWelcome = true;
-                    Verse.LoadedModManager.GetMod<Core.Configs.ModConfigSetter>()?.WriteSettings();
                 }
             }
 

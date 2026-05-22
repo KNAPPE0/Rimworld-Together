@@ -19,7 +19,6 @@ namespace GameClient.Core.Configs
         {
             Scribe_Values.Look(ref CurrentVerboseMode, nameof(CurrentVerboseMode));
             Scribe_Values.Look(ref BypassModCompatibilityCheck, nameof(BypassModCompatibilityCheck));
-            Scribe_Values.Look(ref HasSeenKMHWelcome, nameof(HasSeenKMHWelcome), defaultValue: false);
             Scribe_Values.Look(ref LocalServerDownloadUrl, nameof(LocalServerDownloadUrl), defaultValue: string.Empty);
             base.ExposeData();
         }

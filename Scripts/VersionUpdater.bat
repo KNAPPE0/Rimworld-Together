@@ -4,7 +4,7 @@
 set "DashLine=----------"
 
 ::Set custom title
-title RimWorld Together - Version Updater
+title RimWorld Together (KMH Edition) - Version Updater
 
 ::Set rimworld folder path
 set GameFolder=%CD%
@@ -28,31 +28,48 @@ set /p ModFolder=<ModPath.txt
 ::Go to version folder
 cd "Version"
 
-::Unzip the file
+::Locate the downloaded archive. We accept either filename:
+::  - kmh-mod.zip     (what build-release.ps1 emits as a GitHub release asset)
+::  - 3638751319.zip  (the KMH Steam Workshop ID, used by legacy downloads)
+set "ZipFile="
+if exist "kmh-mod.zip"     set "ZipFile=kmh-mod.zip"
+if exist "3638751319.zip"  set "ZipFile=3638751319.zip"
+if not defined ZipFile (
+    echo %DashLine%
+    echo - ERROR: No KMH archive found in Version folder.
+    echo - Looked for kmh-mod.zip and 3638751319.zip.
+    echo %DashLine%
+    timeout /t 15
+    exit /b 1
+)
+
+::Unzip into a working folder
 echo.
 echo %DashLine%
-echo - Extracting archive...
+echo - Extracting archive: %ZipFile%
 echo %DashLine%
-powershell -command "Expand-Archive -Path '3005289691.zip' -DestinationPath '3005289691' -Force"
+powershell -command "Expand-Archive -Path '%ZipFile%' -DestinationPath 'kmh-extracted' -Force"
 
 ::Save file location
-set "ExtractedFolder=%cd%/3005289691"
+set "ExtractedFolder=%cd%/kmh-extracted"
 
-::Go to mod folder
+::Go to mod folder. KMH's Steam Workshop ID is 3638751319, so the
+::installed mod folder is named 3638751319/ under the workshop content
+::tree. That's what we replace with the freshly extracted KMH build.
 cd %ModFolder%\..
 
 ::Move folder to temp place
-move "%ExtractedFolder%" "3005289691-Temp"
+move "%ExtractedFolder%" "3638751319-Temp"
 timeout /t 3
 
 ::Clean old folder
-rmdir /s /q "3005289691"
+rmdir /s /q "3638751319"
 
 ::Replace with new installation
 echo.
 echo %DashLine%
 echo - Installing new version
-move "3005289691-Temp" "3005289691"
+move "3638751319-Temp" "3638751319"
 echo %DashLine%
 
 ::Wait at end

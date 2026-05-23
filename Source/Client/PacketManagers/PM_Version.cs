@@ -68,8 +68,10 @@ namespace GameClient.PacketManagers
                 return;
             }
 
-            string downloadPath = Path.Combine(Master.AppdataVersionPath, "3005289691.zip");
-            string uri = $"https://github.com/RimWorld-Together/Rimworld-Together/releases/download/{Uri.EscapeDataString(requested)}/3005289691.zip";
+            // Pulls from KMH's own GitHub releases. Filename matches the kmh-mod.zip asset
+            // that build-release.ps1 emits, so VersionUpdater.bat can find it on disk.
+            string downloadPath = Path.Combine(Master.AppdataVersionPath, "kmh-mod.zip");
+            string uri = $"{KMHProject.GitHubUrl}/releases/download/{Uri.EscapeDataString(requested)}/kmh-mod.zip";
 
             DLG_Wait wait = new DLG_Wait("Downloading version");
             DLG_Base.PushNewDialog(wait);
